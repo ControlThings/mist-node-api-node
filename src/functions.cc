@@ -1,4 +1,5 @@
 #include "functions.h"
+#include "mist_app.h"
 
 NAN_METHOD(nothing) {
 }
@@ -9,6 +10,14 @@ NAN_METHOD(aString) {
 
 NAN_METHOD(aBoolean) {
     info.GetReturnValue().Set(false);
+}
+
+mist_app_t* mist_app;
+
+NAN_METHOD(mistApp) {
+    mist_app = start_mist_app();
+    info.GetReturnValue().Set(mist_app == NULL ? false : true);
+    //info.GetReturnValue().Set(true);
 }
 
 NAN_METHOD(aNumber) {
