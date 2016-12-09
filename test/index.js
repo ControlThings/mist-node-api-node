@@ -10,6 +10,13 @@ describe('native extension', function() {
     assert.equal(obj.plusOne(), 3);
   });
 
+  it('should export a wrapped object for a second instance', function() {
+    var obj = new nativeExtension.MyObject(0);
+    assert.equal(obj.plusOne(), 1);
+    assert.equal(obj.plusOne(), 2);
+    assert.equal(obj.plusOne(), 3);
+  });
+
   it('should export function that returns nothing', function() {
     assert.equal(nativeExtension.nothing(), undefined);
   });
@@ -49,4 +56,15 @@ describe('native extension', function() {
   it('should create a mist_app instance', function() {
     assert.equal(typeof nativeExtension.mistApp(), 'boolean');
   });
+  
+  /*
+  it('should set callback function and be called', function(done) {
+    var obj = new nativeExtension.MyObject(7);
+    obj.setCallback(function() {
+        //assert.equal(typeof nativeExtension.mistApp(), 'boolean');
+        console.log("This was called.");
+        done();
+    });
+  });
+  */
 });

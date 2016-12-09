@@ -1,2 +1,2 @@
-var NativeExtension = require('bindings')('NativeExtension');
-module.exports = NativeExtension;
+var MistApi = require('bindings')('MistApi');
+module.exports = MistApi;
