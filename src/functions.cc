@@ -17,7 +17,7 @@ NAN_METHOD(aBoolean) {
 mist_app_t* mist_app;
 
 static enum mist_error hw_read_string(mist_ep* ep, void* result) {
-    memcpy(result, "Morjens", 8);
+    memcpy(result, "nodejs plugins rule!", 21);
     return MIST_NO_ERROR;
 }
 
@@ -38,26 +38,8 @@ NAN_METHOD(mistApp) {
 
     struct mist_model *model = &(mist_app->model);
     
-    /*
-    char* id;       // ID of the item (=the name of the document)
-    char* label;    // Clear text label
-    enum mist_type type;
-    char* unit;
-    char* data;     // Initial value encoded
-    bool readable;
-    bool writable;
-    bool invokable;
-    enum mist_error (*read)(struct mist_endpoint* ep, void* result);
-    enum mist_error (*write)(struct mist_endpoint* ep, void* value);
-    enum mist_error (*invoke)(struct mist_endpoint* ep, mist_buf args, mist_buf response);
-    struct mist_endpoint * next;
-    struct mist_endpoint * prev;
-    bool dirty;
-    // Used in float type 
-    uint8_t scaling;    
-    */
-    
-    mist_ep string = { 
+    // Must be in this exact order with all members initialized
+    mist_ep string = {
         id : (char*) "info", 
         label : (char*) "Mist API", 
         type : MIST_TYPE_STRING,
