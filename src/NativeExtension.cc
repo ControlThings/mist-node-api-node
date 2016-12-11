@@ -11,6 +11,8 @@
 #include <iostream>
 #include <thread>
 
+#include <cstdio>
+
 #include "functions.h"
 
 using v8::FunctionTemplate;
@@ -267,6 +269,11 @@ public:
             cout << "going to read\n";
             Message m = fromNode.read();
             cout << "Got this: " << m.name << " : " << m.data << "\n";
+            printf("m.data %p", &m.data);
+            bool success = *(bool*) injectMessage(&m.data);
+            
+            cout << "Success " << success << "\n";
+            
             max = std::stoi(m.data);
             for (int i = start; i <= max; ++i) {
                 string event = (i % 2 == 0 ? "even" : "odd");

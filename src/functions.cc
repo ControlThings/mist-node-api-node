@@ -3,18 +3,8 @@
 #include "mist_api.h"
 #include "wish_core_client.h"
 
-NAN_METHOD(nothing) {
-}
-
-NAN_METHOD(aString) {
-    info.GetReturnValue().Set(Nan::New("This is a thing.").ToLocalChecked());
-}
-
-NAN_METHOD(aBoolean) {
-    info.GetReturnValue().Set(false);
-}
-
-mist_app_t* mist_app;
+#include <pthread.h>
+#include <stdio.h>
 
 static enum mist_error hw_read_string(mist_ep* ep, void* result) {
     memcpy(result, "nodejs plugins rule!", 21);
@@ -25,10 +15,40 @@ static void init(wish_app_t* app) {
     WISHDEBUG(LOG_CRITICAL, "API ready!");
 }
 
-NAN_METHOD(mistApp) {
-    wish_app_t *app;
-    //mist_app_t *mist_app;
-    mist_api_t *mist_api;
+pthread_mutex_t mutex1 = PTHREAD_MUTEX_INITIALIZER;
+
+static int input_buffer_len = 0;
+
+void* injectMessage(void *ptr) {
+    if (pthread_mutex_trylock(&mutex1)) {
+        return NULL;
+    }
+
+    bool success = false;
+    
+    // check if we can inject a new message, i.e input buffer is consumed by Mist
+
+    if (input_buffer_len == 0) {
+        // last message was consumed, injecting new message
+        // by writing new message to input buffer
+        printf("Lock acquired, injecting");
+        input_buffer_len = 1;
+        success = true;
+    } else {
+        // last message has not been consumed
+        printf("Lock acquired, but last message was not consumed yet.");
+    }
+
+    // release lock   
+    pthread_mutex_unlock(&mutex1);
+    return &success;
+}
+
+static wish_app_t *app;
+static mist_app_t* mist_app;
+static mist_api_t* api;
+
+static void* setupMist(void* ptr) {
     
     // name used for WishApp and MistNode name
     const char *name = "MistApi";
@@ -64,22 +84,67 @@ NAN_METHOD(mistApp) {
     wish_app_add_protocol(app, &mist_app->ucp_handler);
     mist_app->app = app;
 
-    mist_api_t* api = mist_api_init(mist_app);
+    api = mist_api_init(mist_app);
     
     app->ready = init;
     
     if (app == NULL) {
         printf("Failed creating wish app");
-        return;
+        return NULL;
     }
     
     uv_loop_t loop;
     uv_loop_init(&loop);
     
-    wish_core_client_init(app);
-    
-    info.GetReturnValue().Set(mist_app == NULL ? false : true);
-    //info.GetReturnValue().Set(true);
+    wish_core_client_init(app);    
+    return NULL;
+}
+
+NAN_METHOD(nothing) {
+}
+
+NAN_METHOD(aString) {
+
+    pthread_t thread1;
+    //pthread_t thread2;
+    const char *message1 = "Thread 1";
+    //const char *message2 = "Thread 2";
+    int iret1;
+    //int iret2;
+
+    /* Create independent threads each of which will execute function */
+
+    iret1 = pthread_create(&thread1, NULL, setupMist, (void*) message1);
+    if (iret1) {
+        fprintf(stderr, "Error - pthread_create() return code: %d\n", iret1);
+        exit(EXIT_FAILURE);
+    }
+
+    //iret2 = pthread_create(&thread2, NULL, print_message_function, (void*) message2);
+    //if (iret2) {
+    //    fprintf(stderr, "Error - pthread_create() return code: %d\n", iret2);
+    //    exit(EXIT_FAILURE);
+    //}
+
+    printf("pthread_create() for thread 1 returns: %d\n", iret1);
+    //printf("pthread_create() for thread 2 returns: %d\n", iret2);
+
+    /* Wait till threads are complete before main continues. Unless we  */
+    /* wait we run the risk of executing an exit which will terminate   */
+    /* the process and all threads before the threads have completed.   */
+
+    //pthread_join(thread1, NULL);
+    //pthread_join(thread2, NULL);
+        
+    info.GetReturnValue().Set(Nan::New("This is a thing.").ToLocalChecked());
+}
+
+NAN_METHOD(aBoolean) {
+    info.GetReturnValue().Set(false);
+}
+
+NAN_METHOD(mistApp) {
+    info.GetReturnValue().Set(true);
 }
 
 NAN_METHOD(aNumber) {

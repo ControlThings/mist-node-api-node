@@ -32,4 +32,12 @@ class MyObject : public Nan::ObjectWrap {
     double value_;
 };
 
+extern "C" {
+
+    void* injectMessage(void *ptr);
+
+}
+
+
+
 #endif

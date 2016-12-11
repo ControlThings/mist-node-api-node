@@ -97,19 +97,8 @@ describe('native extension', function () {
             worker.sendToAddon("go", -1);
         }, 2000);
 
-        emitter.on('even', function(data) { console.log("even", arguments); if(data === '20') { done(); } });
-        emitter.on('odd', function(data) { console.log("odd", arguments); });
-
-/*
-        eo.from.on('even', function (value) {
-            console.log("EVEN:  " + value);
-        });
-
-        eo.from.on('odd', function (value) {
-            console.log("ODD:   " + value);
-        });
-        //MistApi.callback(done);
-        */
+        emitter.on('even', function(data) { console.log("even", data); if(data === '20') { done(); } });
+        emitter.on('odd', function(data) { console.log("odd", data); });
     });
 
     //it('should create a mist_app instance', function () {
