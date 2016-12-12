@@ -295,9 +295,9 @@ public:
         do {
             cout << "going to read\n";
             Message m = fromNode.read();
-            cout << "Got this: " << m.name << " : " << m.data << " : " << m.msg << " len: " << m.msg_len << "\n";
-            printf("m.data %p", &m.data);
-            bool success = *(bool*) injectMessage(m.msg, m.msg_len);
+            //cout << "Got this: " << m.name << " : " << m.data << " : " << m.msg << " len: " << m.msg_len << "\n";
+            printf("m.data %p\n", &m.data);
+            bool success = injectMessage(m.msg, m.msg_len);
             
             cout << "Success " << success << "\n";
             

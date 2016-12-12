@@ -33,7 +33,7 @@ bool injectMessage(uint8_t *msg, int len) {
     if (input_buffer_len == 0) {
         // last message was consumed, injecting new message
         // by writing new message to input buffer
-        printf("Lock acquired, injecting");
+        printf("Lock acquired, injecting %02x %02x %02x %02x %02x %02x", msg[0], msg[1], msg[2], msg[3], msg[4], msg[5]);
         memcpy(input_buffer, msg, len);
         input_buffer_len = len;
         success = true;
@@ -60,7 +60,7 @@ static void mist_api_periodic_cb_impl(void* ctx) {
         // by writing new message to input buffer
         printf("Lock acquired, consuming");
         
-        //bson_visit( (uint8_t*) input_buffer, elem_visitor);
+        bson_visit( (uint8_t*) input_buffer, elem_visitor);
         
         input_buffer_len = 0;
     } else {
