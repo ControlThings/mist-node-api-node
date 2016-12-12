@@ -13,6 +13,9 @@
 
 #include <cstdio>
 
+#include <stdlib.h>
+#include <string.h>
+
 #include "functions.h"
 
 using v8::FunctionTemplate;
@@ -68,9 +71,31 @@ class Message {
 public:
     string name;
     string data;
+    uint8_t* msg;
+    int msg_len;
 
-    Message(string name, string data) : name(name), data(data) {
+    Message(string name, string data, uint8_t* m, int l) : name(name), data(data) {
+        msg_len = l;
+        msg = NULL;
+        if (msg_len > 65535 || msg_len < 1) {
+            cout << "No msg in message, bail initiation.";
+            // FIXME This silently bails on messages larger than 64k
+            return;
+        }
+        msg = (uint8_t*) malloc(msg_len);
+        printf("We got a %p message %p cpy %p len: %i\n", this, m, msg, msg_len);
+        memcpy(msg, m, msg_len);
     }
+    
+    /*~Message() {
+        printf("Deconstructing: %p msg %p\n", this, msg);
+        if (msg != NULL) {
+            printf("freeing %p\n", msg);
+            free(msg);
+            msg = NULL;
+            printf("freed %p\n", msg);
+        }
+    }*/
 };
 
 class StreamingWorker : public AsyncProgressWorker {
@@ -226,8 +251,10 @@ private:
     static NAN_METHOD(sendToAddon) {
         v8::String::Utf8Value name(info[0]->ToString());
         v8::String::Utf8Value data(info[1]->ToString());
+        uint8_t* buf = (uint8_t*) node::Buffer::Data(info[2]->ToObject());
+        int buf_len = node::Buffer::Length(info[2]->ToObject());
         StreamWorkerWrapper* obj = Nan::ObjectWrap::Unwrap<StreamWorkerWrapper>(info.Holder());
-        obj->_worker->fromNode.write(Message(*name, *data));
+        obj->_worker->fromNode.write(Message(*name, *data, buf, buf_len));
     }
 
     static NAN_METHOD(closeInput) {
@@ -268,16 +295,16 @@ public:
         do {
             cout << "going to read\n";
             Message m = fromNode.read();
-            cout << "Got this: " << m.name << " : " << m.data << "\n";
+            cout << "Got this: " << m.name << " : " << m.data << " : " << m.msg << " len: " << m.msg_len << "\n";
             printf("m.data %p", &m.data);
-            bool success = *(bool*) injectMessage(&m.data);
+            bool success = *(bool*) injectMessage(m.msg, m.msg_len);
             
             cout << "Success " << success << "\n";
             
             max = std::stoi(m.data);
             for (int i = start; i <= max; ++i) {
                 string event = (i % 2 == 0 ? "even" : "odd");
-                Message tosend(event, std::to_string(i));
+                Message tosend(event, std::to_string(i), NULL, 0);
                 writeToNode(progress, tosend);
                 //std::this_thread::sleep_for(chrono::milliseconds(200));
             }

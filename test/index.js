@@ -1,5 +1,6 @@
 var MistApi = require('../');
 var assert = require('assert');
+var BSON = require('wish-bson').BSONPure.BSON;
 
 
 describe('native extension', function () {
@@ -86,7 +87,7 @@ describe('native extension', function () {
                     }));
         };*/
         
-        worker.sendToAddon("go", 1);
+        worker.sendToAddon("go", 1, BSON.serialize({ way: 'cool', works: true }));
 
         setTimeout(function () {
             worker.sendToAddon("go", 7);

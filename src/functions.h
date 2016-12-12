@@ -34,7 +34,7 @@ class MyObject : public Nan::ObjectWrap {
 
 extern "C" {
 
-    void* injectMessage(void *ptr);
+    bool injectMessage(uint8_t* msg, int msg_len);
 
 }
 

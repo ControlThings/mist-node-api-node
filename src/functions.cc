@@ -2,6 +2,7 @@
 #include "mist_app.h"
 #include "mist_api.h"
 #include "wish_core_client.h"
+#include "bson_visitor.h"
 
 #include <pthread.h>
 #include <stdio.h>
@@ -18,8 +19,9 @@ static void init(wish_app_t* app) {
 pthread_mutex_t mutex1 = PTHREAD_MUTEX_INITIALIZER;
 
 static int input_buffer_len = 0;
+static char input_buffer[2048];
 
-void* injectMessage(void *ptr) {
+bool injectMessage(uint8_t *msg, int len) {
     if (pthread_mutex_trylock(&mutex1)) {
         return NULL;
     }
@@ -32,7 +34,8 @@ void* injectMessage(void *ptr) {
         // last message was consumed, injecting new message
         // by writing new message to input buffer
         printf("Lock acquired, injecting");
-        input_buffer_len = 1;
+        memcpy(input_buffer, msg, len);
+        input_buffer_len = len;
         success = true;
     } else {
         // last message has not been consumed
@@ -41,7 +44,32 @@ void* injectMessage(void *ptr) {
 
     // release lock   
     pthread_mutex_unlock(&mutex1);
-    return &success;
+    return success;
+}
+
+static void mist_api_periodic_cb_impl(void* ctx) {
+    if (pthread_mutex_trylock(&mutex1)) {
+        WISHDEBUG(LOG_CRITICAL, "Failed trylock. Fail-safe worked!");
+        return;
+    }
+
+    // check if we can inject a new message, i.e input buffer is consumed by Mist
+
+    if (input_buffer_len > 0) {
+        // last message was consumed, injecting new message
+        // by writing new message to input buffer
+        printf("Lock acquired, consuming");
+        
+        //bson_visit( (uint8_t*) input_buffer, elem_visitor);
+        
+        input_buffer_len = 0;
+    } else {
+        // last message has not been consumed
+        printf("Lock acquired, but no data.");
+    }
+
+    // release lock   
+    pthread_mutex_unlock(&mutex1);
 }
 
 static wish_app_t *app;
@@ -85,6 +113,8 @@ static void* setupMist(void* ptr) {
     mist_app->app = app;
 
     api = mist_api_init(mist_app);
+    api->periodic = mist_api_periodic_cb_impl;
+    api->periodic_ctx = api;
     
     app->ready = init;
     
