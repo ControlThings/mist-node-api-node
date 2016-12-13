@@ -4,20 +4,6 @@ var BSON = require('wish-bson').BSONPure.BSON;
 
 
 describe('native extension', function () {
-    it('should export a wrapped object', function () {
-        var obj = new MistApi.MyObject(0);
-        assert.equal(obj.plusOne(), 1);
-        assert.equal(obj.plusOne(), 2);
-        assert.equal(obj.plusOne(), 3);
-    });
-
-    it('should export a wrapped object for a second instance', function () {
-        var obj = new MistApi.MyObject(0);
-        assert.equal(obj.plusOne(), 1);
-        assert.equal(obj.plusOne(), 2);
-        assert.equal(obj.plusOne(), 3);
-    });
-
     it('should export function that returns nothing', function () {
         assert.equal(MistApi.nothing(), undefined);
     });
@@ -87,8 +73,10 @@ describe('native extension', function () {
                     }));
         };*/
         
-        worker.sendToAddon("go", 1, BSON.serialize({ way: 'cool', works: true }));
+        //worker.sendToAddon("go", 1, BSON.serialize({ way: 'cool', works: true }));
+        worker.sendToAddon("go", 1, BSON.serialize({ op: 'mist.listServices', id: 1 }));
 
+        /*
         setTimeout(function () {
             worker.sendToAddon("go", 7);
         }, 1000);
@@ -96,6 +84,10 @@ describe('native extension', function () {
         setTimeout(function () {
             worker.sendToAddon("go", 20);
             worker.sendToAddon("go", -1);
+        }, 2000);
+        */
+        setTimeout(function () {
+            worker.sendToAddon("go", 1, BSON.serialize({ kill: true }));
         }, 2000);
 
         emitter.on('even', function(data) { console.log("even", data); if(data === '20') { done(); } });

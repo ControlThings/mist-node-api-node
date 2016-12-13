@@ -3,6 +3,7 @@
 #include "mist_api.h"
 #include "wish_core_client.h"
 #include "bson_visitor.h"
+#include "bson.h"
 
 #include <pthread.h>
 #include <stdio.h>
@@ -20,12 +21,19 @@ pthread_mutex_t mutex1 = PTHREAD_MUTEX_INITIALIZER;
 
 static int input_buffer_len = 0;
 static char input_buffer[2048];
+static bool node_api_plugin_kill = false;
 
 bool injectMessage(uint8_t *msg, int len) {
     if (pthread_mutex_trylock(&mutex1)) {
         return NULL;
     }
 
+    printf("Creating new Test and calling send...\n");
+    
+    Test* t = new Test();    
+    t->send(NULL, 0);
+
+    
     bool success = false;
     
     // check if we can inject a new message, i.e input buffer is consumed by Mist
@@ -33,18 +41,25 @@ bool injectMessage(uint8_t *msg, int len) {
     if (input_buffer_len == 0) {
         // last message was consumed, injecting new message
         // by writing new message to input buffer
-        printf("Lock acquired, injecting %02x %02x %02x %02x %02x %02x", msg[0], msg[1], msg[2], msg[3], msg[4], msg[5]);
+        printf("Lock acquired, injecting %02x %02x %02x %02x %02x %02x\n", msg[0], msg[1], msg[2], msg[3], msg[4], msg[5]);
         memcpy(input_buffer, msg, len);
         input_buffer_len = len;
         success = true;
     } else {
         // last message has not been consumed
-        printf("Lock acquired, but last message was not consumed yet.");
+        printf("Lock acquired, but last message was not consumed yet.\n");
     }
-
+    
     // release lock   
     pthread_mutex_unlock(&mutex1);
     return success;
+}
+
+static void list_services_cb(struct wish_rpc_entry* req, void* ctx, uint8_t* data, size_t data_len) {
+    printf("response going towards node.js.\n");
+    bson_visit(data, elem_visitor);
+
+    //static_cast<EvenOdd*>(evenodd_instance)->sendToNode(data, data_len);
 }
 
 static void mist_api_periodic_cb_impl(void* ctx) {
@@ -52,20 +67,43 @@ static void mist_api_periodic_cb_impl(void* ctx) {
         WISHDEBUG(LOG_CRITICAL, "Failed trylock. Fail-safe worked!");
         return;
     }
+    
+    if(node_api_plugin_kill) {
+        printf("killing loop from within.\n");
+        wish_core_client_close(NULL);
+    }
 
     // check if we can inject a new message, i.e input buffer is consumed by Mist
 
     if (input_buffer_len > 0) {
         // last message was consumed, injecting new message
         // by writing new message to input buffer
-        printf("Lock acquired, consuming");
+        printf("Lock acquired, consuming\n");
         
         bson_visit( (uint8_t*) input_buffer, elem_visitor);
+
+        bson_iterator it;
+        bson_find_from_buffer(&it, input_buffer, "kill");
+        
+        if (bson_iterator_type(&it) == BSON_BOOL) {
+            printf("kill is bool\n");
+            if (bson_iterator_bool(&it)) {
+                printf("kill is true\n");
+                node_api_plugin_kill = true;
+            }
+        } else {
+            printf("Making mist_api_request\n");
+            
+            bson bs;
+            bson_init_buffer(&bs, input_buffer, input_buffer_len);
+
+            mist_api_request(&bs, list_services_cb);
+        }
         
         input_buffer_len = 0;
     } else {
         // last message has not been consumed
-        printf("Lock acquired, but no data.");
+        printf("Lock acquired, but no data.\n");
     }
 
     // release lock   
@@ -123,19 +161,23 @@ static void* setupMist(void* ptr) {
         return NULL;
     }
     
-    uv_loop_t loop;
-    uv_loop_init(&loop);
-    
-    wish_core_client_init(app);    
+    wish_core_client_init(app);
     return NULL;
 }
 
 NAN_METHOD(nothing) {
 }
 
+pthread_t thread1;
+
+void kill_and_join(void* args) {
+    printf("Joining Mist thread...\n");
+    pthread_join(thread1, NULL);
+    printf("Join success.\n");
+}
+
 NAN_METHOD(aString) {
 
-    pthread_t thread1;
     //pthread_t thread2;
     const char *message1 = "Thread 1";
     //const char *message2 = "Thread 2";
@@ -198,45 +240,4 @@ NAN_METHOD(anArray) {
 NAN_METHOD(callback) {
     v8::Local<v8::Function> callbackHandle = info[0].As<v8::Function>();
     Nan::MakeCallback(Nan::GetCurrentContext()->Global(), callbackHandle, 0, 0);
-}
-
-// Wrapper Impl
-
-Nan::Persistent<v8::Function> MyObject::constructor;
-
-NAN_MODULE_INIT(MyObject::Init) {
-    v8::Local<v8::FunctionTemplate> tpl = Nan::New<v8::FunctionTemplate>(New);
-    tpl->SetClassName(Nan::New("MyObject").ToLocalChecked());
-    tpl->InstanceTemplate()->SetInternalFieldCount(1);
-
-    Nan::SetPrototypeMethod(tpl, "plusOne", PlusOne);
-
-    constructor.Reset(Nan::GetFunction(tpl).ToLocalChecked());
-    Nan::Set(target, Nan::New("MyObject").ToLocalChecked(), Nan::GetFunction(tpl).ToLocalChecked());
-}
-
-MyObject::MyObject(double value) : value_(value) {
-}
-
-MyObject::~MyObject() {
-}
-
-NAN_METHOD(MyObject::New) {
-    if (info.IsConstructCall()) {
-        double value = info[0]->IsUndefined() ? 0 : Nan::To<double>(info[0]).FromJust();
-        MyObject *obj = new MyObject(value);
-        obj->Wrap(info.This());
-        info.GetReturnValue().Set(info.This());
-    } else {
-        const int argc = 1;
-        v8::Local<v8::Value> argv[argc] = {info[0]};
-        v8::Local<v8::Function> cons = Nan::New(constructor);
-        info.GetReturnValue().Set(cons->NewInstance(argc, argv));
-    }
-}
-
-NAN_METHOD(MyObject::PlusOne) {
-    MyObject* obj = Nan::ObjectWrap::Unwrap<MyObject>(info.This());
-    obj->value_ += 1;
-    info.GetReturnValue().Set(obj->value_);
 }

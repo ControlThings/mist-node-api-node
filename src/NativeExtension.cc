@@ -8,6 +8,7 @@
 #include <chrono>
 #include <condition_variable>
 #include <nan.h>
+#include <node.h>
 #include <iostream>
 #include <thread>
 
@@ -16,6 +17,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "NativeExtension.h"
 #include "functions.h"
 
 using v8::FunctionTemplate;
@@ -78,7 +80,7 @@ public:
         msg_len = l;
         msg = NULL;
         if (msg_len > 65535 || msg_len < 1) {
-            cout << "No msg in message, bail initiation.";
+            cout << "No msg in message, bail initiation.\n";
             // FIXME This silently bails on messages larger than 64k
             return;
         }
@@ -139,12 +141,14 @@ public:
 
     PCQueue<Message> fromNode;
 
-protected:
-
     void writeToNode(const AsyncProgressWorker::ExecutionProgress& progress, Message & msg) {
+        printf("writeToNode\n");
         toNode.write(msg);
         progress.Send(reinterpret_cast<const char*> (&toNode), sizeof (toNode));
     }
+
+
+protected:
 
     bool closed() {
         return input_closed;
@@ -160,6 +164,8 @@ private:
 
     void drainQueue() {
         HandleScope scope;
+        
+        printf("drain queue...\n");
 
         // drain the queue - since we might only get called once for many writes
         std::deque<Message> contents;
@@ -209,8 +215,7 @@ public:
         Nan::Set(target, Nan::New("mistApp").ToLocalChecked(),
                 Nan::GetFunction(Nan::New<FunctionTemplate>(mistApp)).ToLocalChecked());
 
-        // Passing target down to the next NAN_MODULE_INIT
-        MyObject::Init(target);
+        node::AtExit(kill_and_join, NULL);
     }
 
 private:
@@ -270,6 +275,8 @@ private:
     StreamingWorker * _worker;
 };
 
+static void* inst;
+
 class EvenOdd : public StreamingWorker {
 public:
 
@@ -289,8 +296,17 @@ public:
 
     ~EvenOdd() {
     }
+    
+    void sendToNode(Message& message) {
+        writeToNode(*_progress, message);
+    }
 
     void Execute(const AsyncProgressWorker::ExecutionProgress& progress) {
+        this->_progress = &progress;
+        inst = this;
+        
+        printf("Setting instance %p\n", this);
+        
         int max;
         do {
             cout << "going to read\n";
@@ -298,6 +314,7 @@ public:
             //cout << "Got this: " << m.name << " : " << m.data << " : " << m.msg << " len: " << m.msg_len << "\n";
             printf("m.data %p\n", &m.data);
             bool success = injectMessage(m.msg, m.msg_len);
+            
             
             cout << "Success " << success << "\n";
             
@@ -312,7 +329,22 @@ public:
     }
 private:
     int start;
+    const AsyncProgressWorker::ExecutionProgress* _progress;
 };
+
+void Test::send(uint8_t* buf, int len) {
+    printf("sending sending... %p\n", inst);
+    EvenOdd* e = (EvenOdd*) inst;
+
+    string a = "even";
+    string b = "hallelujah!";
+    
+    Message msg(a, b, (uint8_t*) inst, 1);
+    
+    e->sendToNode(msg);
+}
+
+
 
 // Important:  You MUST include this function, and you cannot alter
 //             the signature at all.  The base wrapper class calls this
