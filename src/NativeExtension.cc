@@ -198,27 +198,8 @@ public:
         constructor().Reset(Nan::GetFunction(tpl).ToLocalChecked());
         Nan::Set(target, Nan::New("StreamingWorker").ToLocalChecked(),
                 Nan::GetFunction(tpl).ToLocalChecked());
-        Nan::Set(target, Nan::New("nothing").ToLocalChecked(),
-                Nan::GetFunction(Nan::New<FunctionTemplate>(nothing)).ToLocalChecked());
-        Nan::Set(target, Nan::New("aString").ToLocalChecked(),
-                Nan::GetFunction(Nan::New<FunctionTemplate>(aString)).ToLocalChecked());
-        Nan::Set(target, Nan::New("aBoolean").ToLocalChecked(),
-                Nan::GetFunction(Nan::New<FunctionTemplate>(aBoolean)).ToLocalChecked());
-        Nan::Set(target, Nan::New("aNumber").ToLocalChecked(),
-                Nan::GetFunction(Nan::New<FunctionTemplate>(aNumber)).ToLocalChecked());
-        Nan::Set(target, Nan::New("anObject").ToLocalChecked(),
-                Nan::GetFunction(Nan::New<FunctionTemplate>(anObject)).ToLocalChecked());
-        Nan::Set(target, Nan::New("anArray").ToLocalChecked(),
-                Nan::GetFunction(Nan::New<FunctionTemplate>(anArray)).ToLocalChecked());
-        Nan::Set(target, Nan::New("callback").ToLocalChecked(),
-                Nan::GetFunction(Nan::New<FunctionTemplate>(callback)).ToLocalChecked());
-
-        Nan::Set(target, Nan::New("mistApp").ToLocalChecked(),
-                Nan::GetFunction(Nan::New<FunctionTemplate>(mistApp)).ToLocalChecked());
 
         mist_addon_start();
-        
-        node::AtExit(kill_and_join, NULL);
     }
 
 private:
