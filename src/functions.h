@@ -18,7 +18,8 @@ NAN_METHOD(callback);
 NAN_METHOD(mistApp);
 
 extern "C" {
-    bool injectMessage(uint8_t* msg, int msg_len);
+    void mist_addon_start(void);
+    bool injectMessage(int type, uint8_t* msg, int msg_len);
     void kill_and_join(void* args);
     void set_evenodd(void* instance);
 }

@@ -80,12 +80,12 @@ public:
         msg_len = l;
         msg = NULL;
         if (msg_len > 65535 || msg_len < 1) {
-            cout << "No msg in message, bail initiation.\n";
+            //cout << "No msg in message, bail initiation.\n";
             // FIXME This silently bails on messages larger than 64k
             return;
         }
         msg = (uint8_t*) malloc(msg_len);
-        printf("We got a %p message %p cpy %p len: %i\n", this, m, msg, msg_len);
+        //printf("We got a %p message %p cpy %p len: %i\n", this, m, msg, msg_len);
         memcpy(msg, m, msg_len);
     }
     
@@ -142,7 +142,7 @@ public:
     PCQueue<Message> fromNode;
 
     void writeToNode(const AsyncProgressWorker::ExecutionProgress& progress, Message & msg) {
-        printf("writeToNode\n");
+        //printf("writeToNode\n");
         toNode.write(msg);
         progress.Send(reinterpret_cast<const char*> (&toNode), sizeof (toNode));
     }
@@ -165,7 +165,7 @@ private:
     void drainQueue() {
         HandleScope scope;
         
-        printf("drain queue...\n");
+        //printf("drain queue...\n");
 
         // drain the queue - since we might only get called once for many writes
         std::deque<Message> contents;
@@ -216,6 +216,8 @@ public:
         Nan::Set(target, Nan::New("mistApp").ToLocalChecked(),
                 Nan::GetFunction(Nan::New<FunctionTemplate>(mistApp)).ToLocalChecked());
 
+        mist_addon_start();
+        
         node::AtExit(kill_and_join, NULL);
     }
 
@@ -307,42 +309,43 @@ public:
         run = true;
         inst = this;
         
-        printf("Setting instance %p\n", this);
+        //printf("Setting instance %p progress: %p\n", this, &progress);
 
         while ( run ) {
-            cout << "going to read\n";
+            //cout << "going to read\n";
             Message m = fromNode.read();
             //cout << "Got this: " << m.name << " : " << m.data << " : " << m.msg << " len: " << m.msg_len << "\n";
-            printf("m.data %p\n", &m.data);
+            //printf("m.data %p\n", &m.data);
             
             if(m.name == "kill") {
-                cout << "Execute got kill command\n";
+                //cout << "Execute got kill command\n";
                 run = false;
+                Test::kill();
             }
             
             while (true) {
-                bool success = injectMessage(m.msg, m.msg_len);
+                int type = 0;
+                if (m.name == "wish") {
+                    //printf("===WISH\n");
+                    type = 1;
+                } else if ( m.name == "mist") {
+                    //printf("===MIST\n");
+                    type = 2;
+                }
+                
+                bool success = injectMessage(type, m.msg, m.msg_len);
+                
                 if(success) { 
-                    cout << "Success injecting message " << success << "\n";
+                    //cout << "Success injecting message " << success << "\n";
                     break; 
                 } else {
-                    cout << "Injecting message waiting for my turn. Mist is busy." << success << "\n";
+                    //cout << "Injecting message waiting for my turn. Mist is busy." << success << "\n";
                     std::this_thread::sleep_for(chrono::milliseconds(100));
                 }
             }
-            
-            /*
-            max = std::stoi(m.data);
-            for (int i = start; i <= max; ++i) {
-                string event = (i % 2 == 0 ? "even" : "odd");
-                Message tosend(event, std::to_string(i), NULL, 0);
-                writeToNode(progress, tosend);
-                //std::this_thread::sleep_for(chrono::milliseconds(200));
-            }
-            */
         };
         
-        printf("Plugin Execute is returning\n");
+        //printf("Plugin Execute is returning\n");
     }
 private:
     int start;
@@ -351,13 +354,25 @@ private:
 };
 
 void Test::send(uint8_t* buf, int len) {
-    printf("sending sending... %p buf: %p len: %i\n", inst, buf, len);
+    //printf("sending sending... %p buf: %p len: %i\n", inst, buf, len);
     EvenOdd* e = (EvenOdd*) inst;
 
     string a = "even";
-    string b = "hallelujah!";
+    string b = "dummy";
     
     Message msg(a, b, (uint8_t*) buf, len);
+    
+    e->sendToNode(msg);
+}
+
+void Test::kill() {
+    //printf("kill kill..\n");
+    EvenOdd* e = (EvenOdd*) inst;
+
+    string a = "done";
+    string b = "dummy";
+    
+    Message msg(a, b, NULL, 0);
     
     e->sendToNode(msg);
 }

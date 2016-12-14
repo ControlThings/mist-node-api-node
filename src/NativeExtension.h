@@ -5,5 +5,6 @@
 class Test {
 public:
     static void send(uint8_t* buf, int len);
+    static void kill();
 };
 
