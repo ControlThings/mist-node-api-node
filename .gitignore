@@ -4,4 +4,4 @@
 /build
 /npm-debug.log
 /*.tgz
-
+/mappings.bin

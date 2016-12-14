@@ -1,61 +1,44 @@
-var MistApi = require('../').MistApi;
 var Mist = require('../').Mist;
 var assert = require('assert');
 var BSON = require('wish-bson').BSONPure.BSON;
 var inspect = require('util').inspect;
 
 /*
-    var Mist = require('../').Mist;
+var Mist = require('../').Mist;
 
-    var mist = new Mist();
-    
-    mist.request('mist.listServices', [], function(err, data) {
+var mist = new Mist();
 
-        mist.request('control.model', [data['0']], function(err, data) {
-            console.log("Model:", data);
-        });
+mist.addEndpoint('mybool', {
+    write: function(value, opts) {
+        console.log("Write", value, opts);
+    }
+});
 
-    });
+mist.update('mybool', false);
 */
 
 describe('MistApi', function () {
     var mist = new Mist();
-    
-    it('mist.listServices', function (done) {
-        var timeout = setTimeout(function() { done(new Error("Timeout")); }, 200);
 
-        mist.request('mist.listServices', [], function(err, data) {
-            console.log("Got the response:", err, data);
-            clearTimeout(timeout);
-            done();
-        });
+    it('should create a mist node', function (done) {
+        this.timeout(10000);
+        mist.create();
+        
+        var bool = false;
+        
+        var interval = setInterval(function() {
+            bool = !bool;
+            
+            console.log("changing state to", bool);
+            mist.update('state', bool);
+        }, 600);
+        
+        setTimeout(function() { clearInterval(interval); }, 8000);
+        setTimeout(done, 9000);
     });
-    
-    it('Passthrough to core identity.list', function (done) {
-        var timeout = setTimeout(function() { done(new Error("Timeout")); }, 200);
 
-        mist.wish('identity.list', [], function(err, data) {
-            console.log("Got the response:", err, data);
-            clearTimeout(timeout);
-            done();
-        });
-    });
-    
-    it('Passthrough to core identity.create', function (done) {
-        var timeout = setTimeout(function() { done(new Error("Timeout")); }, 200);
-
-        mist.wish('identity.create', ['node.js'], function(err, data) {
-            //console.log("Got the response:", err, data);
-            mist.wish('identity.remove', [data.uid], function(err, data) {
-                console.log("Got the response:", err, data);
-                clearTimeout(timeout);
-                done();
-            });
-        });
-    });
-    
     it('should shut down the mist plugin', function (done) {
         mist.shutdown();
-        setTimeout(done, 100);
+        setTimeout(done, 1000);
     });
 });

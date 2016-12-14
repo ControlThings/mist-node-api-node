@@ -307,11 +307,11 @@ public:
             while (true) {
                 int type = 0;
                 if (m.name == "wish") {
-                    //printf("===WISH\n");
                     type = 1;
                 } else if ( m.name == "mist") {
-                    //printf("===MIST\n");
                     type = 2;
+                } else if ( m.name == "mistnode") {
+                    type = 3;
                 }
                 
                 bool success = injectMessage(type, m.msg, m.msg_len);

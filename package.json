@@ -1,7 +1,7 @@
 {
-  "name": "mist-api-node",
+  "name": "mist-node-api-node",
   "version": "0.0.1",
-  "description": "Mist API wrapper for node",
+  "description": "Mist Node API wrapper for node. Used for creating Mist nodes/devices/systems.",
   "main": "index.js",
   "scripts": {
     "configure": "node-gyp configure",
@@ -10,7 +10,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "wish.cto.fi:/git/mist-api-node"
+    "url": "wish.cto.fi:/git/mist-node-api-node"
   },
   "keywords": [
     "mist",

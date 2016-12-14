@@ -53,6 +53,22 @@ Mist.prototype.shutdown = function() {
     this.api.sendToAddon("kill", 1, BSON.serialize({ kill: true }));
 };
 
+Mist.prototype.create = function(op, args, cb) {
+    var id = ++this.id;
+    var request = { addEndpoint: true };
+    
+    // store callback for response
+    this.requests[id] = cb;
+    
+    this.api.sendToAddon("mistnode", 1, BSON.serialize(request));
+};
+
+Mist.prototype.update = function(ep, value) {
+    var request = { update: ep, value: value };
+    
+    this.api.sendToAddon("mistnode", 1, BSON.serialize(request));
+};
+
 Mist.prototype.request = function(op, args, cb) {
     var id = ++this.id;
     var request = { op: op, args: args, id: id };
