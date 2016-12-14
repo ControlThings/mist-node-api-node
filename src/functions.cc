@@ -28,12 +28,6 @@ bool injectMessage(uint8_t *msg, int len) {
         return NULL;
     }
 
-    printf("Creating new Test and calling send...\n");
-    
-    Test* t = new Test();    
-    t->send(NULL, 0);
-
-    
     bool success = false;
     
     // check if we can inject a new message, i.e input buffer is consumed by Mist
@@ -59,6 +53,8 @@ static void list_services_cb(struct wish_rpc_entry* req, void* ctx, uint8_t* dat
     printf("response going towards node.js.\n");
     bson_visit(data, elem_visitor);
 
+    Test::send(data, data_len);
+    
     //static_cast<EvenOdd*>(evenodd_instance)->sendToNode(data, data_len);
 }
 
@@ -103,7 +99,7 @@ static void mist_api_periodic_cb_impl(void* ctx) {
         input_buffer_len = 0;
     } else {
         // last message has not been consumed
-        printf("Lock acquired, but no data.\n");
+        //printf("Lock acquired, but no data.\n");
     }
 
     // release lock   
@@ -140,8 +136,9 @@ static void* setupMist(void* ptr) {
         next : NULL,
         prev : NULL,
         dirty : false,
-        scaling : 1
+        scaling : NULL
     };
+    
     mist_add_ep(model, &string);
 
     mist_set_name(mist_app, (char*)name);

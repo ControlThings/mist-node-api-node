@@ -174,9 +174,10 @@ private:
         for (Message & msg : contents) {
             v8::Local<v8::Value> argv[] = {
                 New<v8::String>(msg.name.c_str()).ToLocalChecked(),
-                New<v8::String>(msg.data.c_str()).ToLocalChecked()
+                New<v8::String>(msg.data.c_str()).ToLocalChecked(),
+                Nan::NewBuffer( (char*) msg.msg, (uint32_t) msg.msg_len).ToLocalChecked()
             };
-            progress->Call(2, argv);
+            progress->Call(3, argv);
         }
     }
 };
@@ -303,21 +304,34 @@ public:
 
     void Execute(const AsyncProgressWorker::ExecutionProgress& progress) {
         this->_progress = &progress;
+        run = true;
         inst = this;
         
         printf("Setting instance %p\n", this);
-        
-        int max;
-        do {
+
+        while ( run ) {
             cout << "going to read\n";
             Message m = fromNode.read();
             //cout << "Got this: " << m.name << " : " << m.data << " : " << m.msg << " len: " << m.msg_len << "\n";
             printf("m.data %p\n", &m.data);
-            bool success = injectMessage(m.msg, m.msg_len);
             
+            if(m.name == "kill") {
+                cout << "Execute got kill command\n";
+                run = false;
+            }
             
-            cout << "Success " << success << "\n";
+            while (true) {
+                bool success = injectMessage(m.msg, m.msg_len);
+                if(success) { 
+                    cout << "Success injecting message " << success << "\n";
+                    break; 
+                } else {
+                    cout << "Injecting message waiting for my turn. Mist is busy." << success << "\n";
+                    std::this_thread::sleep_for(chrono::milliseconds(100));
+                }
+            }
             
+            /*
             max = std::stoi(m.data);
             for (int i = start; i <= max; ++i) {
                 string event = (i % 2 == 0 ? "even" : "odd");
@@ -325,21 +339,25 @@ public:
                 writeToNode(progress, tosend);
                 //std::this_thread::sleep_for(chrono::milliseconds(200));
             }
-        } while (max >= 0);
+            */
+        };
+        
+        printf("Plugin Execute is returning\n");
     }
 private:
     int start;
+    bool run;
     const AsyncProgressWorker::ExecutionProgress* _progress;
 };
 
 void Test::send(uint8_t* buf, int len) {
-    printf("sending sending... %p\n", inst);
+    printf("sending sending... %p buf: %p len: %i\n", inst, buf, len);
     EvenOdd* e = (EvenOdd*) inst;
 
     string a = "even";
     string b = "hallelujah!";
     
-    Message msg(a, b, (uint8_t*) inst, 1);
+    Message msg(a, b, (uint8_t*) buf, len);
     
     e->sendToNode(msg);
 }

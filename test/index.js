@@ -1,6 +1,7 @@
 var MistApi = require('../');
 var assert = require('assert');
 var BSON = require('wish-bson').BSONPure.BSON;
+var inspect = require('util').inspect;
 
 
 describe('native extension', function () {
@@ -49,8 +50,12 @@ describe('native extension', function () {
         var emitter = new EventEmitter();
         
         var worker = new MistApi.StreamingWorker(
-                function (event, value) {
+                function (event, value, data) {
                     emitter.emit(event, value);
+                    
+                    if( Buffer.isBuffer(data) && data.length >= 5 ) { 
+                        console.log("the answer is:", inspect(BSON.deserialize(data), { colors: true, depth: 10 }));
+                    }
                 },
                 function () {
                     emitter.emit("close");
@@ -59,10 +64,10 @@ describe('native extension', function () {
                     emitter.emit("error", error);
                 },
                 null);
-
+        /*
         var sw = {};
         sw.from = emitter;
-        /*sw.from.stream = function () {
+        sw.from.stream = function () {
             return emitStream(sw.from).pipe(
                     through(function (data) {
                         if (data[0] === "close") {
@@ -75,6 +80,7 @@ describe('native extension', function () {
         
         //worker.sendToAddon("go", 1, BSON.serialize({ way: 'cool', works: true }));
         worker.sendToAddon("go", 1, BSON.serialize({ op: 'mist.listServices', id: 1 }));
+        worker.sendToAddon("go", 1, BSON.serialize({ op: 'mist.signals', id: 2 }));
 
         /*
         setTimeout(function () {
@@ -87,11 +93,16 @@ describe('native extension', function () {
         }, 2000);
         */
         setTimeout(function () {
-            worker.sendToAddon("go", 1, BSON.serialize({ kill: true }));
+            worker.sendToAddon("kill", 1, BSON.serialize({ kill: true }));
         }, 2000);
 
-        emitter.on('even', function(data) { console.log("even", data); if(data === '20') { done(); } });
-        emitter.on('odd', function(data) { console.log("odd", data); });
+        emitter.on('even', function(data) {
+            console.log("even", data); 
+            if( data === '20') { done(); }
+        });
+        emitter.on('odd', function(data) { 
+            console.log("odd", data); 
+        });
     });
 
     //it('should create a mist_app instance', function () {

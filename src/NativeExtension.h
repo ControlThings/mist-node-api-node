@@ -4,6 +4,6 @@
 
 class Test {
 public:
-    void send(uint8_t* buf, int len);
+    static void send(uint8_t* buf, int len);
 };
 
