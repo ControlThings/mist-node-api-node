@@ -78,15 +78,28 @@ static enum mist_error hw_read(mist_ep* ep, void* result) {
 static enum mist_error hw_write(mist_ep* ep, void* value) {
     if (ep->data == NULL) { return MIST_ERROR; }
     
+    bson bs;
+    bson_init(&bs);
+    bson_append_string(&bs, "epid", ep->id);
+    
     if (ep->type == MIST_TYPE_FLOAT) {
         double v = *((double*) value);
         double *t = (double*) ep->data;
         *t = v;
+        bson_append_double(&bs, "data", v);
     } else if (ep->type == MIST_TYPE_BOOL) {
         bool v = *((bool*) value);
         bool *t = (bool*) ep->data;
         *t = v;
+        bson_append_bool(&bs, "data", v);
+    } else {
+        printf("Unsupported MIST_TYPE %i\n", ep->type);
     }
+    
+    bson_finish(&bs);
+        
+    Test::write((uint8_t*) bson_data(&bs), bson_size(&bs));
+    
     return MIST_NO_ERROR;
 }
 
@@ -315,7 +328,7 @@ static void mist_api_periodic_cb_impl(void* ctx) {
                         
                         c++;
                         
-                        if(c>3) { break; }
+                        if(c>4) { break; }
                     }
                     
                     //mist_set_name(mist_app, name);
