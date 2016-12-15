@@ -1,0 +1,87 @@
+{
+    "device": "Joystick",
+    "model": {
+        "mist": {
+            "name": "Joystick"
+        },
+        "axis0": {
+            "label": "Left controller axis (left/right)",
+            "type": "float",
+            "scale": "100",
+            "unit": "%",
+            "data": 0
+        },
+        "axis1": {
+            "label": "Left controller axis (up/down)",
+            "type": "float",
+            "scale": "100",
+            "unit": "%",
+            "data": 0
+        },
+        "button0": {
+            "label": "Button 1",
+            "type": "bool",
+            "data": false
+        },
+        "button1": {
+            "label": "Button 2",
+            "type": "bool",
+            "data": false,
+            "write": true
+        },
+        "button2": {
+            "label": "Button 3",
+            "type": "bool",
+            "data": false
+        },
+        "button3": {
+            "label": "Button 4",
+            "type": "bool",
+            "data": false
+        },
+        "button4": {
+            "label": "Button 5",
+            "type": "bool",
+            "data": false
+        },
+        "axis2": {
+            "label": "LT",
+            "type": "float",
+            "scale": "100",
+            "unit": "%",
+            "data": 0
+        },
+        "axis3": {
+            "label": "Right controller axis (left/right)",
+            "type": "float",
+            "scale": "100",
+            "unit": "%",
+            "data": 0
+        },
+        "axis4": {
+            "label": "Right controller axis (up/down)",
+            "type": "float",
+            "scale": "100",
+            "unit": "%",
+            "data": 0
+        },
+        "axis5": {
+            "label": "RT",
+            "type": "float",
+            "scale": "100",
+            "unit": "%",
+            "data": 0
+        },
+        "button5": {
+            "label": "Button 6",
+            "type": "bool",
+            "data": false
+        },
+        "vibrateStrong": {
+            "label": "rumble",
+            "type": "slot",
+            "write": true
+        }
+    }
+}
+

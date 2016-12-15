@@ -2,6 +2,7 @@ var Mist = require('../').Mist;
 var assert = require('assert');
 var BSON = require('wish-bson').BSONPure.BSON;
 var inspect = require('util').inspect;
+var model = require('./../src/model.json');
 
 /*
 var Mist = require('../').Mist;
@@ -19,19 +20,27 @@ mist.update('mybool', false);
 
 describe('MistApi', function () {
     var mist = new Mist();
-
+    
+    // callback 
+    mist.write(function(data) {
+        console.log("mist write:", data);
+    });
+    
     it('should create a mist node', function (done) {
         this.timeout(10000);
-        mist.create();
+        mist.create(model);
         
         var bool = false;
+        var axis0 = 0;
         
         var interval = setInterval(function() {
             bool = !bool;
+            axis0 = Math.sin(Date.now()/4000);
             
-            console.log("changing state to", bool);
-            mist.update('state', bool);
-        }, 600);
+            mist.update('axis0', axis0);
+            mist.update('axis1', Math.round(axis0));
+            mist.update('button0', bool);
+        }, 300);
         
         setTimeout(function() { clearInterval(interval); }, 8000);
         setTimeout(done, 9000);

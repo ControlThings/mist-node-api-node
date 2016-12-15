@@ -346,6 +346,18 @@ void Test::send(uint8_t* buf, int len) {
     e->sendToNode(msg);
 }
 
+void Test::write(uint8_t* buf, int len) {
+    //printf("sending sending... %p buf: %p len: %i\n", inst, buf, len);
+    EvenOdd* e = (EvenOdd*) inst;
+
+    string a = "write";
+    string b = "dummy";
+    
+    Message msg(a, b, (uint8_t*) buf, len);
+    
+    e->sendToNode(msg);
+}
+
 void Test::kill() {
     //printf("kill kill..\n");
     EvenOdd* e = (EvenOdd*) inst;

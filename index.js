@@ -14,6 +14,11 @@ function Mist() {
 
     this.api = new MistApi.StreamingWorker(
         function (event, value, data) {
+            if (event === 'write' && typeof self.writeCb === 'function') {
+                self.writeCb(BSON.deserialize(data));
+                return;
+            }
+            
             emitter.emit(event, value);
             
             //console.log("got something from Addon...", event, value);
@@ -53,9 +58,9 @@ Mist.prototype.shutdown = function() {
     this.api.sendToAddon("kill", 1, BSON.serialize({ kill: true }));
 };
 
-Mist.prototype.create = function(op, args, cb) {
+Mist.prototype.create = function(model, cb) {
     var id = ++this.id;
-    var request = { addEndpoint: true };
+    var request = { model: model };
     
     // store callback for response
     this.requests[id] = cb;
@@ -87,6 +92,10 @@ Mist.prototype.wish = function(op, args, cb) {
     this.requests[id] = cb;
     
     this.api.sendToAddon("wish", 1, BSON.serialize(request));
+};
+
+Mist.prototype.write = function(cb) {
+    this.writeCb = cb;
 };
 
 module.exports = {
