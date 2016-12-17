@@ -2,7 +2,7 @@ var Mist = require('../').Mist;
 var assert = require('assert');
 var BSON = require('wish-bson').BSONPure.BSON;
 var inspect = require('util').inspect;
-var model = require('./../src/model.json');
+var model = require('./../doc/model.json');
 
 /*
 var Mist = require('../').Mist;

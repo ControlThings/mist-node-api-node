@@ -1,0 +1,8 @@
+/nbproject
+/node_modules
+/mist-esp
+/build
+/npm-debug.log
+/*.tgz
+/mappings.bin
+/binding.gyp

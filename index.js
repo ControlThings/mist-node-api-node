@@ -1,4 +1,5 @@
-var MistApi = require('bindings')('MistApi');
+//var MistApi = require('bindings')('MistApi');
+var MistApi = require('./bin/MistApi.node');
 var BSON = require('wish-bson').BSONPure.BSON;
 var inspect = require('util').inspect;
 var EventEmitter = require('events');

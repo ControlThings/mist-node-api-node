@@ -1,5 +1,5 @@
 {
-  "name": "mist-node-api-node",
+  "name": "mist-node-api",
   "version": "0.0.1",
   "description": "Mist Node API wrapper for node. Used for creating Mist nodes/devices/systems.",
   "main": "index.js",
