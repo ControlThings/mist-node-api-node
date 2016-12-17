@@ -1,6 +1,6 @@
 var Mist = require('./').Mist;
 var assert = require('assert');
-var BSON = require('wish-bson').BSONPure.BSON;
+var BSON = require('wish-bson');
 var inspect = require('util').inspect;
 var model = require('./doc/model.json');
 

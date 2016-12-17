@@ -24,7 +24,7 @@
   "dependencies": {
     "bindings": "1.2.1",
     "nan": "2.4.0",
-    "wish-bson": "0.2.8"
+    "wish-bson": "1.0.2"
   },
   "devDependencies": {
     "mocha": "3.1.2",
