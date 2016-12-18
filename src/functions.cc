@@ -249,6 +249,13 @@ static void mist_api_periodic_cb_impl(void* ctx) {
                         }
                         char* ep_type = (char*) bson_iterator_string(&epit);
                         
+                        char* ep_scale = NULL;
+                        bson_iterator_subiterator(&modelit, &epit);
+                        bson_find_fieldpath_value("scale", &epit);
+                        if( bson_iterator_type(&epit) == BSON_STRING) {
+                            ep_scale = (char*) bson_iterator_string(&epit);
+                        }
+                        
                         bool readable = false;
                         
                         // data: _anything_
@@ -316,7 +323,7 @@ static void mist_api_periodic_cb_impl(void* ctx) {
                         ep->next = NULL;
                         ep->prev = NULL;
                         ep->dirty = false;
-                        ep->scaling = NULL;
+                        ep->scaling = ep_scale;
 
                         
                         mist_add_ep(model, ep);
