@@ -1,7 +1,14 @@
 //var MistApi = require('bindings')('MistApi');
-var MistApi = require('./bin/MistApi.node');
-var BSON = require('wish-bson');
-var inspect = require('util').inspect;
+if (process.arch === 'arm' && process.platform === 'linux' ) {
+    var MistApi = require('./bin/MistApi-arm-eabi5.node');
+} else if (process.platform === 'darwin') {
+    var MistApi = require('./bin/MistApi-osx.node');
+} else {
+    var MistApi = require('./bin/MistApi.node');
+}
+
+var bson = require('wish-bson');
+var BSON = new bson();
 var EventEmitter = require('events');
 var emitter = new EventEmitter();
 
