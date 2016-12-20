@@ -194,6 +194,16 @@ static void mist_api_periodic_cb_impl(void* ctx) {
                 wish_api_request(&bs, list_services_cb);
             } else if (input_type == 2) { // MIST
                 //printf("### Mist\n");
+                
+                bson_iterator it;
+                bson_find_from_buffer(&it, input_buffer, "cancel");
+
+                if (bson_iterator_type(&it) == BSON_INT) {
+                    printf("mist_cancel %i\n", bson_iterator_int(&it));
+                    mist_api_request_cancel(bson_iterator_int(&it));
+                    goto consume_and_unlock;
+                }
+                
                 mist_api_request(&bs, list_services_cb);
             } else if (input_type == 3) { // MIST NODE API
                 //printf("MistNodeApi got message from node.js:\n");
@@ -394,76 +404,15 @@ static void periodic_cb(void* ctx) {
     mist_api_periodic_cb_impl(NULL);
 }
 
-static void* setupMist(void* ptr) {
+static void* setupMistNodeApi(void* ptr) {
 
     // name used for WishApp and MistNode name
     char* name = (char*) "Node";
 
     //start wish apps
     mist_app = start_mist_app();
-
+    
     model = &(mist_app->model);
-    
-    /*
-    mist_ep relay = {
-        id : (char*) "state", 
-        label : (char*) "Relay", 
-        type : MIST_TYPE_BOOL,
-        unit : NULL,
-        data : NULL,
-        readable : true,
-        writable : true,
-        invokable : false,
-        read : hw_read_relay,
-        write : hw_write_relay,
-        invoke : NULL,
-        next : NULL,
-        prev : NULL,
-        dirty : false,
-        scaling : NULL
-    };
-    
-    mist_ep string = {
-        id : (char*) "my_str", 
-        label : (char*) "My String", 
-        type : MIST_TYPE_STRING,
-        unit : NULL,
-        data : NULL,
-        readable : true,
-        writable : false,
-        invokable : false,
-        read : hw_read_string,
-        write : NULL,
-        invoke : NULL,
-        next : NULL,
-        prev : NULL,
-        dirty : false,
-        scaling : NULL
-    };
-    
-    mist_ep function = {
-        id : (char*) "function", 
-        label : (char*) "Function", 
-        type : MIST_TYPE_INVOKE,
-        unit : NULL,
-        data : NULL,
-        readable : false,
-        writable : false,
-        invokable : true,
-        read : NULL,
-        write : NULL,
-        invoke : hw_invoke_function,
-        next : NULL,
-        prev : NULL,
-        dirty : false,
-        scaling : NULL
-    };
-    
-    mist_add_ep(model, &relay);
-    mist_add_ep(model, &string);
-    mist_add_ep(model, &function);
-    */
-
     model->custom_ui_url = (char*) "https://mist.controlthings.fi/mist-io-switch-0.0.2.tgz";
     
     mist_set_name(mist_app, name);
@@ -487,6 +436,39 @@ static void* setupMist(void* ptr) {
     return NULL;
 }
 
+static void* setupMistApi(void* ptr) {
+
+    // name used for WishApp and MistNode name
+    char* name = (char*) "MistApi";
+
+    //start wish apps
+    mist_app = start_mist_app();
+
+    mist_set_name(mist_app, name);
+    
+    app = wish_app_create((char*)name);
+    wish_app_add_protocol(app, &mist_app->ucp_handler);
+    mist_app->app = app;
+
+    app->periodic = periodic_cb;
+    app->periodic_ctx = NULL;
+
+    api = mist_api_init(mist_app);
+    api->periodic = mist_api_periodic_cb_impl;
+    api->periodic_ctx = api;
+
+    //app->ready = init;
+    
+    if (app == NULL) {
+        printf("Failed creating wish app\n");
+        return NULL;
+    }
+    
+    wish_core_client_init(app);
+    
+    return NULL;
+}
+
 pthread_t thread1;
 
 void mist_addon_start() {
@@ -497,7 +479,7 @@ void mist_addon_start() {
 
     /* Create independent threads each of which will execute function */
 
-    iret1 = pthread_create(&thread1, NULL, setupMist, (void*) message1);
+    iret1 = pthread_create(&thread1, NULL, setupMistApi, (void*) message1);
     if (iret1) {
         fprintf(stderr, "Error - pthread_create() return code: %d\n", iret1);
         exit(EXIT_FAILURE);

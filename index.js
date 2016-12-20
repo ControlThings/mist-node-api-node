@@ -1,5 +1,8 @@
 //var MistApi = require('bindings')('MistApi');
-if (process.arch === 'arm' && process.platform === 'linux' ) {
+
+if(process.env.BUILD) {
+    var MistApi = require('./build/Release/MistApi.node');
+} else if (process.arch === 'arm' && process.platform === 'linux' ) {
     var MistApi = require('./bin/MistApi-arm-eabi5.node');
 } else if (process.platform === 'darwin') {
     var MistApi = require('./bin/MistApi-osx.node');
@@ -18,7 +21,7 @@ function Mist() {
     this.id = 0;
     this.requests = {};
 
-    //console.log("Creating the MistApi.StreamingWorker.");
+    console.log("Creating the MistApi.StreamingWorker.");
 
     this.api = new MistApi.StreamingWorker(
         function (event, value, data) {
@@ -90,6 +93,13 @@ Mist.prototype.request = function(op, args, cb) {
     this.requests[id] = cb;
     
     this.api.sendToAddon("mist", 1, BSON.serialize(request));
+
+    return id;
+};
+
+Mist.prototype.requestCancel = function(id) {
+    var request = { cancel: id };
+    this.api.sendToAddon("mist", 1, BSON.serialize(request));
 };
 
 Mist.prototype.wish = function(op, args, cb) {
@@ -100,6 +110,8 @@ Mist.prototype.wish = function(op, args, cb) {
     this.requests[id] = cb;
     
     this.api.sendToAddon("wish", 1, BSON.serialize(request));
+
+    return id;
 };
 
 Mist.prototype.write = function(cb) {
@@ -107,7 +119,6 @@ Mist.prototype.write = function(cb) {
 };
 
 module.exports = {
-    Mist: Mist,
-    MistApi: MistApi };
+    Mist: Mist };
 
 

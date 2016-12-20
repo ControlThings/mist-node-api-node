@@ -75,6 +75,10 @@ var interval = setInterval(function() {
 }, 300);
 ```
 
+# Building
+
+Set the environment variable `BUILD=1`  to use the `build/Release/MistApi.node` instead of prebuilt binaries.
+
 ## Build (Linux desktop):
 
   node node_modules/node-gyp/bin/node-gyp.js rebuild --thin=yes --release --silly
