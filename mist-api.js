@@ -12,6 +12,10 @@ mist.request('mist.listServices', [], function(err, data) {
         })(i, data[i]);
     }
 
+//});
+
+//(function f() {
+    
     setTimeout(function() {
 
         mist.request('control.write', [data[2], 'button1', true], function(err, data) { });
@@ -42,7 +46,7 @@ mist.request('mist.listServices', [], function(err, data) {
         */
 
         mist.request('control.requestMapping', [data[3] ,data[2], 'button1', { type: 'direct', interval: 'change' }, 'button1', { type: 'write' }], function(err, data) {
-            console.log("Follow update:", data);
+            console.log('control.requestMapping', err, data);
         });
 
         //mist.wish('identity.list', [], function(err, identities) { });
