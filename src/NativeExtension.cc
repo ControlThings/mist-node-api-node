@@ -226,7 +226,7 @@ private:
                 v8::Local<v8::Value> _nodeName = options->Get(Nan::New<v8::String>("name").ToLocalChecked());
                 v8::Local<v8::Value> _coreIp = options->Get(Nan::New<v8::String>("coreIp").ToLocalChecked());
                 v8::Local<v8::Value> _corePort = options->Get(Nan::New<v8::String>("corePort").ToLocalChecked());
-                v8::Local<v8::Value> _apiType = options->Get(Nan::New<v8::String>("apiType").ToLocalChecked());
+                v8::Local<v8::Value> _apiType = options->Get(Nan::New<v8::String>("type").ToLocalChecked());
 
                 if (_nodeName->IsString()) {
                     nodeName = string(*v8::String::Utf8Value(_nodeName->ToString()));
