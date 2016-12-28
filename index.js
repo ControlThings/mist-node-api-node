@@ -24,9 +24,9 @@ function Mist(opts) {
     console.log("Creating the MistApi.StreamingWorker.");
 
     if (!opts) { opts = {}; }
-    
-    // force type to MistNodeApi
-    opts.type = 3;
+
+    // Default to MistApi
+    if (!opts.type) { opts.type = 2; }
 
     this.api = new MistApi.StreamingWorker(
         function (event, value, data) {
@@ -125,112 +125,14 @@ Mist.prototype.write = function(cb) {
 };
 
 function MistNode(opts) {
-    var self = this;
-    this.id = 0;
-    this.requests = {};
-
-    console.log("Creating the MistApi.StreamingWorker.");
-    
+    console.log("creating new MistNode.....");
     if (!opts) { opts = {}; }
     
     // force type to MistNodeApi
     opts.type = 3;
-
-    this.api = new MistApi.StreamingWorker(
-        function (event, value, data) {
-            if (event === 'write' && typeof self.writeCb === 'function') {
-                var msg = BSON.deserialize(data);
-                self.writeCb(msg.epid, msg.data);
-                return;
-            }
-            
-            emitter.emit(event, value);
-            
-            //console.log("got something from Addon...", event, value);
-
-            if( Buffer.isBuffer(data) && data.length >= 5 ) {
-                var msg = BSON.deserialize(data);
-                
-                var id = msg.ack || msg.sig || msg.end || msg.err;
-                
-                //console.log("the answer is:", inspect(msg, { colors: true, depth: 10 }));
-                
-                if(typeof self.requests[id] === 'function') {
-                    if (msg.err) {
-                        self.requests[id](true, msg.data);
-                    } else {
-                        self.requests[id](true, msg.data);
-                    }
-                    
-                    if(!msg.sig) {
-                        delete self.requests[id];
-                    }
-                }
-            }
-        },
-        function () {
-            emitter.emit("close");
-        },
-        function (error) {
-            emitter.emit("error", error);
-        },
-        opts);
-
-    //emitter.on('done', function() { console.log("MistNodeApi: C99 plugin has shut down gracefully."); });
+    
+    return new Mist(opts);
 }
-
-MistNode.prototype.shutdown = function() {
-    this.api.sendToAddon("kill", 1, BSON.serialize({ kill: true }));
-};
-
-MistNode.prototype.create = function(model, cb) {
-    var id = ++this.id;
-    var request = { model: model };
-    
-    // store callback for response
-    this.requests[id] = cb;
-    
-    this.api.sendToAddon("mistnode", 1, BSON.serialize(request));
-};
-
-MistNode.prototype.update = function(ep, value) {
-    var request = { update: ep, value: value };
-    
-    this.api.sendToAddon("mistnode", 1, BSON.serialize(request));
-};
-
-MistNode.prototype.request = function(op, args, cb) {
-    var id = ++this.id;
-    var request = { op: op, args: args, id: id };
-    
-    // store callback for response
-    this.requests[id] = cb;
-    
-    this.api.sendToAddon("mist", 1, BSON.serialize(request));
-
-    return id;
-};
-
-MistNode.prototype.requestCancel = function(id) {
-    var request = { cancel: id };
-    this.api.sendToAddon("mist", 1, BSON.serialize(request));
-};
-
-MistNode.prototype.wish = function(op, args, cb) {
-    var id = ++this.id;
-    var request = { op: op, args: args, id: id };
-    
-    // store callback for response
-    this.requests[id] = cb;
-    
-    this.api.sendToAddon("wish", 1, BSON.serialize(request));
-
-    return id;
-};
-
-MistNode.prototype.write = function(cb) {
-    this.writeCb = cb;
-};
 
 module.exports = {
     Mist: Mist,
