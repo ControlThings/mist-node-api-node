@@ -31,7 +31,8 @@ function Mist(opts) {
     this.api = new MistApi.StreamingWorker(
         function (event, value, data) {
             if (event === 'write' && typeof self.writeCb === 'function') {
-                self.writeCb(BSON.deserialize(data));
+                var msg = BSON.deserialize(data);
+                self.writeCb(msg.epid, msg.data);
                 return;
             }
             
@@ -138,7 +139,8 @@ function MistNode(opts) {
     this.api = new MistApi.StreamingWorker(
         function (event, value, data) {
             if (event === 'write' && typeof self.writeCb === 'function') {
-                self.writeCb(BSON.deserialize(data));
+                var msg = BSON.deserialize(data);
+                self.writeCb(msg.epid, msg.data);
                 return;
             }
             
