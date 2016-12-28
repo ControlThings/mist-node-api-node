@@ -404,10 +404,19 @@ static void periodic_cb(void* ctx) {
     mist_api_periodic_cb_impl(NULL);
 }
 
+struct wish_app_core_opts {
+    char* name;
+    char* ip;
+    uint16_t port;
+};
+
 static void* setupMistNodeApi(void* ptr) {
+    struct wish_app_core_opts* opts = (struct wish_app_core_opts*) ptr;
+
+    printf("ip:port %s, %d\n", opts->ip, opts->port);
 
     // name used for WishApp and MistNode name
-    char* name = (char*) "Node";
+    char* name = (char*) (opts->name != NULL ? opts->name : "Node");
 
     //start wish apps
     mist_app = start_mist_app();
@@ -418,18 +427,19 @@ static void* setupMistNodeApi(void* ptr) {
     mist_set_name(mist_app, name);
     
     app = wish_app_create(name);
-    wish_app_add_protocol(app, &mist_app->ucp_handler);
-    mist_app->app = app;
-    
-    app->periodic = periodic_cb;
-    app->periodic_ctx = NULL;
     
     if (app == NULL) {
         printf("Failed creating wish app\n");
         return NULL;
     }
     
+    wish_app_add_protocol(app, &mist_app->ucp_handler);
+    mist_app->app = app;
     
+    app->periodic = periodic_cb;
+    app->periodic_ctx = NULL;
+
+    app->port = opts->port;
     
     wish_core_client_init(app);
     
@@ -437,9 +447,12 @@ static void* setupMistNodeApi(void* ptr) {
 }
 
 static void* setupMistApi(void* ptr) {
-
+    struct wish_app_core_opts* opts = (struct wish_app_core_opts*) ptr;
+    
+    printf("ip:port %s, %d\n", opts->ip, opts->port);
+    
     // name used for WishApp and MistNode name
-    char* name = (char*) "MistApi";
+    char* name = (char*) (opts->name != NULL ? opts->name : "MistApi");
 
     //start wish apps
     mist_app = start_mist_app();
@@ -447,11 +460,19 @@ static void* setupMistApi(void* ptr) {
     mist_set_name(mist_app, name);
     
     app = wish_app_create((char*)name);
+    
+    if (app == NULL) {
+        printf("Failed creating wish app\n");
+        return NULL;
+    }
+    
     wish_app_add_protocol(app, &mist_app->ucp_handler);
     mist_app->app = app;
 
     app->periodic = periodic_cb;
     app->periodic_ctx = NULL;
+    
+    app->port = opts->port;
 
     api = mist_api_init(mist_app);
     api->periodic = mist_api_periodic_cb_impl;
@@ -459,29 +480,37 @@ static void* setupMistApi(void* ptr) {
 
     //app->ready = init;
     
-    if (app == NULL) {
-        printf("Failed creating wish app\n");
-        return NULL;
-    }
-    
     wish_core_client_init(app);
     
     return NULL;
 }
 
 pthread_t thread1;
+struct wish_app_core_opts opts;
 
-void mist_addon_start() {
-    const char *message1 = "Thread 1";
-    //const char *message2 = "Thread 2";
-    int iret1;
-    //int iret2;
+void mist_addon_start(char* name, int type, char* ip, uint16_t port) {
+    int iret;
+
+    opts.name = name;
+    opts.ip = ip;
+    opts.port = port;
 
     /* Create independent threads each of which will execute function */
 
-    iret1 = pthread_create(&thread1, NULL, setupMistApi, (void*) message1);
-    if (iret1) {
-        fprintf(stderr, "Error - pthread_create() return code: %d\n", iret1);
+    if(type == 2) {
+        printf("mist_addon_start(setupMistApi, %s, core: %s:%d)\n", name, ip, port);
+        iret = pthread_create(&thread1, NULL, setupMistApi, (void*) &opts);
+    } else if ( type == 3 ) {
+        printf("mist_addon_start(setupMistNodeApi, %s, core: %s:%d)\n", name, ip, port);
+        iret = pthread_create(&thread1, NULL, setupMistNodeApi, (void*) &opts);
+    } else {
+        fprintf(stderr, "Error - pthread_create() return code: %d\n", iret);
+        exit(EXIT_FAILURE);
+    }
+        
+        
+    if (iret) {
+        fprintf(stderr, "Error - pthread_create() return code: %d\n", iret);
         exit(EXIT_FAILURE);
     }
 }

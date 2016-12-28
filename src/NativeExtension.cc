@@ -188,6 +188,7 @@ class StreamWorkerWrapper : public Nan::ObjectWrap {
 public:
 
     static NAN_MODULE_INIT(Init) {
+        cout << "class StreamWorkerWrapper : static NAN_MODULE_INIT(Init) {\n";
         v8::Local<v8::FunctionTemplate> tpl = Nan::New<v8::FunctionTemplate>(New);
         tpl->SetClassName(Nan::New("StreamingWorker").ToLocalChecked());
         tpl->InstanceTemplate()->SetInternalFieldCount(2);
@@ -196,10 +197,7 @@ public:
         SetPrototypeMethod(tpl, "closeInput", closeInput);
 
         constructor().Reset(Nan::GetFunction(tpl).ToLocalChecked());
-        Nan::Set(target, Nan::New("StreamingWorker").ToLocalChecked(),
-                Nan::GetFunction(tpl).ToLocalChecked());
-
-        mist_addon_start();
+        Nan::Set(target, Nan::New("StreamingWorker").ToLocalChecked(), Nan::GetFunction(tpl).ToLocalChecked());
     }
 
 private:
@@ -212,16 +210,50 @@ private:
 
     static NAN_METHOD(New) {
         if (info.IsConstructCall()) {
+            
+            cout << "StreamWorkerWrapper construct call\n";
             Callback *data_callback = new Callback(info[0].As<v8::Function>());
             Callback *complete_callback = new Callback(info[1].As<v8::Function>());
             Callback *error_callback = new Callback(info[2].As<v8::Function>());
             v8::Local<v8::Object> options = info[3].As<v8::Object>();
 
-            StreamWorkerWrapper *obj = new StreamWorkerWrapper(
-                    create_worker(
-                    data_callback,
-                    complete_callback,
-                    error_callback, options));
+            string nodeName = "Node";
+            string coreIp = "127.0.0.1";
+            uint16_t corePort = 9094;
+            uint16_t apiType = 2;
+
+            if (options->IsObject()) {
+                v8::Local<v8::Value> _nodeName = options->Get(Nan::New<v8::String>("name").ToLocalChecked());
+                v8::Local<v8::Value> _coreIp = options->Get(Nan::New<v8::String>("coreIp").ToLocalChecked());
+                v8::Local<v8::Value> _corePort = options->Get(Nan::New<v8::String>("corePort").ToLocalChecked());
+                v8::Local<v8::Value> _apiType = options->Get(Nan::New<v8::String>("apiType").ToLocalChecked());
+
+                if (_nodeName->IsString()) {
+                    nodeName = string(*v8::String::Utf8Value(_nodeName->ToString()));
+                }
+
+                if (_coreIp->IsString()) {
+                    coreIp = string(*v8::String::Utf8Value(_coreIp->ToString()));
+                    cout << "StreamWorkerWrapper constructor: opts: " << coreIp << "\n";
+                } else {
+                    cout << "StreamWorkerWrapper constructor: opts.core not string\n";
+                }
+
+                if (_corePort->IsNumber()) {
+                    corePort = (uint16_t) _corePort->NumberValue();
+                }
+
+                if (_apiType->IsNumber()) {
+                    apiType = (uint16_t) _apiType->NumberValue();
+                }
+            }
+            
+            char* ip = strdup(coreIp.c_str());
+            char* name = strdup(nodeName.c_str());
+            
+            mist_addon_start(name, apiType, ip, corePort);
+            
+            StreamWorkerWrapper *obj = new StreamWorkerWrapper( create_worker(data_callback, complete_callback, error_callback, options));
 
             obj->Wrap(info.This());
             info.GetReturnValue().Set(info.This());
@@ -230,6 +262,7 @@ private:
             AsyncQueueWorker(obj->_worker);
 
         } else {
+            cout << "StreamWorkerWrapper another call\n";
             const int argc = 3;
             v8::Local<v8::Value> argv[argc] = {info[0], info[1], info[2]};
             v8::Local<v8::Function> cons = Nan::New(constructor());
@@ -264,18 +297,9 @@ static void* inst;
 class EvenOdd : public StreamingWorker {
 public:
 
-    EvenOdd(Callback *data
-            , Callback *complete
-            , Callback *error_callback,
-            v8::Local<v8::Object> & options) : StreamingWorker(data, complete, error_callback) {
-
-        start = 0;
-        if (options->IsObject()) {
-            v8::Local<v8::Value> start_ = options->Get(New<v8::String>("start").ToLocalChecked());
-            if (start_->IsNumber()) {
-                start = start_->NumberValue();
-            }
-        }
+    EvenOdd(Callback *data, Callback *complete, Callback *error_callback, v8::Local<v8::Object> & options) 
+            : StreamingWorker(data, complete, error_callback) {
+        cout << "EvenOdd constructor.\n";
     }
 
     ~EvenOdd() {
@@ -329,7 +353,6 @@ public:
         //printf("Plugin Execute is returning\n");
     }
 private:
-    int start;
     bool run;
     const AsyncProgressWorker::ExecutionProgress* _progress;
 };
