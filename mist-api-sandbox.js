@@ -8,6 +8,8 @@ mist.request('sandbox.listPeers', [], function(err, data) {
 });
 */
 
+var sandboxId = new Buffer('ff00abababababababababababababababababababababababababababababab', 'hex');
+
 var apeer = {
     luid: new Buffer('abababababababababababababababababababababababababababababababab', 'hex'),
     ruid: new Buffer('bbababababababababababababababababababababababababababababababab', 'hex'),
@@ -16,11 +18,16 @@ var apeer = {
     protocol: 'mist'
 };
 
-mist.request('mist.sandbox.register', [apeer], function(err, data) {
+mist.request('mist.sandbox.register', [sandboxId], function(err, data) {
     console.log("Sandbox register reponse:", err, data);
     
-    mist.request('mist.sandbox.list', [], function(err, data) {
-        console.log("Sandbox list reponse:", err, data);
+    mist.request('mist.sandbox.addPeer', [sandboxId, apeer], function(err, data) {
+        console.log("Sandbox addPeer reponse:", err, data);
+
+        mist.request('mist.sandbox.list', [], function(err, data) {
+            console.log("Sandbox list reponse:", err, data);
+
+        });
 
     });
 });
