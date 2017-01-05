@@ -49,9 +49,9 @@ function Mist(opts) {
                 
                 if(typeof self.requests[id] === 'function') {
                     if (msg.err) {
-                        self.requests[id](true, msg.data);
+                        self.requests[id](true, { code: msg.code, msg: msg.msg });
                     } else {
-                        self.requests[id](true, msg.data);
+                        self.requests[id](null, msg.data);
                     }
                     
                     if(!msg.sig) {
