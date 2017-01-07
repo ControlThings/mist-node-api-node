@@ -1,6 +1,6 @@
 var Mist = require('./').Mist;
 
-var mist = new Mist({ name: 'TheUI', coreIp: '127.0.0.1', corePort: 9095 });
+var mist = new Mist({ name: 'TheUI', coreIp: '127.0.0.1', corePort: 9094 });
 
 /*
 mist.request('sandbox.listPeers', [], function(err, data) {
@@ -10,113 +10,95 @@ mist.request('sandbox.listPeers', [], function(err, data) {
 
 var sandboxId = new Buffer('ff00abababababababababababababababababababababababababababababab', 'hex');
 
-var apeer = {
+var peer1 = {
     luid: new Buffer('abababababababababababababababababababababababababababababababab', 'hex'),
     ruid: new Buffer('bbababababababababababababababababababababababababababababababab', 'hex'),
     rhid: new Buffer('cbababababababababababababababababababababababababababababababab', 'hex'),
     rsid: new Buffer('dbababababababababababababababababababababababababababababababab', 'hex'),
-    protocol: 'mist'
+    protocol: 'ucp'
 };
+
+var peer2 = {
+    luid: new Buffer('2aababababababababababababababababababababababababababababababab', 'hex'),
+    ruid: new Buffer('2bababababababababababababababababababababababababababababababab', 'hex'),
+    rhid: new Buffer('2cababababababababababababababababababababababababababababababab', 'hex'),
+    rsid: new Buffer('2dababababababababababababababababababababababababababababababab', 'hex'),
+    protocol: 'ucp'
+};
+
+mist.request('sandbox.signals', [], function(err, data) {
+    console.log("Signal from sandbox", err, data);
+    
+    if (data === 'peers') {
+        mist.request('sandbox.listPeers', [sandboxId], function(err, data) {
+            console.log("Sandbox listPeers reponse:", err, data);
+            
+            for (var i in data) {
+                (function(peer) {
+                    console.log("issuing sandbox.control.model for", peer);
+                    if (peer.online) {
+                        mist.request('sandbox.control.model', [sandboxId, peer], function (err, model) {
+                            console.log("Got a model:", err, model);
+
+                            mist.request('sandbox.control.write', [sandboxId, peer, 'input', true], function (err, data) {
+                                console.log("Write success?:", err, data);                                
+                            });
+                            
+                            var followId = mist.request('sandbox.control.follow', [sandboxId, peer], function (err, data) {
+                                console.log("Follow:", err, data);
+                                
+                            });
+                            
+                            setTimeout(function() {
+                                console.log("Canceling request", followId);
+                                mist.requestCancel(followId);
+                            }, 5000);
+                        });
+                    }
+                })(data[i]);
+            }
+        });
+    }
+});
 
 mist.request('mist.sandbox.register', [sandboxId], function(err, data) {
     console.log("Sandbox register reponse:", err, data);
     
-    mist.request('mist.sandbox.addPeer', [sandboxId, apeer], function(err, data) {
+    /*
+    mist.request('mist.sandbox.addPeer', [sandboxId, peer1], function(err, data) {
         console.log("Sandbox addPeer reponse:", err, data);
 
         mist.request('mist.sandbox.list', [], function(err, data) {
             console.log("Sandbox list reponse:", err, data);
 
-        });
+            setTimeout(function() {
+                mist.request('mist.sandbox.addPeer', [sandboxId, peer2], function(err, data) {
+                    console.log("Sandbox addPeer reponse:", err, data);
 
-    });
-});
+                    mist.request('mist.sandbox.list', [], function(err, data) {
+                        console.log("Sandbox list reponse:", err, data);
 
-
-mist.request('mist.listServices', [], function(err, data) {
-    return;
-
-    var peerA;
-    var peerB;
-    
-    var count = 0;
-    
-    var done = function() {
-        console.log("Done enumerating network.");
-        if (peerA && peerB) {
-            console.log("Both peers populated");
-            
-            /*
-            var to;
-            var from;
-            var fromEpid;
-            var fromOpts = { type: 'direct', interval: 'change' };
-            var toEpid;
-            var toOpts = { type: 'write' };
-            */
-
-            mist.request('control.requestMapping', [data[peerB] ,data[peerA], 'button1', { type: 'direct', interval: 'change' }, 'button1', { type: 'write' }], function(err, mapping) {
-                console.log('control.requestMapping', err, mapping);
-
-                /*
-                setTimeout(function() {
-
-                    mist.request('control.write', [data[peerA], 'button1', true], function(err, data) { console.log("peerA.control.write +", err, data); });
-                    mist.request('control.write', [data[peerA], 'button1', false], function(err, data) { console.log("peerA.control.write -", err, data); });
-                    mist.request('control.write', [data[peerB], 'button1', true], function(err, data) { console.log("peerB.control.write +", err, data); });
-                    mist.request('control.write', [data[peerB], 'button1', false], function(err, data) { console.log("peerB.control.write -", err, data); });
-
-
-                    var follow = mist.request('control.follow', [peerA], function(err, data) {
-                        console.log("Follow update:", data);
                     });
+                });
+            }, 1500);
 
-                    setTimeout(function() {
-                        mist.requestCancel(follow);
-                    }, 1000);
-
-                    //mist.request('control.write', [data[4], 'button1', true], function(err, data) {
-                    //    console.log("Follow update:", data);
-                    //});
-
-
-                    //mist.wish('identity.list', [], function(err, identities) { });
-
-                    
-                    //mist.request('manage.user.ensure', [data[2], { ensure: "node.js" }], function(err, data) {
-                    //    console.log("manage.user.ensure response:", data);
-                    //});
-                    
-
-                }, 800);
-                */
-            });
-            
-        } else {
-            console.log("Either peer is missing, but we will assume index 0 and 1", !!peerA, !!peerB);
-            /*
-            mist.request('control.requestMapping', [data[1] ,data[0], 'led', { type: 'direct', interval: 'change' }, 'state', { type: 'write' }], function(err, mapping) {
-                console.log('control.requestMapping', err, mapping);
-            });
-            */
-        }
-    };
-
-    for(var i in data) {
-        count++;
-        (function(i, d) {
-            mist.request('control.model', [d], function(err, data) {
-                console.log("Model:", i, data.device);
-                if (data.device === 'NodeB') { peerA = i; console.log("set PeerA to", d); }
-                if (data.device === 'Node') { peerB = i; console.log("set PeerB to", d); }
-                if (--count === 0) {
-                    if (typeof done === 'function') { done(); }
-                }
-            });
-        })(i, data[i]);
-    }
-    
+        });
+    });
+    */
 });
 
 
+mist.request('mist.signals', [], function(err, data) {
+    if (data === 'peers') {
+        console.log("got peers from mist.signals.");
+        mist.request('mist.listServices', [], function(err, data) {
+            console.log("mist.listServices response", err, data);
+            
+            mist.request('mist.sandbox.addPeer', [sandboxId, data[0]], function(err, data) {
+                console.log("Sandbox addPeer reponse:", err, data);
+            });
+            
+        });
+    }
+});
 
