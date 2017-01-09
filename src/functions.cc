@@ -2,6 +2,7 @@
 #include "mist_app.h"
 #include "mist_api.h"
 #include "mist_model.h"
+#include "mist_handler.h"
 #include "mist_follow.h"
 #include "wish_core_client.h"
 #include "bson_visitor.h"
@@ -10,9 +11,11 @@
 #include <pthread.h>
 #include <stdio.h>
 
+/*
 static void init(wish_app_t* app) {
     //WISHDEBUG(LOG_CRITICAL, "API ready!");
 }
+*/
 
 pthread_mutex_t mutex1 = PTHREAD_MUTEX_INITIALIZER;
 
@@ -104,56 +107,15 @@ static enum mist_error hw_write(mist_ep* ep, void* value) {
 }
 
 static enum mist_error hw_invoke(mist_ep* ep, mist_buf args, mist_buf response) {
-    printf("in hw_invoke\n");
-    return MIST_NO_ERROR;
-}
-
-/*
-static enum mist_error hw_read_relay(mist_ep* ep, void* result) {
-    bool* bool_result = (bool*) result;
-    *bool_result = relay_state;
-
-    return MIST_NO_ERROR;
-}
-
-static enum mist_error hw_write_relay(mist_ep* ep, void* new_value) {
-    bson bs;
-    bson_init(&bs);
-    bson_append_string(&bs, "epid", ep->id);
-    if (ep->type == MIST_TYPE_BOOL) {
-        bool* bool_value = (bool*) new_value;
-        relay_state = *bool_value;
-        
-        bson_append_bool(&bs, "data", relay_state);
-    } else {
-        printf("Unsupported MIST_TYPE %i\n", ep->type);
-    }
-    bson_finish(&bs);
-    
-    Test::write((uint8_t*) bson_data(&bs), bson_size(&bs));
-
-    return MIST_NO_ERROR;
-}
-
-static enum mist_error hw_read_string(mist_ep* ep, void* result) {
-    WISHDEBUG(LOG_CRITICAL, "hw_read_string %p data: %p", ep, ep->data);
-    memcpy(result, "nodejs plugins rule!", 21);
-    return MIST_NO_ERROR;
-}
-
-static enum mist_error hw_invoke_function(mist_ep* ep, mist_buf args, mist_buf response) {
-    printf("in hw_invoke_function\n");
-    bson_visit( (uint8_t*)args.base, elem_visitor);
+    //printf("in hw_invoke\n");
     
     bson bs;
-    bson_init_buffer(&bs, response.base, response.len);
-    bson_append_int(&bs, "number", 7);
-    bson_append_bool(&bs, "cool", true);
-    bson_finish(&bs);
-
+    bson_init_data(&bs, args.base);
+    
+    Test::invoke((uint8_t*) bson_data(&bs), bson_size(&bs));
+    
     return MIST_NO_ERROR;
 }
-*/
 
 static void mist_api_periodic_cb_impl(void* ctx) {
     if (pthread_mutex_trylock(&mutex1)) {
@@ -220,7 +182,7 @@ static void mist_api_periodic_cb_impl(void* ctx) {
                         goto consume_and_unlock;
                     }
                     
-                    char* name = strdup(bson_iterator_string(&it));
+                    //char* name = strdup(bson_iterator_string(&it));
                     //printf("Name in model: %s\n", name);
                     
                     //mist_set_name(mist_app, name);
@@ -254,10 +216,14 @@ static void mist_api_periodic_cb_impl(void* ctx) {
                         
                         bson_iterator_subiterator(&modelit, &epit);
                         bson_find_fieldpath_value("type", &epit);
+                        
+                        char* ep_type;
+                        
                         if( bson_iterator_type(&epit) != BSON_STRING) {
-                            continue;
+                            ep_type = "";
+                        } else {
+                            ep_type = (char*) bson_iterator_string(&epit);
                         }
-                        char* ep_type = (char*) bson_iterator_string(&epit);
                         
                         char* ep_scale = NULL;
                         bson_iterator_subiterator(&modelit, &epit);
@@ -322,6 +288,8 @@ static void mist_api_periodic_cb_impl(void* ctx) {
                             //printf("A bool.\n");
                             ep->type = MIST_TYPE_BOOL;
                             *((bool*) ep->data) = false;
+                        } else if (invokable) {
+                            ep->type = MIST_TYPE_INVOKE;                            
                         } else {
                             continue;
                         }
@@ -351,6 +319,23 @@ static void mist_api_periodic_cb_impl(void* ctx) {
                     //mist_set_name(mist_app, name);
                 } else {
 
+                    bson_find_from_buffer(&it, input_buffer, "invoke");
+                    
+                    if (bson_iterator_type(&it) == BSON_INT) {
+                        // this is a response to an invoke request
+                        
+                        /*
+                         { invoke: request_id,
+                           data: response_data } 
+                        */
+                        
+                        int id = bson_iterator_int(&it);
+
+                        mist_invoke_response(&mist_app->device_rpc_server, id, (uint8_t*) input_buffer);
+                        goto consume_and_unlock;
+                    }
+                    
+                    
                     bson_find_from_buffer(&it, input_buffer, "update");
                     mist_ep* ep = NULL;
                     char* ep_name = (char*) "";
@@ -413,7 +398,7 @@ struct wish_app_core_opts {
 static void* setupMistNodeApi(void* ptr) {
     struct wish_app_core_opts* opts = (struct wish_app_core_opts*) ptr;
 
-    printf("ip:port %s, %d\n", opts->ip, opts->port);
+    //printf("ip:port %s, %d\n", opts->ip, opts->port);
 
     // name used for WishApp and MistNode name
     char* name = (char*) (opts->name != NULL ? opts->name : "Node");
@@ -449,7 +434,7 @@ static void* setupMistNodeApi(void* ptr) {
 static void* setupMistApi(void* ptr) {
     struct wish_app_core_opts* opts = (struct wish_app_core_opts*) ptr;
     
-    printf("ip:port %s, %d\n", opts->ip, opts->port);
+    //printf("ip:port %s, %d\n", opts->ip, opts->port);
     
     // name used for WishApp and MistNode name
     char* name = (char*) (opts->name != NULL ? opts->name : "MistApi");
@@ -498,10 +483,10 @@ void mist_addon_start(char* name, int type, char* ip, uint16_t port) {
     /* Create independent threads each of which will execute function */
 
     if(type == 2) {
-        printf("mist_addon_start(setupMistApi, %s, core: %s:%d)\n", name, ip, port);
+        //printf("mist_addon_start(setupMistApi, %s, core: %s:%d)\n", name, ip, port);
         iret = pthread_create(&thread1, NULL, setupMistApi, (void*) &opts);
     } else if ( type == 3 ) {
-        printf("mist_addon_start(setupMistNodeApi, %s, core: %s:%d)\n", name, ip, port);
+        //printf("mist_addon_start(setupMistNodeApi, %s, core: %s:%d)\n", name, ip, port);
         iret = pthread_create(&thread1, NULL, setupMistNodeApi, (void*) &opts);
     } else {
         fprintf(stderr, "Error - pthread_create() return code: %d\n", iret);

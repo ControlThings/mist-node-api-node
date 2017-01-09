@@ -20,8 +20,9 @@ function Mist(opts) {
     var self = this;
     this.id = 0;
     this.requests = {};
+    this.invokeCb = {};
 
-    console.log("Creating the MistApi.StreamingWorker.");
+    //console.log("2. Creating the MistApi.StreamingWorker.");
 
     if (!opts) { opts = {}; }
 
@@ -30,9 +31,22 @@ function Mist(opts) {
 
     this.api = new MistApi.StreamingWorker(
         function (event, value, data) {
+            //console.log("Event from streaming worker", event, data);
             if (event === 'write' && typeof self.writeCb === 'function') {
                 var msg = BSON.deserialize(data);
                 self.writeCb(msg.epid, msg.data);
+                return;
+            }
+            
+            if (event === 'invoke') {
+                var msg = BSON.deserialize(data);
+                
+                if(typeof self.invokeCb[msg.epid] === 'function') {
+                    self.invokeCb[msg.epid]( msg.args, (function (id) { return function(data) { var request = { invoke: id, data: data }; self.api.sendToAddon("mistnode", 1, BSON.serialize(request)); }; })(msg.id) );
+                } else {
+                    console.log("There is no invoke function registered for", msg.epid );
+                }
+                
                 return;
             }
             
@@ -124,8 +138,13 @@ Mist.prototype.write = function(cb) {
     this.writeCb = cb;
 };
 
+Mist.prototype.invoke = function(epid, cb) {
+    this.invokeCb[epid] = cb;
+    //console.log("Registering invoke for epid:", epid, this.invokeCb);
+};
+
 function MistNode(opts) {
-    console.log("creating new MistNode.....");
+    //console.log("creating new MistNode.....");
     if (!opts) { opts = {}; }
     
     // force type to MistNodeApi

@@ -38,25 +38,40 @@ mist.request('sandbox.signals', [], function(err, data) {
                     //console.log("issuing sandbox.control.model for", peer);
                     if (peer.online) {
                         mist.request('sandbox.control.model', [sandboxId, peer], function (err, model) {
-                            console.log("Got a model:", err, model);
+                            //console.log("Got a model:", err, model);
 
-                            setTimeout(function() { mist.request('sandbox.control.write', [sandboxId, peer, 'input', true], function (err, data) {}); }, 500);
-                            setTimeout(function() { mist.request('sandbox.control.write', [sandboxId, peer, 'input', false], function (err, data) {}); }, 600);
-                            setTimeout(function() { mist.request('sandbox.control.write', [sandboxId, peer, 'input', true], function (err, data) {}); }, 700);
-                            setTimeout(function() { mist.request('sandbox.control.write', [sandboxId, peer, 'input', false], function (err, data) {}); }, 800);
-                            setTimeout(function() { mist.request('sandbox.control.write', [sandboxId, peer, 'input', true], function (err, data) {}); }, 900);
+                            /*
+                            setTimeout(function() { mist.request('sandbox.control.write', [sandboxId, peer, 'button1', true], function (err, data) {}); }, 500);
+                            setTimeout(function() { mist.request('sandbox.control.write', [sandboxId, peer, 'button1', false], function (err, data) {}); }, 600);
+                            setTimeout(function() { mist.request('sandbox.control.write', [sandboxId, peer, 'button1', true], function (err, data) {}); }, 700);
+                            setTimeout(function() { mist.request('sandbox.control.write', [sandboxId, peer, 'button1', false], function (err, data) {}); }, 800);
+                            setTimeout(function() { mist.request('sandbox.control.write', [sandboxId, peer, 'button1', true], function (err, data) {}); }, 900);
+                            */
 
                             setTimeout(function() {
-                                mist.request('sandbox.control.write', [sandboxId, peer, 'input', false], function (err, data) {
+                                mist.request('sandbox.control.write', [sandboxId, peer, 'button1', false], function (err, data) {
                                     console.log("Write success?:", err, data);                                
                                 });
                             }, 1000);
 
                             setTimeout(function() {
-                                mist.request('sandbox.control.write', [sandboxId, peer, 'input', true], function (err, data) {
+                                mist.request('sandbox.control.write', [sandboxId, peer, 'button1', true], function (err, data) {
                                     console.log("Write success?:", err, data);                                
                                 });
                             }, 1500);
+
+                            setTimeout(function() {
+                                mist.request('sandbox.control.invoke', [sandboxId, peer, 'config', [{ that: 'this!' }, { cool: 'thing', more: [1,2,3], ding: 'dong', tick: 'tack'}, 7]], function (err, data) {
+                                    console.log("Invoke success?:", err, data);                                
+                                });
+                            }, 2000);
+
+                            setTimeout(function() {
+                                mist.request('sandbox.control.invoke', [sandboxId, peer, 'config', [{ that: 'this!' }, 57]], function (err, data) {
+                                    console.log("Invoke success?:", err, data);                                
+                                });
+                            }, 2500);
+
                             
                             var followId = mist.request('sandbox.control.follow', [sandboxId, peer], function (err, data) {
                                 console.log("Follow:", err, data);

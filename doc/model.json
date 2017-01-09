@@ -18,13 +18,9 @@
             "unit": "%",
             "data": 0
         },
-        "axis2": {
-            "label": "LT",
-            "type": "float",
-            "scale": "100",
-            "unit": "%",
-            "read": true,
-            "write": true
+        "config": {
+            "label": "Configure",
+            "invoke": true
         },
         "button0": {
             "label": "Button 1",
@@ -51,6 +47,14 @@
             "label": "Button 5",
             "type": "bool",
             "data": false
+        },
+        "axis2": {
+            "label": "LT",
+            "type": "float",
+            "scale": "100",
+            "unit": "%",
+            "read": true,
+            "write": true
         },
         "axis3": {
             "label": "Right controller axis (left/right)",

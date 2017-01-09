@@ -188,7 +188,7 @@ class StreamWorkerWrapper : public Nan::ObjectWrap {
 public:
 
     static NAN_MODULE_INIT(Init) {
-        cout << "class StreamWorkerWrapper : static NAN_MODULE_INIT(Init) {\n";
+        //cout << "1. class StreamWorkerWrapper : static NAN_MODULE_INIT(Init) {\n";
         v8::Local<v8::FunctionTemplate> tpl = Nan::New<v8::FunctionTemplate>(New);
         tpl->SetClassName(Nan::New("StreamingWorker").ToLocalChecked());
         tpl->InstanceTemplate()->SetInternalFieldCount(2);
@@ -211,7 +211,7 @@ private:
     static NAN_METHOD(New) {
         if (info.IsConstructCall()) {
             
-            cout << "StreamWorkerWrapper construct call\n";
+            //cout << "3. StreamWorkerWrapper construct call\n";
             Callback *data_callback = new Callback(info[0].As<v8::Function>());
             Callback *complete_callback = new Callback(info[1].As<v8::Function>());
             Callback *error_callback = new Callback(info[2].As<v8::Function>());
@@ -234,9 +234,9 @@ private:
 
                 if (_coreIp->IsString()) {
                     coreIp = string(*v8::String::Utf8Value(_coreIp->ToString()));
-                    cout << "StreamWorkerWrapper constructor: opts: " << coreIp << "\n";
+                    //cout << "4. a) StreamWorkerWrapper constructor: opts: " << coreIp << "\n";
                 } else {
-                    cout << "StreamWorkerWrapper constructor: opts.core not string\n";
+                    //cout << "4. b) StreamWorkerWrapper constructor: opts.core not string\n";
                 }
 
                 if (_corePort->IsNumber()) {
@@ -262,7 +262,7 @@ private:
             AsyncQueueWorker(obj->_worker);
 
         } else {
-            cout << "StreamWorkerWrapper another call\n";
+            //cout << "StreamWorkerWrapper another call\n";
             const int argc = 3;
             v8::Local<v8::Value> argv[argc] = {info[0], info[1], info[2]};
             v8::Local<v8::Function> cons = Nan::New(constructor());
@@ -299,7 +299,7 @@ public:
 
     EvenOdd(Callback *data, Callback *complete, Callback *error_callback, v8::Local<v8::Object> & options) 
             : StreamingWorker(data, complete, error_callback) {
-        cout << "EvenOdd constructor.\n";
+        //cout << "6. EvenOdd constructor.\n";
     }
 
     ~EvenOdd() {
@@ -374,6 +374,18 @@ void Test::write(uint8_t* buf, int len) {
     EvenOdd* e = (EvenOdd*) inst;
 
     string a = "write";
+    string b = "dummy";
+    
+    Message msg(a, b, (uint8_t*) buf, len);
+    
+    e->sendToNode(msg);
+}
+
+void Test::invoke(uint8_t* buf, int len) {
+    //printf("sending sending... %p buf: %p len: %i\n", inst, buf, len);
+    EvenOdd* e = (EvenOdd*) inst;
+
+    string a = "invoke";
     string b = "dummy";
     
     Message msg(a, b, (uint8_t*) buf, len);
