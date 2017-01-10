@@ -31,49 +31,49 @@ mist.request('sandbox.signals', [], function(err, data) {
     
     if (data === 'peers') {
         mist.request('sandbox.listPeers', [sandboxId], function(err, data) {
-            //console.log("Sandbox listPeers reponse:", err, data);
+            console.log("Sandbox listPeers reponse:", err, data);
             
             for (var i in data) {
                 (function(peer) {
-                    //console.log("issuing sandbox.control.model for", peer);
                     if (peer.online) {
-                        mist.request('sandbox.control.model', [sandboxId, peer], function (err, model) {
-                            //console.log("Got a model:", err, model);
+                        console.log("issuing sandbox.mist.control.model for", peer);
+                        mist.request('sandbox.mist.control.model', [sandboxId, peer], function (err, model) {
+                            console.log("Got a model:", err, model);
 
                             /*
-                            setTimeout(function() { mist.request('sandbox.control.write', [sandboxId, peer, 'button1', true], function (err, data) {}); }, 500);
-                            setTimeout(function() { mist.request('sandbox.control.write', [sandboxId, peer, 'button1', false], function (err, data) {}); }, 600);
-                            setTimeout(function() { mist.request('sandbox.control.write', [sandboxId, peer, 'button1', true], function (err, data) {}); }, 700);
-                            setTimeout(function() { mist.request('sandbox.control.write', [sandboxId, peer, 'button1', false], function (err, data) {}); }, 800);
-                            setTimeout(function() { mist.request('sandbox.control.write', [sandboxId, peer, 'button1', true], function (err, data) {}); }, 900);
+                            setTimeout(function() { mist.request('sandbox.mist.control.write', [sandboxId, peer, 'button1', true], function (err, data) {}); }, 500);
+                            setTimeout(function() { mist.request('sandbox.mist.control.write', [sandboxId, peer, 'button1', false], function (err, data) {}); }, 600);
+                            setTimeout(function() { mist.request('sandbox.mist.control.write', [sandboxId, peer, 'button1', true], function (err, data) {}); }, 700);
+                            setTimeout(function() { mist.request('sandbox.mist.control.write', [sandboxId, peer, 'button1', false], function (err, data) {}); }, 800);
+                            setTimeout(function() { mist.request('sandbox.mist.control.write', [sandboxId, peer, 'button1', true], function (err, data) {}); }, 900);
                             */
 
                             setTimeout(function() {
-                                mist.request('sandbox.control.write', [sandboxId, peer, 'button1', false], function (err, data) {
+                                mist.request('sandbox.mist.control.write', [sandboxId, peer, 'button1', false], function (err, data) {
                                     console.log("Write success?:", err, data);                                
                                 });
                             }, 1000);
 
                             setTimeout(function() {
-                                mist.request('sandbox.control.write', [sandboxId, peer, 'button1', true], function (err, data) {
+                                mist.request('sandbox.mist.control.write', [sandboxId, peer, 'button1', true], function (err, data) {
                                     console.log("Write success?:", err, data);                                
                                 });
                             }, 1500);
 
                             setTimeout(function() {
-                                mist.request('sandbox.control.invoke', [sandboxId, peer, 'config', [{ that: 'this!' }, { cool: 'thing', more: [1,2,3], ding: 'dong', tick: 'tack'}, 7]], function (err, data) {
+                                mist.request('sandbox.mist.control.invoke', [sandboxId, peer, 'config', [{ that: 'this!' }, { cool: 'thing', more: [1,2,3], ding: 'dong', tick: 'tack'}, 7]], function (err, data) {
                                     console.log("Invoke success?:", err, data);                                
                                 });
                             }, 2000);
 
                             setTimeout(function() {
-                                mist.request('sandbox.control.invoke', [sandboxId, peer, 'config', [{ that: 'this!' }, 57]], function (err, data) {
+                                mist.request('sandbox.mist.control.invoke', [sandboxId, peer, 'config', [{ that: 'this!' }, 57]], function (err, data) {
                                     console.log("Invoke success?:", err, data);                                
                                 });
                             }, 2500);
 
                             
-                            var followId = mist.request('sandbox.control.follow', [sandboxId, peer], function (err, data) {
+                            var followId = mist.request('sandbox.mist.control.follow', [sandboxId, peer], function (err, data) {
                                 console.log("Follow:", err, data);
                                 
                             });
@@ -90,44 +90,44 @@ mist.request('sandbox.signals', [], function(err, data) {
     }
 });
 
-mist.request('mist.sandbox.register', [sandboxId], function(err, data) {
-    console.log("Sandbox register reponse:", err, data);
-    
-    /*
-    mist.request('mist.sandbox.addPeer', [sandboxId, peer1], function(err, data) {
-        console.log("Sandbox addPeer reponse:", err, data);
-
-        mist.request('mist.sandbox.list', [], function(err, data) {
-            console.log("Sandbox list reponse:", err, data);
-
-            setTimeout(function() {
-                mist.request('mist.sandbox.addPeer', [sandboxId, peer2], function(err, data) {
-                    console.log("Sandbox addPeer reponse:", err, data);
-
-                    mist.request('mist.sandbox.list', [], function(err, data) {
-                        console.log("Sandbox list reponse:", err, data);
-
-                    });
-                });
-            }, 1500);
-
-        });
-    });
-    */
-});
-
-
-mist.request('mist.signals', [], function(err, data) {
+mist.request('signals', [], function(err, data) {
     if (data === 'peers') {
         console.log("got peers from mist.signals.");
-        mist.request('mist.listServices', [], function(err, data) {
+        mist.request('listPeers', [], function(err, data) {
             console.log("mist.listServices response", err, data);
             
-            mist.request('mist.sandbox.addPeer', [sandboxId, data[0]], function(err, data) {
+            mist.request('sandbox.addPeer', [sandboxId, data[0]], function(err, data) {
                 console.log("Sandbox addPeer reponse:", err, data);
             });
             
         });
+    } else if (data[0] === 'settings') {
+        console.log("settings from signals", err, data[1]);
+    } else {
+        console.log("signals", err, data);
     }
 });
+
+
+mist.request('sandbox.settings', [sandboxId, { hint: 'commission' }], function(err, data) {
+    console.log("sandbox settings response", err, data);
+});
+
+mist.request('sandbox.login', [sandboxId, 'Soikea App'], function(err, data) {
+    console.log("Sandbox login reponse:", err, data);
+
+    mist.request('sandbox.list', [], function(err, data) {
+        console.log("Sandbox list reponse:", err, data);
+    });
+});
+
+setTimeout(function() {
+    mist.request('sandbox.logout', [sandboxId], function(err, data) {
+        console.log("Sandbox logout reponse:", err, data);
+
+        mist.request('sandbox.list', [], function(err, data) {
+            console.log("Sandbox list reponse:", err, data);
+        });
+    });
+}, 5000);
 
