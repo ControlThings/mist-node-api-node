@@ -106,7 +106,7 @@ static enum mist_error hw_write(mist_ep* ep, void* value) {
     return MIST_NO_ERROR;
 }
 
-static enum mist_error hw_invoke(mist_ep* ep, mist_buf args, mist_buf response) {
+static enum mist_error hw_invoke(mist_ep* ep, mist_buf args) {
     //printf("in hw_invoke\n");
     
     bson bs;
