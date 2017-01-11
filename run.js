@@ -30,7 +30,7 @@ var interval = setInterval(function() {
     mist.update('axis0', axis0);
     mist.update('axis1', Math.round(axis0));
     mist.update('button0', bool);
-}, 300);
+}, 1000);
 
 process.on('exit', function() {
     console.log("exiting, doing cleanup.");

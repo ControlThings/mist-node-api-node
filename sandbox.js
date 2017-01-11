@@ -25,7 +25,8 @@ mist.request('signals', [], function(err, data) {
                 }
 
                 for(var x in peers) {
-                    console.log("Requesting to add peer ")
+                    console.log("Requesting to add peer.", peers[x].rsid.toString());
+                    if ( peers[x].rsid.slice(0,4).toString() !== 'Node' ) { console.log("not Node: =="+peers[x].rsid.toString()+"=="); continue; }
                     mist.request('sandbox.addPeer', [sandbox, peers[x]], function(err, data) {
                         console.log("Sandbox addPeer reponse:", err, data);
                     });
@@ -65,7 +66,7 @@ var peer2 = {
 sandboxed.request('sandboxed.login', ['Soikea App'], function(err, data) {
     console.log("Sandbox login reponse:", err, data);
 
-    sandboxed.request('sandbox.list', [], function(err, data) {
+    mist.request('sandbox.list', [], function(err, data) {
         console.log("Sandbox list reponse:", err, data);
     });
 });
@@ -143,7 +144,7 @@ setTimeout(function() {
     sandboxed.request('sandboxed.logout', [], function(err, data) {
         console.log("Sandbox logout reponse:", err, data);
 
-        sandboxed.request('sandbox.list', [], function(err, data) {
+        mist.request('sandbox.list', [], function(err, data) {
             console.log("Sandbox list reponse:", err, data);
         });
     });

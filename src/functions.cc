@@ -388,12 +388,12 @@ static void mist_api_periodic_cb_impl(void* ctx) {
                 bson_find_from_buffer(&it, input_buffer, "cancel");
 
                 if (bson_iterator_type(&it) == BSON_INT) {
-                    printf("Node/C99: sandboxed_cancel %i\n", bson_iterator_int(&it));
+                    //printf("Node/C99: sandboxed_cancel %i\n", bson_iterator_int(&it));
                     sandboxed_api_request_cancel(&sandbox_id[0], bson_iterator_int(&it));
                     goto consume_and_unlock;
                 }
                 
-                printf("Node/C99: sandboxed\n");
+                //printf("Node/C99: sandboxed\n");
                 sandboxed_api_request(&sandbox_id[0], &bs, sandboxed_response_cb);
             }
         }
