@@ -336,6 +336,8 @@ public:
                     type = 2;
                 } else if ( m.name == "mistnode") {
                     type = 3;
+                } else if ( m.name == "sandboxed") {
+                    type = 4;
                 }
                 
                 bool success = injectMessage(type, m.msg, m.msg_len);
@@ -362,6 +364,18 @@ void Test::send(uint8_t* buf, int len) {
     EvenOdd* e = (EvenOdd*) inst;
 
     string a = "even";
+    string b = "dummy";
+    
+    Message msg(a, b, (uint8_t*) buf, len);
+    
+    e->sendToNode(msg);
+}
+
+void Test::sendSandboxed(uint8_t* buf, int len) {
+    //printf("sending sending... %p buf: %p len: %i\n", inst, buf, len);
+    EvenOdd* e = (EvenOdd*) inst;
+
+    string a = "sandboxed";
     string b = "dummy";
     
     Message msg(a, b, (uint8_t*) buf, len);

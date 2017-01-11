@@ -54,11 +54,20 @@ bool injectMessage(int type, uint8_t *msg, int len) {
     return success;
 }
 
-static void list_services_cb(struct wish_rpc_entry* req, void* ctx, uint8_t* data, size_t data_len) {
+static void mist_response_cb(struct wish_rpc_entry* req, void* ctx, uint8_t* data, size_t data_len) {
     //printf("response going towards node.js.\n");
     //bson_visit(data, elem_visitor);
 
     Test::send(data, data_len);
+    
+    //static_cast<EvenOdd*>(evenodd_instance)->sendToNode(data, data_len);
+}
+
+static void sandboxed_response_cb(struct wish_rpc_entry* req, void* ctx, uint8_t* data, size_t data_len) {
+    //printf("response going towards node.js.\n");
+    //bson_visit(data, elem_visitor);
+
+    Test::sendSandboxed(data, data_len);
     
     //static_cast<EvenOdd*>(evenodd_instance)->sendToNode(data, data_len);
 }
@@ -117,6 +126,8 @@ static enum mist_error hw_invoke(mist_ep* ep, mist_buf args) {
     return MIST_NO_ERROR;
 }
 
+static char sandbox_id[32] = { 45,44,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45 };
+
 static void mist_api_periodic_cb_impl(void* ctx) {
     if (pthread_mutex_trylock(&mutex1)) {
         //WISHDEBUG(LOG_CRITICAL, "Failed trylock. Fail-safe worked!");
@@ -153,7 +164,7 @@ static void mist_api_periodic_cb_impl(void* ctx) {
             
             if(input_type == 1) { // WISH
                 //printf("### Wish\n");
-                wish_api_request(&bs, list_services_cb);
+                wish_api_request(&bs, mist_response_cb);
             } else if (input_type == 2) { // MIST
                 //printf("### Mist\n");
                 
@@ -166,7 +177,7 @@ static void mist_api_periodic_cb_impl(void* ctx) {
                     goto consume_and_unlock;
                 }
                 
-                mist_api_request(&bs, list_services_cb);
+                mist_api_request(&bs, mist_response_cb);
             } else if (input_type == 3) { // MIST NODE API
                 //printf("MistNodeApi got message from node.js:\n");
                     
@@ -370,6 +381,20 @@ static void mist_api_periodic_cb_impl(void* ctx) {
                         }
                     }
                 }
+            } else if (input_type == 4) { // MIST SANDBOXED API
+                //printf("### Sandboxed Api\n");
+                
+                bson_iterator it;
+                bson_find_from_buffer(&it, input_buffer, "cancel");
+
+                if (bson_iterator_type(&it) == BSON_INT) {
+                    printf("Node/C99: sandboxed_cancel %i\n", bson_iterator_int(&it));
+                    sandboxed_api_request_cancel(&sandbox_id[0], bson_iterator_int(&it));
+                    goto consume_and_unlock;
+                }
+                
+                printf("Node/C99: sandboxed\n");
+                sandboxed_api_request(&sandbox_id[0], &bs, sandboxed_response_cb);
             }
         }
         
@@ -488,8 +513,11 @@ void mist_addon_start(char* name, int type, char* ip, uint16_t port) {
     } else if ( type == 3 ) {
         //printf("mist_addon_start(setupMistNodeApi, %s, core: %s:%d)\n", name, ip, port);
         iret = pthread_create(&thread1, NULL, setupMistNodeApi, (void*) &opts);
+    } else if ( type == 4 ) {
+        //printf("mist_addon_start(setupMistNodeApi, %s, core: %s:%d)\n", name, ip, port);
+        iret = pthread_create(&thread1, NULL, setupMistApi, (void*) &opts);
     } else {
-        fprintf(stderr, "Error - pthread_create() return code: %d\n", iret);
+        printf("mist_addon_start received unrecognized type %i, (expecting 2, 3 or 4)\n", type);
         exit(EXIT_FAILURE);
     }
         
