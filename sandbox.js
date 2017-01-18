@@ -3,6 +3,10 @@ var Sandboxed = require('./').Sandboxed;
 
 var mist = new Mist({ name: 'Generic UI', coreIp: '127.0.0.1', corePort: 9094 });
 
+mist.request('ready', [], function(err, data) {
+    console.log("MistApi ready():", err, data);
+});
+
 mist.request('signals', [], function(err, data) {
     console.log("Signal from MistApi", err, data);
     
@@ -106,7 +110,7 @@ sandboxed.request('sandboxed.signals', [], function(err, data) {
                             }, 1500);
 
                             setTimeout(function() {
-                                sandboxed.request('sandboxed.mist.control.invoke', [peer, 'config', [{ that: 'this!' }, { cool: 'thing', more: [1,2,3], ding: 'dong', tick: 'tack'}, 7]], function (err, data) {
+                                sandboxed.request('sandboxed.mist.control.invoke', [peer, 'config', [{ that: 'this!' }, { cool: 'thing', bin: new Buffer("Binary safe"), more: [1,2,3], ding: 'dong', tick: 'tack'}, 7]], function (err, data) {
                                     console.log("Invoke success?:", err, data);                                
                                 });
                             }, 2000);

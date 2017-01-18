@@ -7,8 +7,8 @@ var model = require('./doc/model.json');
 var mist = new Mist({ corePort: 9094 });
 
 // callback 
-mist.write(function(data) {
-    console.log("mist write:", data);
+mist.write(function(ep, value) {
+    console.log("mist write:", ep, value);
 });
 
 // callback 
