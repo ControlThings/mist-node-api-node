@@ -75,7 +75,7 @@ var interval = setInterval(function() {
 }, 300);
 ```
 
-# Building
+# Building (see Releasing for Release steps)
 
 Set the environment variable `BUILD=1`  to use the `build/Release/MistApi.node` instead of prebuilt binaries.
 
@@ -101,4 +101,13 @@ CC=arm-linux-gnueabihf-gcc-4.8 CXX=arm-linux-gnueabihf-g++-4.8 node-gyp clean co
 ### On the PI: 
 
   http://nodejs.org/dist/latest-v6.x/node-v6.9.2-linux-armv6l.tar.gz
+
+# Releasing
+
+1. The static library must be built with -fvisibility=hidden. 
+2. Build as explained in the Building-section. 
+3. Strip the resulting .node file
+4. Verify there are no unnecessary mist, wish, bson and sandbox symbols. (`readelf -sW result.node`)
+
+
 
