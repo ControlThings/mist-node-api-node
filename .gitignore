@@ -4,5 +4,5 @@
 /build
 /npm-debug.log
 /*.tgz
-/mappings.bin
-/sandbox.bin
+mappings.bin
+sandbox.bin

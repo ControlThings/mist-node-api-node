@@ -1,18 +1,18 @@
-# Mist Node API
+# Mist API
 
-A native node.js plugin which uses the C99 Mist implementation. Currently working with Linux and OSX.
+A native node.js plugin which uses the C99 Mist implementation. Currently working with Linux x86_64 only. To get it working you need to run a Wish Core on the same host.
 
 ## Install 
 
 ```sh
-npm install mist-node-api
+npm install mist-api
 ```
 
 ## Example
 
 ```js
 // Include the Mist
-var Mist = require('mist-node-api').Mist;
+var Mist = require('mist-api').Mist;
 
 // Initialize Mist
 var mist = new Mist();
@@ -56,6 +56,14 @@ mist.write(function(endpoint, value) {
     console.log("mist write:", endpoint, value);
 });
 
+// callback for invoke command sent to this device
+mist.invoke('config', function(args, cb) {
+    console.log("mist invoke:", args);
+
+    // respond to request
+    cb({ yo: [5,4], all: args });
+});
+
 // Initialize Mist device
 mist.create(model);
 
@@ -74,43 +82,3 @@ var interval = setInterval(function() {
     mist.update('button0', button0);
 }, 300);
 ```
-
-## Building (see Releasing for Release steps)
-
-Set the environment variable `BUILD=1`  to use the `build/Release/MistApi.node` instead of prebuilt binaries.
-
-### Build (Linux desktop):
-
-  node node_modules/node-gyp/bin/node-gyp.js rebuild --thin=yes --release --silly
-
-### Build (Crosscompile for Raspberry pi)
-
-### First build the libmist.a from mist-esp:
-
-sudo apt-get install build-essential
-sudo apt-get install g++-arm-linux-gnueabihf
-sudo apt-get install gdb-multiarch
-
-make -f linux-arm-static-library.mk
-
-### Build the node.js plugin
-
-CC=arm-linux-gnueabihf-gcc-4.8 CXX=arm-linux-gnueabihf-g++-4.8 node-gyp clean configure --arch=arm rebuild
-
-
-### On the PI: 
-
-  http://nodejs.org/dist/latest-v6.x/node-v6.9.2-linux-armv6l.tar.gz
-
-## Releasing
-
-1. The static library must be built with -fvisibility=hidden. 
-2. Build as explained in the Building-section. 
-3. Strip the resulting .node file
-4. Verify there are no unnecessary mist, wish, bson and sandbox symbols. (`readelf -sW result.node`)
-
-## Known issues
-
-* Memory leaks in message queue
-* Input buffer is not a ring, but a single 1MiB block, fails horribly at the end
-

@@ -1,5 +1,5 @@
-var Mist = require('./').Mist;
-var Sandboxed = require('./').Sandboxed;
+var Mist = require('../index.js').Mist;
+var Sandboxed = require('../index.js').Sandboxed;
 
 var mist = new Mist({ name: 'Generic UI', coreIp: '127.0.0.1', corePort: 9094 });
 

@@ -1,4 +1,3 @@
-//var MistApi = require('bindings')('MistApi');
 
 if(process.env.BUILD) {
     var MistApi = require('./build/Release/MistApi.node');
@@ -10,7 +9,7 @@ if(process.env.BUILD) {
     var MistApi = require('./bin/MistApi.node');
 }
 
-var bson = require('wish-bson');
+var bson = require('bson-buffer');
 var BSON = new bson();
 var EventEmitter = require('events');
 var emitter = new EventEmitter();

@@ -1,4 +1,4 @@
-var Mist = require('./').Mist;
+var Mist = require('../index.js').Mist;
 
 var mist = new Mist({ name: 'TheUI', coreIp: '127.0.0.1', corePort: 9095 });
 

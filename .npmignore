@@ -6,3 +6,8 @@
 /*.tgz
 /mappings.bin
 /binding.gyp
+/doc
+/src
+/test
+/tools
+/.npmignore

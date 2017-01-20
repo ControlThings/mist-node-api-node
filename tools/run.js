@@ -1,8 +1,7 @@
-var Mist = require('./').MistNode;
-var assert = require('assert');
-var BSON = require('wish-bson');
+var Mist = require('../index.js').MistNode;
+var BSON = require('bson-buffer');
 var inspect = require('util').inspect;
-var model = require('./doc/model.json');
+var model = require('../doc/model.json');
 
 var mist = new Mist({ corePort: 9094 });
 
