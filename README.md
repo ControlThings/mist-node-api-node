@@ -75,15 +75,15 @@ var interval = setInterval(function() {
 }, 300);
 ```
 
-# Building (see Releasing for Release steps)
+## Building (see Releasing for Release steps)
 
 Set the environment variable `BUILD=1`  to use the `build/Release/MistApi.node` instead of prebuilt binaries.
 
-## Build (Linux desktop):
+### Build (Linux desktop):
 
   node node_modules/node-gyp/bin/node-gyp.js rebuild --thin=yes --release --silly
 
-## Build (Crosscompile for Raspberry pi)
+### Build (Crosscompile for Raspberry pi)
 
 ### First build the libmist.a from mist-esp:
 
@@ -102,12 +102,15 @@ CC=arm-linux-gnueabihf-gcc-4.8 CXX=arm-linux-gnueabihf-g++-4.8 node-gyp clean co
 
   http://nodejs.org/dist/latest-v6.x/node-v6.9.2-linux-armv6l.tar.gz
 
-# Releasing
+## Releasing
 
 1. The static library must be built with -fvisibility=hidden. 
 2. Build as explained in the Building-section. 
 3. Strip the resulting .node file
 4. Verify there are no unnecessary mist, wish, bson and sandbox symbols. (`readelf -sW result.node`)
 
+## Known issues
 
+* Memory leaks in message queue
+* Input buffer is not a ring, but a single 1MiB block, fails horribly at the end
 
