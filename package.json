@@ -1,7 +1,7 @@
 {
-  "name": "mist-node-api",
+  "name": "mist-api",
   "version": "0.0.7",
-  "description": "Mist Node API wrapper for node. Used for creating Mist nodes/devices/systems.",
+  "description": "Mist API wrapper for node. Used for accessing all Mist APIs.",
   "main": "index.js",
   "scripts": {
     "configure": "node-gyp configure",
@@ -20,7 +20,7 @@
     "peer-to-peer"
   ],
   "author": "André Kaustell <andre.kaustell@controlthings.fi>",
-  "license": "MIT",
+  "license": "SEE LICENSE IN LICENSE",
   "dependencies": {
     "nan": "2.4.0",
     "bson-buffer": "1.0.2"
