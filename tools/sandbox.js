@@ -5,6 +5,14 @@ var mist = new Mist({ name: 'Generic UI', coreIp: '127.0.0.1', corePort: 9094 })
 
 mist.request('ready', [], function(err, data) {
     console.log("MistApi ready():", err, data);
+    mist.wish('identity.list', [], function(err, data) {
+        console.log("Identities:", err, data, data.length);
+        if (data.length === 0) {
+            mist.wish('identity.create', ['Mr. Andersson'], function(err, data) {
+                console.log("We just created an identity for you.", err, data);
+            });
+        }
+    });
 });
 
 mist.request('signals', [], function(err, data) {
