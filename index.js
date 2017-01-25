@@ -1,13 +1,27 @@
 
+if (!process.version.startsWith('v6.')) {
+    console.log('MistApi is a native addon, which is not supported by Node.js version ('+process.version+'), requires v6.x.x., tested on v6.9.2.');
+    process.exit(1);
+}
+
 if(process.env.BUILD) {
     var MistApi = require('./build/Release/MistApi.node');
-} else if (process.arch === 'arm' && process.platform === 'linux' ) {
+} else if (process.arch === 'x64' && process.platform === 'linux' ) {
+    var MistApi = require('./bin/MistApi.node');
+} else {
+    console.log('MistApi is a native addon, which is not supported by your platform/arch ('+process.platform+'/'+process.arch+').');
+    process.exit(1);
+}
+
+/*
+else if (process.arch === 'arm' && process.platform === 'linux' ) {
     var MistApi = require('./bin/MistApi-arm-eabi5.node');
 } else if (process.platform === 'darwin') {
     var MistApi = require('./bin/MistApi-osx.node');
 } else {
     var MistApi = require('./bin/MistApi.node');
 }
+*/
 
 var bson = require('bson-buffer');
 var BSON = new bson();
