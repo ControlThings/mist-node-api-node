@@ -35,7 +35,7 @@ if (process.env.ID) {
             break;
         case 'write':
             mist.request('listPeers', [], function(err, data) {
-                mist.request('mist.control.write', [data[id], p1, p2], function(err, res) { 
+                mist.request('mist.control.write', [data[id], p1, JSON.parse(p2)], function(err, res) { 
                     console.log("Write:", id, res);
                     mist.shutdown();
                 });
