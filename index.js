@@ -1,5 +1,5 @@
 
-if (!process.version.startsWith('v6.')) {
+if (!process.version.substr(0, 3) === 'v6.') {
     console.log('MistApi is a native addon, which is not supported by Node.js version ('+process.version+'), requires v6.x.x., tested on v6.9.2.');
     process.exit(1);
 }
