@@ -30,7 +30,7 @@ mist.request('signals', [], function(err, data) {
                 if ( Buffer.compare(data[i].id, soikeaSandboxId) === 0 ) {
                     console.log("Found the soikea sandbox for adding a peer:", data[i]);
                     
-                    var sandboxId = data[0].id; 
+                    var sandboxId = data[i].id; 
 
                     mist.request('listPeers', [sandboxId], function(err, data) {
                         var peers = [];
