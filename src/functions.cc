@@ -19,6 +19,8 @@ static void init(wish_app_t* app) {
 
 pthread_mutex_t mutex1 = PTHREAD_MUTEX_INITIALIZER;
 
+#define SANDBOX_RPC_MSG_LEN_MAX     (16*1024)
+
 bool relay_state = false;
 
 static wish_app_t *app;
@@ -66,7 +68,7 @@ static void mist_response_cb(struct wish_rpc_entry* req, void* ctx, uint8_t* dat
 static void sandboxed_response_cb(struct wish_rpc_entry* req, void* ctx, uint8_t* data, size_t data_len) {
     //printf("response going towards node.js.\n");
     //bson_visit(data, elem_visitor);
-
+    
     Test::sendSandboxed(data, data_len);
     
     //static_cast<EvenOdd*>(evenodd_instance)->sendToNode(data, data_len);
@@ -134,8 +136,6 @@ static enum mist_error hw_invoke(mist_ep* ep, mist_buf args) {
     
     return MIST_NO_ERROR;
 }
-
-static char sandbox_id[32] = { 45,44,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45 };
 
 static void mist_api_periodic_cb_impl(void* ctx) {
     if (pthread_mutex_trylock(&mutex1)) {
@@ -404,18 +404,132 @@ static void mist_api_periodic_cb_impl(void* ctx) {
                 }
             } else if (input_type == 4) { // MIST SANDBOXED API
                 //printf("### Sandboxed Api\n");
+                //WISHDEBUG(LOG_CRITICAL, "sandbox_api-request:");
+                //bson_visit((uint8_t*)bson_data(&bs), elem_visitor);
+                
+                const char* sandbox_id = "";
                 
                 bson_iterator it;
+
                 bson_find_from_buffer(&it, input_buffer, "cancel");
 
                 if (bson_iterator_type(&it) == BSON_INT) {
-                    //printf("Node/C99: sandboxed_cancel %i\n", bson_iterator_int(&it));
-                    sandboxed_api_request_cancel(&sandbox_id[0], bson_iterator_int(&it));
+                    int id = bson_iterator_int(&it);
+                    
+                    //printf("Node/C99: sandboxed_cancel %i\n", id);                    
+                    
+                    bson_find_from_buffer(&it, input_buffer, "sandbox");
+                    
+                    if ( bson_iterator_type(&it) == BSON_BINDATA && bson_iterator_bin_len(&it) == 32 ) {
+                        // found the sandbox_id
+                        sandbox_id = (char*) bson_iterator_bin_data(&it);
+                    } else {
+                        printf("Invalid sandbox id. 5 != %i || 32 != %i\n", bson_iterator_type(&it), bson_iterator_bin_len(&it));
+                    }
+                    
+                    sandboxed_api_request_cancel(sandbox_id, id);
                     goto consume_and_unlock;
                 }
                 
-                //printf("Node/C99: sandboxed\n");
-                sandboxed_api_request(&sandbox_id[0], &bs, sandboxed_response_cb);
+                
+                // rewrite bson message to remove the first parameter of args
+                
+                bson_find(&it, &bs, "op");
+                char* op = (char*)bson_iterator_string(&it);
+
+                bson_find(&it, &bs, "id");
+                int id = bson_iterator_int(&it);
+
+                bson b;
+                bson_init_size(&b, SANDBOX_RPC_MSG_LEN_MAX);
+
+                bson_append_string(&b, "op", op);
+
+                bson_iterator ait;
+                bson_iterator sit;
+                bson_find(&ait, &bs, "args");
+                
+                
+                // init the sub iterator from args array iterator
+                bson_iterator_subiterator(&ait, &sit);
+
+                // read the argument
+                bson_find_fieldpath_value("0", &sit);
+                
+                if ( bson_iterator_type(&sit) == BSON_BINDATA && bson_iterator_bin_len(&sit) == 32 ) {
+                    // found the sandbox_id
+                    sandbox_id = (char*) bson_iterator_bin_data(&sit);
+                } else {
+                    printf("Args first parameter was not BINDATA and len 32, bailing out!\n %i", bson_iterator_type(&sit));
+                    // could not find sandbox_id, bailing out
+                    bson_destroy(&b);
+                    goto consume_and_unlock;
+                }
+
+                bool done = false;
+                int i;
+                int args_len = 0;
+
+                bson_append_start_array(&b, "args");
+
+                // Only single digit array index supported. 
+                //   i.e Do not exceed 8 with the index. Rewrite indexing if you must!
+                for(i=0; i<9; i++) {
+
+                    char* src;
+                    BSON_NUMSTR(src, i+1);
+
+                    char* dst;
+                    BSON_NUMSTR(dst, i);
+
+
+                    // init the sub iterator from args array iterator
+                    bson_iterator_subiterator(&ait, &sit);
+
+                    // read the argument
+                    //bson_find(&it, req, src);
+                    bson_type type = bson_find_fieldpath_value(src, &sit);
+
+                    // FIXME check type under iterator is valid
+                    switch(type) {
+                        case BSON_EOO:
+                            done = true;
+                            break;
+                        case BSON_BOOL:
+                            bson_append_bool(&b, dst, bson_iterator_bool(&sit));
+                            break;
+                        case BSON_INT:
+                            bson_append_int(&b, dst, bson_iterator_int(&sit));
+                            break;
+                        case BSON_DOUBLE:
+                            bson_append_double(&b, dst, bson_iterator_double(&sit));
+                            break;
+                        case BSON_STRING:
+                        case BSON_BINDATA:
+                        case BSON_OBJECT:
+                        case BSON_ARRAY:
+                            bson_append_element(&b, dst, &sit);
+                            break;
+                        default:
+                            WISHDEBUG(LOG_CRITICAL, "Unsupported bson type %i in mist_passthrough", type);
+                    }
+
+                    if(done) {
+                        break;
+                    } else {
+                        args_len++;
+                    }
+                }
+
+                bson_append_finish_array(&b);
+                bson_append_int(&b, "id", id);
+                bson_finish(&b);
+
+                //WISHDEBUG(LOG_CRITICAL, "sandbox_api-request re-written:");
+                //bson_visit((uint8_t*)bson_data(&b), elem_visitor);                    
+                
+                //printf("Node/C99: sandboxed %02x %02x %02x\n", sandbox_id[0], sandbox_id[1], sandbox_id[2]);
+                sandboxed_api_request(sandbox_id, &b, sandboxed_response_cb);
             }
         }
         

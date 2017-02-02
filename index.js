@@ -72,17 +72,17 @@ function Mist(opts) {
 
                     var id = msg.ack || msg.sig || msg.end || msg.err;
 
-                    //console.log("the answer is:", inspect(msg, { colors: true, depth: 10 }));
+                    //console.log("the answer is:", require('util').inspect(msg, { colors: true, depth: 10 }));
 
-                    if(typeof self.sandbox.requests[id] === 'function') {
+                    if(typeof self.requests[id] === 'function') {
                         if (msg.err) {
-                            self.sandbox.requests[id](true, { code: msg.code, msg: msg.msg });
+                            self.requests[id](true, { code: msg.code, msg: msg.msg });
                         } else {
-                            self.sandbox.requests[id](null, msg.data);
+                            self.requests[id](null, msg.data);
                         }
 
                         if(!msg.sig) {
-                            delete self.sandbox.requests[id];
+                            delete self.requests[id];
                         }
                     }
                 }
@@ -196,21 +196,29 @@ function MistNode(opts) {
     return new Mist(opts);
 }
 
-function Sandboxed(mist) {
+function Sandboxed(mist, sandboxId) {
     if (!mist || !mist.opts || !mist.opts.type === 2) {
-        throw new Error('Sandbox constructor parameter must be Mist of type 2.');
+        throw new Error('Sandbox constructor parameter 1 must be Mist of type 2.');
     }
-    this.requests = {};
+    
+    if ( !Buffer.isBuffer(sandboxId) || sandboxId.length !== 32 ) {
+        console.log("sandboxId:", sandboxId);
+        throw new Error('Sandbox constructor parameter 2 must be Buffer(len:32).');
+    }
+    
     this.api = mist.api;
+    this.sandboxId = sandboxId;
+    this.mist = mist;
     mist.registerSandbox(this);
 }
 
 Sandboxed.prototype.request = function(op, args, cb) {
     var id = ++sharedId;
-    var request = { op: op, args: args, id: id };
+    var sandboxArgs = [this.sandboxId].concat(args);
+    var request = { op: 'sandboxed.'+op, args: sandboxArgs, id: id };
     
-    // store callback for response
-    this.requests[id] = cb;
+    // store callback for response in the mist object
+    this.mist.requests[id] = cb;
     
     this.api.sendToAddon('sandboxed', 1, BSON.serialize(request));
 
@@ -218,7 +226,10 @@ Sandboxed.prototype.request = function(op, args, cb) {
 };
 
 Sandboxed.prototype.requestCancel = function(id) {
-    var request = { cancel: id };
+    var self = this;
+    var request = { cancel: id, sandbox: this.sandboxId };
+    
+    setTimeout(function() { if(self.mist.requests[id]) { delete self.mist.requests[id]; } }, 500);
     
     this.api.sendToAddon('sandboxed', 1, BSON.serialize(request));
 };
