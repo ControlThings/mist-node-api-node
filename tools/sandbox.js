@@ -26,24 +26,30 @@ mist.request('signals', [], function(err, data) {
         mist.request('sandbox.list', [], function(err, data) {
             //console.log("Sandbox list reponse:", err, data);
             
-            var sandbox = data[0].id; 
-            
-            mist.request('listPeers', [], function(err, data) {
-                var peers = [];
-                for(var i in data) {
-                    peers.push(data[i]);
-                }
-                
-                console.log("Peers available:", peers.length);
+            for (var i in data) {
+                if ( Buffer.compare(data[i].id, soikeaSandboxId) === 0 ) {
+                    console.log("Found the soikea sandbox for adding a peer:", data[i]);
+                    
+                    var sandboxId = data[0].id; 
 
-                for(var x in peers) {
-                    //console.log("Requesting to add peer.", peers[x].rsid.toString());
-                    if ( peers[x].rsid.slice(0,11).toString() !== 'GPS node.js' ) { continue; }
-                    mist.request('sandbox.addPeer', [sandbox, peers[x]], function(err, data) {
-                        console.log("Sandbox addPeer reponse:", err, data);
+                    mist.request('listPeers', [sandboxId], function(err, data) {
+                        var peers = [];
+                        for(var i in data) {
+                            peers.push(data[i]);
+                        }
+
+                        console.log("Peers available:", peers.length);
+
+                        for(var x in peers) {
+                            //console.log("Requesting to add peer.", peers[x].rsid.toString());
+                            if ( peers[x].rsid.slice(0,11).toString() !== 'GPS node.js' ) { continue; }
+                            mist.request('sandbox.addPeer', [sandboxId, peers[x]], function(err, data) {
+                                console.log("Sandbox addPeer reponse:", err, data);
+                            });
+                        }
                     });
                 }
-            });
+            }
         });
     }
 });
@@ -75,7 +81,7 @@ sandboxedSoikea.request('signals', [], function(err, data) {
     
     if (data === 'peers') {
         sandboxedSoikea.request('listPeers', [], function(err, data) {
-            console.log("Sandbox listPeers reponse:", err, data);
+            console.log("Soikea sandboxed listPeers reponse:", err, data);
             
             for (var i in data) {
                 (function(peer) {
@@ -137,6 +143,38 @@ sandboxedSoikea.request('signals', [], function(err, data) {
 sandboxedSoikea.request('settings', [{ hint: 'commission' }], function(err, data) {
     console.log("sandbox settings response", err, data);
 });
+
+setTimeout(function() {
+    mist.request('sandbox.list', [], function(err, data) {
+        //console.log("Sandbox list reponse:", err, data);
+        
+        for (var i in data) {
+            if ( Buffer.compare(data[i].id, soikeaSandboxId) === 0 ) {
+                console.log("Found the soikea sandbox:", data[i]);
+                mist.request('sandbox.listPeers', [soikeaSandboxId], function (err, data) {
+                    
+                    // delete a single peer
+                    
+                    for(var i in data) {
+                        console.log("Mist sandbox found a peer to delete:", err, data);
+                        mist.request('sandbox.removePeer', [soikeaSandboxId, data[i]], function (err, data) {
+                            console.log("Sandbox list reponse:", err, data);
+                            
+                            mist.request('sandbox.listPeers', [soikeaSandboxId], function (err, data) {
+                                console.log("Sandbox listPeers after remove:", err, data);
+                            });                            
+                        });
+                        return;
+                    }
+                    
+                    console.log("No peer to delete.");
+                    
+                });
+            }
+        }
+    });
+}, 3000);
+
 
 setTimeout(function() {
     sandboxedSoikea.request('logout', [], function(err, data) {
