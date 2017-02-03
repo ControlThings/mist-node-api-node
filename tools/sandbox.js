@@ -130,6 +130,7 @@ sandboxedSoikea.request('signals', [], function(err, data) {
                             setTimeout(function() {
                                 console.log("Canceling request", followId);
                                 sandboxedSoikea.requestCancel(followId);
+                                setTimeout(function() { mist.shutdown(); }, 200);
                             }, 5000);
                         });
                     }

@@ -1,0 +1,38 @@
+{
+    "device": "GPS node.js",
+    "model": {
+        "mist": {
+            "name": "GPS node.js"
+        },
+        "lon": {
+            "label": "Longitude",
+            "type": "float",
+            "read": true
+        },
+        "lat": {
+            "label": "Latitude",
+            "type": "float",
+            "read": true
+        },
+        "accuracy": {
+            "label": "Accuracy",
+            "type": "float",
+            "read": true
+        },
+        "counter": {
+            "label": "Dummy Counter",
+            "type": "int",
+            "read": true
+        },
+        "config": {
+            "label": "Configuration",
+            "invoke": true
+        },
+        "enabled": {
+            "label": "GPS enabled",
+            "type": "bool",
+            "read": true,
+            "write": true
+        }
+    }
+}
