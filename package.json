@@ -21,6 +21,6 @@
     "bson-buffer": "1.0.2"
   },
   "devDependencies": {
-    "mocha": "3.1.2"
+    "mocha": "3.2.0"
   }
 }

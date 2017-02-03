@@ -9,7 +9,7 @@ var wishBinaryUrl = 'https://mist.controlthings.fi/dist/wish-core-v0.6.6-stable3
 function done() {
     
     console.log('Starting Wish Core.');
-    var core = child.spawn('./env/wish-core');
+    var core = child.spawn('./wish-core', [], { cwd: './env' });
     
     function running() {
         console.log('Starting node.');
@@ -28,13 +28,17 @@ function done() {
         });
 
         console.log('Starting test.');
-        var test = child.spawn('node', ['./sandbox.js']);
+        var test = child.spawn('../node_modules/mocha/bin/mocha', ['-c']);
 
         test.on('error', (err) => {
-            process('Failed to start test process.');
+            console.log('\x1b[36mtest> Failed to start test process.');
         });
 
         test.stdout.on('data', (data) => {
+            console.log('\x1b[36mtest>', data.toString().trim());
+        });
+        
+        test.stderr.on('data', (data) => {
             console.log('\x1b[36mtest>', data.toString().trim());
         });
         
@@ -52,6 +56,7 @@ function done() {
     
     core.on('error', (err) => {
         console.log('\x1b[35mwish> Failed to start wish-core process.');
+        clearTimeout(coreTimeout);
     });
     
     core.stdout.on('data', (data) => {
@@ -71,12 +76,14 @@ function done() {
 https.get(wishBinaryUrl, (res) => {
     //console.log('statusCode:', res.statusCode);
     //console.log('headers:', res.headers);
+    
+    var downloadTime = Date.now();
 
     var fileName = './env/wish-core';
     var file = fs.createWriteStream(fileName);
 
     if (res.statusCode === 200) {
-        file.on('close', function() { fs.chmodSync(fileName, '755'); done(); });
+        file.on('close', function() { console.log('Downloaded Wish binary '+(Date.now()-downloadTime)+'ms'); fs.chmodSync(fileName, '755'); done(); });
         res.pipe(file);
     } else if ( res.statusCode === 404 ) {
         console.error('Wish binary not found '+wishBinaryUrl);
