@@ -32,7 +32,7 @@ mist.request('signals', [], function(err, data) {
                     
                     var sandboxId = data[i].id; 
 
-                    mist.request('listPeers', [sandboxId], function(err, data) {
+                    mist.request('listPeers', [], function(err, data) {
                         var peers = [];
                         for(var i in data) {
                             peers.push(data[i]);
