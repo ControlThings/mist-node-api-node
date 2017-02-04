@@ -47,9 +47,7 @@ var model = {
             write: true // just to demonstrate 
         }
     }
-}
-
-;
+};
 
 // callback for write commands sent to this device
 mist.write(function(endpoint, value) {
