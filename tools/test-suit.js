@@ -23,36 +23,60 @@ function done() {
             console.log('\x1b[37mnode>', data.toString().trim());
         });
 
-        node.on('exit', function(code, signal) {
+        node.on('exit', (code, signal) => {
             console.log('\x1b[36mnode> Exited with code:', signal ? signal : code);
         });
 
-        console.log('Starting test.');
-        var test = child.spawn('../node_modules/mocha/bin/mocha', ['-c']);
-
-        test.on('error', (err) => {
-            console.log('\x1b[36mtest> Failed to start test process.');
-        });
-
-        test.stdout.on('data', (data) => {
-            console.log('\x1b[36mtest>', data.toString().trim());
-        });
-        
-        test.stderr.on('data', (data) => {
-            console.log('\x1b[36mtest>', data.toString().trim());
-        });
-        
-        test.on('exit', function(code, signal) {
-            console.log('\x1b[36mtest> Exited with code:', code, signal);
-            if( code === 0 ) {
-                console.log('\x1b[35mTest run completed successfully in '+(Date.now()-testStartTime)+'ms');
+        function run(list) {
+            if (list.length > 0) {
+                var file = list.pop();
+            } else {
+                console.log("We're all done.", list);
+                node.kill();
+                core.kill();
+                return;
             }
-            node.kill();
-            core.kill();
+
+            console.log('Starting test.');
+            var test = child.spawn('../node_modules/mocha/bin/mocha', ['-c', './test/'+file]);
+
+            test.on('error', (err) => {
+                console.log('\x1b[36mtest> Failed to start test process.');
+            });
+
+            test.stdout.on('data', (data) => {
+                console.log('\x1b[36mtest>', data.toString().trim());
+            });
+
+            test.stderr.on('data', (data) => {
+                console.log('\x1b[36mtest>', data.toString().trim());
+            });
+
+            test.on('exit', (code, signal) => {
+                console.log('\x1b[36mtest> Exited with code:', code, signal);
+                if( code === 0 ) {
+                    console.log('\x1b[35mTest run completed successfully in '+(Date.now()-testStartTime)+'ms');
+                }
+                
+                process.nextTick(function() { run(list); });
+            });            
+        }
+
+        var list = [];
+        const testFolder = './test/';
+        const fs = require('fs');
+        fs.readdir(testFolder, (err, files) => {
+            files.forEach(file => {
+                list.push(file);
+            });
+            
+            run(list);
         });
+        
+        
     }
     
-    var coreTimeout = setTimeout(function() { running(); }, 200);
+    var coreTimeout = setTimeout(() => { running(); }, 200);
     
     core.on('error', (err) => {
         console.log('\x1b[35mwish> Failed to start wish-core process.');
@@ -67,11 +91,16 @@ function done() {
         console.log('wish>', data.toString().trim());
     });
     
-    core.on('exit', function(code) {
+    core.on('exit', (code) => {
         console.log("wish exited with code:", code);
         clearTimeout(coreTimeout);
     });
 }
+
+try {
+    //fs.unlinkSync('./env/wish_hostid.raw');
+    //fs.unlinkSync('./env/wish_id_db.bson');
+} catch (e) {}
 
 https.get(wishBinaryUrl, (res) => {
     //console.log('statusCode:', res.statusCode);
@@ -83,7 +112,7 @@ https.get(wishBinaryUrl, (res) => {
     var file = fs.createWriteStream(fileName);
 
     if (res.statusCode === 200) {
-        file.on('close', function() { console.log('Downloaded Wish binary '+(Date.now()-downloadTime)+'ms'); fs.chmodSync(fileName, '755'); done(); });
+        file.on('close', () => { console.log('Downloaded Wish binary '+(Date.now()-downloadTime)+'ms'); fs.chmodSync(fileName, '755'); done(); });
         res.pipe(file);
     } else if ( res.statusCode === 404 ) {
         console.error('Wish binary not found '+wishBinaryUrl);
@@ -93,4 +122,5 @@ https.get(wishBinaryUrl, (res) => {
 }).on('error', (e) => {
     console.error('Failed downloading wish binary.', e);
 });
+
 
