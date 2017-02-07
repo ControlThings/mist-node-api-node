@@ -5,6 +5,7 @@
 #include "mist_handler.h"
 #include "mist_follow.h"
 #include "wish_core_client.h"
+#include "wish_platform.h"
 #include "bson_visitor.h"
 #include "bson.h"
 
@@ -23,10 +24,10 @@ pthread_mutex_t mutex1 = PTHREAD_MUTEX_INITIALIZER;
 
 bool relay_state = false;
 
-static wish_app_t *app;
-static mist_app_t* mist_app;
-static mist_api_t* api;
-static struct mist_model* model;
+//static wish_app_t *app;
+//static mist_app_t* mist_app;
+//static mist_api_t* api;
+//static struct mist_model* model;
 
 static int input_buffer_len = 0;
 static char input_buffer[2048];
@@ -138,6 +139,9 @@ static enum mist_error hw_invoke(mist_ep* ep, mist_buf args) {
 }
 
 static void mist_api_periodic_cb_impl(void* ctx) {
+    mist_app_t* mist_app = (mist_app_t*) ctx;
+    mist_model_t* model = (mist_model_t*) &mist_app->model;
+    
     if (pthread_mutex_trylock(&mutex1)) {
         //WISHDEBUG(LOG_CRITICAL, "Failed trylock. Fail-safe worked!");
         return;
@@ -240,7 +244,7 @@ static void mist_api_periodic_cb_impl(void* ctx) {
                         char* ep_type;
                         
                         if( bson_iterator_type(&epit) != BSON_STRING) {
-                            ep_type = "";
+                            ep_type = (char*) "";
                         } else {
                             ep_type = (char*) bson_iterator_string(&epit);
                         }
@@ -546,10 +550,14 @@ consume_and_unlock:
 }
 
 static void periodic_cb(void* ctx) {
-    mist_api_periodic_cb_impl(NULL);
+    mist_api_t* api = (mist_api_t*) ctx;
+    mist_api_periodic_cb_impl(api);
 }
 
 struct wish_app_core_opts {
+    mist_api_t* mist_api;
+    mist_app_t* mist_app;
+    wish_app_t* wish_app;
     char* name;
     char* ip;
     uint16_t port;
@@ -564,14 +572,19 @@ static void* setupMistNodeApi(void* ptr) {
     char* name = (char*) (opts->name != NULL ? opts->name : "Node");
 
     //start wish apps
-    mist_app = start_mist_app();
+    mist_app_t* mist_app = opts->mist_app; // start_mist_app();
+    opts->mist_app = mist_app;
     
-    model = &(mist_app->model);
+    printf("setupMistApi has instance: %p\n", mist_app);
+
+    mist_model_t* model = &(mist_app->model);
+    
     model->custom_ui_url = (char*) "https://mist.controlthings.fi/mist-io-switch-0.0.2.tgz";
     
     mist_set_name(mist_app, name);
     
-    app = wish_app_create(name);
+    wish_app_t* app = wish_app_create(name);
+    opts->wish_app = app;
     
     if (app == NULL) {
         printf("Failed creating wish app\n");
@@ -582,7 +595,7 @@ static void* setupMistNodeApi(void* ptr) {
     mist_app->app = app;
     
     app->periodic = periodic_cb;
-    app->periodic_ctx = NULL;
+    app->periodic_ctx = mist_app;
 
     app->port = opts->port;
     
@@ -600,11 +613,15 @@ static void* setupMistApi(void* ptr) {
     char* name = (char*) (opts->name != NULL ? opts->name : "MistApi");
 
     //start wish apps
-    mist_app = start_mist_app();
+    mist_app_t* mist_app = opts->mist_app; // start_mist_app();
+    opts->mist_app = mist_app;
+    
+    printf("setupMistApi has instance: %p\n", mist_app);
 
     mist_set_name(mist_app, name);
     
-    app = wish_app_create((char*)name);
+    wish_app_t* app = wish_app_create((char*)name);
+    opts->wish_app = app;
     
     if (app == NULL) {
         printf("Failed creating wish app\n");
@@ -615,11 +632,13 @@ static void* setupMistApi(void* ptr) {
     mist_app->app = app;
 
     app->periodic = periodic_cb;
-    app->periodic_ctx = NULL;
+    app->periodic_ctx = mist_app;
     
     app->port = opts->port;
 
-    api = mist_api_init(mist_app);
+    mist_api_t* api = mist_api_init(mist_app);
+    opts->mist_api = api;
+    
     api->periodic = mist_api_periodic_cb_impl;
     api->periodic_ctx = api;
 
@@ -630,7 +649,7 @@ static void* setupMistApi(void* ptr) {
     return NULL;
 }
 
-pthread_t thread1;
+pthread_t* thread;
 struct wish_app_core_opts opts;
 
 void mist_addon_start(char* name, int type, char* ip, uint16_t port) {
@@ -641,20 +660,32 @@ void mist_addon_start(char* name, int type, char* ip, uint16_t port) {
     opts.port = port;
 
     /* Create independent threads each of which will execute function */
+    
+    printf("We're here!\n");
+    
+    wish_platform_set_malloc(malloc);    
+    
+    // FIXME This is never freed!
+    thread = (pthread_t*) wish_platform_malloc(sizeof(pthread_t));
+    memset(thread, 0, sizeof(pthread_t));
+    
+    opts.mist_app = start_mist_app();
 
     if(type == 2) {
-        //printf("mist_addon_start(setupMistApi, %s, core: %s:%d)\n", name, ip, port);
-        iret = pthread_create(&thread1, NULL, setupMistApi, (void*) &opts);
+        printf("mist_addon_start(setupMistApi, %s, core: %s:%d)\n", name, ip, port);
+        iret = pthread_create(thread, NULL, setupMistApi, (void*) &opts);
     } else if ( type == 3 ) {
-        //printf("mist_addon_start(setupMistNodeApi, %s, core: %s:%d)\n", name, ip, port);
-        iret = pthread_create(&thread1, NULL, setupMistNodeApi, (void*) &opts);
+        printf("mist_addon_start(setupMistNodeApi, %s, core: %s:%d)\n", name, ip, port);
+        iret = pthread_create(thread, NULL, setupMistNodeApi, (void*) &opts);
     } else if ( type == 4 ) {
-        //printf("mist_addon_start(setupMistNodeApi, %s, core: %s:%d)\n", name, ip, port);
-        iret = pthread_create(&thread1, NULL, setupMistApi, (void*) &opts);
+        printf("mist_addon_start(setupMistNodeApi, %s, core: %s:%d)\n", name, ip, port);
+        iret = pthread_create(thread, NULL, setupMistApi, (void*) &opts);
     } else {
         printf("mist_addon_start received unrecognized type %i, (expecting 2, 3 or 4)\n", type);
         exit(EXIT_FAILURE);
     }
+    
+    printf("And got here...\n");
         
         
     if (iret) {

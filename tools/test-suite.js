@@ -75,6 +75,7 @@ function done() {
                 //fs.writeFileSync('./results.json', JSON.stringify(results, null, 2));
                 node.kill();
                 core.kill();
+                coreBob.kill();
                 return;
             }
 
@@ -142,6 +143,33 @@ function done() {
     core.on('exit', (code) => {
         console.log("wish exited with code:", code);
         clearTimeout(coreTimeout);
+    });
+    
+    function runningBob() {
+        
+    }
+    
+    console.log('Starting Wish Core for Bob.');
+    var coreBob = child.spawn('./wish-core', ['-p 38001', '-a 9096'], { cwd: './env/bob' });
+    
+    var coreBobTimeout = setTimeout(() => { runningBob(); }, 200);
+    
+    coreBob.on('error', (err) => {
+        console.log('\x1b[35mwish> Failed to start wish-core process.');
+        clearTimeout(coreBobTimeout);
+    });
+    
+    coreBob.stdout.on('data', (data) => {
+        console.log('\x1b[35mwish>', data.toString().trim());
+    });
+    
+    coreBob.stderr.on('data', (data) => {
+        console.log('wish>', data.toString().trim());
+    });
+    
+    coreBob.on('exit', (code) => {
+        console.log("wish exited with code:", code);
+        clearTimeout(coreBobTimeout);
     });
 }
 

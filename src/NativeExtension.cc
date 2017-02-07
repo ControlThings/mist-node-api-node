@@ -211,7 +211,7 @@ private:
     static NAN_METHOD(New) {
         if (info.IsConstructCall()) {
             
-            //cout << "3. StreamWorkerWrapper construct call\n";
+            cout << "3. StreamWorkerWrapper construct call\n";
             Callback *data_callback = new Callback(info[0].As<v8::Function>());
             Callback *complete_callback = new Callback(info[1].As<v8::Function>());
             Callback *error_callback = new Callback(info[2].As<v8::Function>());
@@ -250,6 +250,8 @@ private:
             
             char* ip = strdup(coreIp.c_str());
             char* name = strdup(nodeName.c_str());
+
+            cout << "Going to call mist_addon_start\n";
             
             mist_addon_start(name, apiType, ip, corePort);
             
@@ -262,7 +264,7 @@ private:
             AsyncQueueWorker(obj->_worker);
 
         } else {
-            //cout << "StreamWorkerWrapper another call\n";
+            cout << "StreamWorkerWrapper another call\n";
             const int argc = 3;
             v8::Local<v8::Value> argv[argc] = {info[0], info[1], info[2]};
             v8::Local<v8::Function> cons = Nan::New(constructor());

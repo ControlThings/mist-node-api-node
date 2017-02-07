@@ -3,12 +3,17 @@ var Sandboxed = require('../../index.js').Sandboxed;
 
 describe('MistApi Control', function () {
     var mist;
+    var bob;
     
     before(function (done) {
         mist = new Mist({ name: 'FriendManager', coreIp: '127.0.0.1', corePort: 9094 });
 
         mist.request('ready', [], function(err, data) {
-            done();
+            //bob = new Mist({ name: 'BobsFriendManager', coreIp: '127.0.0.1', corePort: 9096 });
+
+            //bob.request('ready', [], function(err, data) {
+                done();
+            //});
         });
     });
     

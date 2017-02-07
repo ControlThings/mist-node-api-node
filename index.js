@@ -44,6 +44,8 @@ function Mist(opts) {
     if (!opts.type) { opts.type = 2; }
     
     this.opts = opts;
+    
+    console.log('Starting with opts:', opts);
 
     this.api = new MistApi.StreamingWorker(
         function (event, value, data) {
