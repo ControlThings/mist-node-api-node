@@ -43,7 +43,7 @@ describe('MistApi Control', function () {
         mist.request('listPeers', [], peers);
     });
     
-    it('should be just fine', function (done) {
+    it('should check identity in core', function (done) {
         mist.wish('identity.list', [], function(err, data) {
             if (err) { return done(new Error('wish rpc returned error')); }
             

@@ -27,25 +27,70 @@ function done() {
             console.log('\x1b[36mnode> Exited with code:', signal ? signal : code);
         });
 
+        var results = [];
+
         function run(list) {
             if (list.length > 0) {
                 var file = list.pop();
             } else {
                 console.log("We're all done.", list);
+
+                console.log('\n\x1b[34m\x1b[1mSuccesses\x1b[22m');
+
+                for(var i in results) {
+                    for(var j in results[i].passes) {
+                        var it = results[i].passes[j];
+                        console.log('  \x1b[34m✓ \x1b[37m', it.fullTitle, '\x1b[32m('+it.duration+'ms)');
+                    }
+                }
+
+                var failures = false;
+
+                for(var i in results) {
+                    for(var j in results[i].failures) {
+                        failures = true;
+                    }
+                }
+                
+                if (failures) {
+                
+                    console.log('\n\x1b[1mFailures\x1b[22m');
+
+                    for(var i in results) {
+                        for(var j in results[i].failures) {
+                            var it = results[i].failures[j];
+                            console.log('  \x1b[31m✗ \x1b[38m', it.fullTitle, '\x1b[32m('+it.duration+'ms)');
+
+                            console.log();
+                            console.log('      \x1b[35m\x1b[1m'+it.err.message+'\x1b[22m');
+                            console.log('        '+it.err.stack.replace(/\n/g, '\n        '));
+                            console.log();
+                        }
+                    }
+                }
+
+                console.log();
+
+                //fs.writeFileSync('./results.json', JSON.stringify(results, null, 2));
                 node.kill();
                 core.kill();
                 return;
             }
 
-            console.log('Starting test.');
-            var test = child.spawn('../node_modules/mocha/bin/mocha', ['-c', './test/'+file]);
+            var testFile = './test/'+file;
+            console.log('\x1b[34mStarting test:', testFile);
+            var test = child.spawn('../node_modules/mocha/bin/mocha', ['--reporter', 'json', '-c', testFile]);
 
             test.on('error', (err) => {
                 console.log('\x1b[36mtest> Failed to start test process.');
             });
 
             test.stdout.on('data', (data) => {
-                console.log('\x1b[36mtest>', data.toString().trim());
+                try {
+                    results.push(JSON.parse(data));
+                } catch(e) {
+                    console.log('\x1b[36mtest>', data.toString().trim());
+                }                
             });
 
             test.stderr.on('data', (data) => {
@@ -67,7 +112,9 @@ function done() {
         const fs = require('fs');
         fs.readdir(testFolder, (err, files) => {
             files.forEach(file => {
-                list.push(file);
+                if(file.endsWith('.js')) {
+                    list.push(file);
+                }
             });
             
             run(list);

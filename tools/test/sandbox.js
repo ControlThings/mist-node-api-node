@@ -15,12 +15,15 @@ describe('MistApi Sandbox', function () {
             }
         });
     });
+
     
     after(function(done) {
+        //console.log("Calling mist.shutdown().");
         mist.shutdown();
+        //process.nextTick(function() { console.log('exiting.'); process.exit(0); });
+        setTimeout(function() { /*console.log('exiting.');*/ process.exit(0); }, 150);
         done();
-    });
-
+    });    
 
     it('should get signals', function(done) {
         mist.request('signals', [], function(err, data) {
@@ -30,7 +33,7 @@ describe('MistApi Sandbox', function () {
         });
     });
     
-    it('should be just fine', function (done) {
+    it('should check identity in core', function (done) {
         mist.wish('identity.list', [], function(err, data) {
             if (err) { return done(new Error('wish rpc returned error')); }
             
@@ -52,6 +55,9 @@ describe('MistApi Sandbox', function () {
             done();
         });
     });
+
+    var gpsSandboxId = new Buffer('dead00ababababababababababababababababababababababababababababab', 'hex');
+    var controlThingsSandboxId = new Buffer('beef00ababababababababababababababababababababababababababababab', 'hex');
     
     it('shuold test sandbox', function(done) {
 
@@ -96,9 +102,6 @@ describe('MistApi Sandbox', function () {
             }
         });
 
-        var gpsSandboxId = new Buffer('dead00ababababababababababababababababababababababababababababab', 'hex');
-        var controlThingsSandboxId = new Buffer('beef00ababababababababababababababababababababababababababababab', 'hex');
-
         var sandboxedGps = new Sandboxed(mist, gpsSandboxId);
         var sandboxedControlThings = new Sandboxed(mist, controlThingsSandboxId);
 
@@ -139,9 +142,6 @@ describe('MistApi Sandbox', function () {
                                         //console.log("Sandbox logout reponse:", err, success);
 
                                         mist.request('sandbox.list', [], function (err, data) {
-                                            console.log("Calling mist.shutdown().");
-                                            mist.shutdown();
-                                            process.nextTick(function() { console.log('exiting.'); process.exit(0); });
                                             done();
                                         });
                                     });
@@ -166,39 +166,38 @@ describe('MistApi Sandbox', function () {
         sandboxedGps.request('settings', [{ hint: 'commission' }], function(err, data) {
             //console.log("sandbox settings response", err, data);
         });
-
-        /*
-        setTimeout(function() {
-            mist.request('sandbox.list', [], function(err, data) {
-                //console.log("Sandbox list reponse:", err, data);
-
-                for (var i in data) {
-                    if ( Buffer.compare(data[i].id, gpsSandboxId) === 0 ) {
-                        //console.log("Found the Gps sandbox:", data[i]);
-                        mist.request('sandbox.listPeers', [gpsSandboxId], function (err, data) {
-
-                            // delete a single peer
-
-                            for(var i in data) {
-                                //console.log("Mist sandbox found a peer to delete:", err, data);
-                                mist.request('sandbox.removePeer', [gpsSandboxId, data[i]], function (err, data) {
-                                    //console.log("Sandbox list reponse:", err, data);
-
-                                    mist.request('sandbox.listPeers', [gpsSandboxId], function (err, data) {
-                                        //console.log("Sandbox listPeers after remove:", err, data);
-                                    });                            
-                                });
-                                return;
-                            }
-
-                            //console.log("No peer to delete.");
-
-                        });
-                    }
-                }
-            });
-        }, 1000);
-        */
     });
     
+    it('should remove a peer from sandbox', function(done) {
+        mist.request('sandbox.listPeers', [gpsSandboxId], function (err, data) {
+            //console.log("Mist sandbox peers:", err, data);
+
+            var length = data.length;
+
+            // delete a single peer
+
+            for(var i in data) {
+                //console.log("Mist sandbox found a peer to delete:", err, data);
+                mist.request('sandbox.removePeer', [gpsSandboxId, data[i]], function (err, data) {
+                    //console.log("Sandbox list reponse:", err, data);
+                    
+                    if(data !== true) { return done(new Error('removePeer returned false.')); }
+
+                    mist.request('sandbox.listPeers', [gpsSandboxId], function (err, data) {
+                        //console.log("Sandbox listPeers after remove:", err, data);
+                        
+                        if (data.length === length - 1) {
+                            done();
+                        } else {
+                            done(new Error('List of peers is not one less than before.'));
+                        }                        
+                    });                            
+                });
+                return;
+            }
+
+            //console.log("No peer to delete.");
+
+        });
+    });
 });
