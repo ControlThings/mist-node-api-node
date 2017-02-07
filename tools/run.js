@@ -5,17 +5,36 @@ var util = require("util");
 
 console.log('GPS running');
 
-var mist = new Mist({ name: model.device });
+var mist = new Mist({ name: model.device, corePort: 9094 });
 
 // callback 
 mist.write(function(epid, data) {
-    console.log("mist write:", epid, data);
+    //console.log("mist write:", epid, data);
 });
 
 // callback 
 mist.invoke('config', function(data, cb) {
-    console.log("mist invoke:", data);
-    cb({ here: "you", go: true });
+    //console.log("mist invoke:", data);
+    
+    switch(typeof data) {
+        case 'number':
+            cb({ an: 'object-response', echo: data });
+            break;
+        case 'boolean':
+            cb({ an: 'object-response', echo: data });
+            break;
+        case 'string':
+            cb({ an: 'object-response', echo: data });
+            break;
+        case 'object':
+            cb({ an: 'object-response', echo: data });
+            break;
+        default:
+            cb("I did not get that.");
+            break;
+    }
+    
+    
 });
 
 mist.create(model);
@@ -46,7 +65,7 @@ Gps.prototype.write = function(feature, value) {
     this.emit('change', feature, value);
 };
 
-var c = 0;
+var c = 1;
 
 function MistGps() {
     var sensor = new Gps();
