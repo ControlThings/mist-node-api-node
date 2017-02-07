@@ -200,4 +200,14 @@ describe('MistApi Sandbox', function () {
 
         });
     });
+    
+    it('should remove a sandbox', function(done) {
+        mist.request('sandbox.remove', [gpsSandboxId], function (err, data) {
+            if (data === true) {
+                done();
+            } else {
+                done(new Error('List of peers is not one less than before.'));
+            }
+        });
+    });
 });

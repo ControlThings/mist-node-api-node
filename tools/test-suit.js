@@ -42,6 +42,7 @@ function done() {
                         var it = results[i].passes[j];
                         console.log('  \x1b[34m✓ \x1b[37m', it.fullTitle, '\x1b[32m('+it.duration+'ms)');
                     }
+                    console.log();
                 }
 
                 var failures = false;
@@ -64,8 +65,8 @@ function done() {
                             console.log();
                             console.log('      \x1b[35m\x1b[1m'+it.err.message+'\x1b[22m');
                             console.log('        '+it.err.stack.replace(/\n/g, '\n        '));
-                            console.log();
                         }
+                        console.log();
                     }
                 }
 
