@@ -2,6 +2,30 @@
 
 A native node.js plugin which uses the C99 Mist implementation. Currently able to build for Linux (desktop and raspberry) and OSX. Requires a Wish Core running on localhost.
 
+## Running tests
+
+How to run the tests:
+
+  node --version # must return 6.x
+  git clone wish.cto.fi:/git/mist-node-api-node
+  cd mist-node-api-node
+  npm i
+  cd tools
+  node test-suite.js
+
+# first time will fail, until we get the wish-core fixed
+
+To test new features of mist-api you need to:
+
+  # have mist-esp softlinked to the mist-node-api-node directory
+  # build the libmist.a using make -f linux-static...mk in mist-esp
+  cd .. && node-gyp rebuild && cd tools
+  BUILD=1 node test-suite.js
+  
+
+Write more tests by copying one of the test in tools/test
+
+
 ## Building (see Releasing for Release steps)
 
 Set the environment variable `BUILD=1`  to use the `build/Release/MistApi.node` instead of prebuilt binaries.
