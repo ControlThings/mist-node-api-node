@@ -19,10 +19,8 @@ describe('MistApi RPC', function () {
 
     
     after(function(done) {
-        //console.log("Calling mist.shutdown().");
         mist.shutdown();
-        //process.nextTick(function() { console.log('exiting.'); process.exit(0); });
-        setTimeout(function() { /*console.log('exiting.');*/ process.exit(0); }, 150);
+        setTimeout(function() { process.exit(0); }, 150);
         done();
     });    
 

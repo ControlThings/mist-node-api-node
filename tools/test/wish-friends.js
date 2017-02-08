@@ -1,7 +1,7 @@
 var Mist = require('../../index.js').Mist;
 var Sandboxed = require('../../index.js').Sandboxed;
 
-describe('MistApi Control', function () {
+describe('MistApi Friends', function () {
     var mist;
     var bob;
     
@@ -9,11 +9,11 @@ describe('MistApi Control', function () {
         mist = new Mist({ name: 'FriendManager', coreIp: '127.0.0.1', corePort: 9094 });
 
         mist.request('ready', [], function(err, data) {
-            //bob = new Mist({ name: 'BobsFriendManager', coreIp: '127.0.0.1', corePort: 9096 });
+            bob = new Mist({ name: 'BobsFriendManager', coreIp: '127.0.0.1', corePort: 9096 });
 
-            //bob.request('ready', [], function(err, data) {
+            bob.request('ready', [], function(err, data) {
                 done();
-            //});
+            });
         });
     });
     
@@ -22,7 +22,9 @@ describe('MistApi Control', function () {
         done();
     });
 
-    it('should check identity in core', function (done) {
+
+    xit('should check identity in core', function (done) {
+        console.log("====================Running");
         mist.wish('identity.list', [], function(err, data) {
             if (err) { return done(new Error('wish rpc returned error')); }
             
@@ -39,7 +41,8 @@ describe('MistApi Control', function () {
         });
     });
     
-    it('should find a identity to befriend using local discovery', function(done) {
+    xit('should find a identity to befriend using local discovery', function(done) {
+        console.log("====================Running 2");
         mist.wish('signals', [], function(err, signal) {
             var args;
             if( Array.isArray(signal) ) { args = signal[1]; signal = signal[0]; }

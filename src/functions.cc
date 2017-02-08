@@ -575,7 +575,7 @@ static void* setupMistNodeApi(void* ptr) {
     mist_app_t* mist_app = opts->mist_app; // start_mist_app();
     opts->mist_app = mist_app;
     
-    printf("setupMistApi has instance: %p\n", mist_app);
+    printf("setupMistNodeApi has instance: %p\n", mist_app);
 
     mist_model_t* model = &(mist_app->model);
     
@@ -619,10 +619,10 @@ static void* setupMistApi(void* ptr) {
     printf("setupMistApi has instance: %p\n", mist_app);
 
     mist_set_name(mist_app, name);
-    
+
     wish_app_t* app = wish_app_create((char*)name);
     opts->wish_app = app;
-    
+
     if (app == NULL) {
         printf("Failed creating wish app\n");
         return NULL;
@@ -649,45 +649,39 @@ static void* setupMistApi(void* ptr) {
     return NULL;
 }
 
-pthread_t* thread;
-struct wish_app_core_opts opts;
-
 void mist_addon_start(char* name, int type, char* ip, uint16_t port) {
+    wish_platform_set_malloc(malloc);
+    
     int iret;
 
-    opts.name = name;
-    opts.ip = ip;
-    opts.port = port;
+    struct wish_app_core_opts* opts = (struct wish_app_core_opts*) wish_platform_malloc(sizeof(struct wish_app_core_opts));
+    
+    opts->name = strdup(name);
+    opts->ip = strdup(ip);
+    opts->port = port;
 
     /* Create independent threads each of which will execute function */
     
-    printf("We're here!\n");
-    
-    wish_platform_set_malloc(malloc);    
-    
     // FIXME This is never freed!
-    thread = (pthread_t*) wish_platform_malloc(sizeof(pthread_t));
+    pthread_t* thread = (pthread_t*) wish_platform_malloc(sizeof(pthread_t));
     memset(thread, 0, sizeof(pthread_t));
-    
-    opts.mist_app = start_mist_app();
+
+    opts->mist_app = start_mist_app();
 
     if(type == 2) {
         printf("mist_addon_start(setupMistApi, %s, core: %s:%d)\n", name, ip, port);
-        iret = pthread_create(thread, NULL, setupMistApi, (void*) &opts);
+        iret = pthread_create(thread, NULL, setupMistApi, (void*) opts);
     } else if ( type == 3 ) {
         printf("mist_addon_start(setupMistNodeApi, %s, core: %s:%d)\n", name, ip, port);
-        iret = pthread_create(thread, NULL, setupMistNodeApi, (void*) &opts);
+        iret = pthread_create(thread, NULL, setupMistNodeApi, (void*) opts);
     } else if ( type == 4 ) {
         printf("mist_addon_start(setupMistNodeApi, %s, core: %s:%d)\n", name, ip, port);
-        iret = pthread_create(thread, NULL, setupMistApi, (void*) &opts);
+        iret = pthread_create(thread, NULL, setupMistApi, (void*) opts);
     } else {
         printf("mist_addon_start received unrecognized type %i, (expecting 2, 3 or 4)\n", type);
         exit(EXIT_FAILURE);
     }
     
-    printf("And got here...\n");
-        
-        
     if (iret) {
         fprintf(stderr, "Error - pthread_create() return code: %d\n", iret);
         exit(EXIT_FAILURE);
