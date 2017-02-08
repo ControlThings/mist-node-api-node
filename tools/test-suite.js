@@ -178,25 +178,36 @@ try {
     //fs.unlinkSync('./env/wish_id_db.bson');
 } catch (e) {}
 
-https.get(wishBinaryUrl, (res) => {
-    //console.log('statusCode:', res.statusCode);
-    //console.log('headers:', res.headers);
-    
-    var downloadTime = Date.now();
+var fileName = './env/wish-core';
 
-    var fileName = './env/wish-core';
-    var file = fs.createWriteStream(fileName);
-
-    if (res.statusCode === 200) {
-        file.on('close', () => { console.log('Downloaded Wish binary '+(Date.now()-downloadTime)+'ms'); fs.chmodSync(fileName, '755'); done(); });
-        res.pipe(file);
-    } else if ( res.statusCode === 404 ) {
-        console.error('Wish binary not found '+wishBinaryUrl);
-    } else {
-        console.error('Failed downloading Wish binary '+wishBinaryUrl+'. HTTP response code', res.statusCode);
+if (process.env.WISH) {
+    try {
+        fs.writeFileSync(fileName, fs.readFileSync(process.env.WISH));
+        done();
+    } catch(e) {
+        console.log('Could not find Wish binary from WISH='+process.env.WISH, e);
     }
-}).on('error', (e) => {
-    console.error('Failed downloading wish binary.', e);
-});
+} else {
 
+    https.get(wishBinaryUrl, (res) => {
+        //console.log('statusCode:', res.statusCode);
+        //console.log('headers:', res.headers);
 
+        var downloadTime = Date.now();
+
+        var fileName = './env/wish-core';
+        var file = fs.createWriteStream(fileName);
+
+        if (res.statusCode === 200) {
+            file.on('close', () => { console.log('Downloaded Wish binary '+(Date.now()-downloadTime)+'ms'); fs.chmodSync(fileName, '755'); done(); });
+            res.pipe(file);
+        } else if ( res.statusCode === 404 ) {
+            console.error('Wish binary not found '+wishBinaryUrl);
+        } else {
+            console.error('Failed downloading Wish binary '+wishBinaryUrl+'. HTTP response code', res.statusCode);
+        }
+    }).on('error', (e) => {
+        console.error('Failed downloading wish binary.', e);
+    });
+
+}
