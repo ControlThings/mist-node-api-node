@@ -1,6 +1,8 @@
 var Mist = require('../../index.js').Mist;
 var Sandboxed = require('../../index.js').Sandboxed;
 
+var inspect = require('util').inspect;
+
 describe('MistApi Control', function () {
     var mist;
     
@@ -62,6 +64,7 @@ describe('MistApi Control', function () {
     
     it('shuold test control.model', function(done) {
         mist.request('mist.control.model', [peer], function (err, model) {
+            if (err) { return done(new Error(inspect(model))); }
             //console.log("Got a model:", err, model);
             done();
         });
@@ -71,7 +74,8 @@ describe('MistApi Control', function () {
     
     it('shuold test control.follow', function(done) {
         var end = false;
-        follow = mist.request('mist.control.follow', [peer], function (err, model) {
+        follow = mist.request('mist.control.follow', [peer], function (err, data) {
+            if (err) { return done(new Error(inspect(data))); }
             //console.log("Follow update:", err, model);
             
             if (!end) { end = true; done(); }
@@ -80,6 +84,8 @@ describe('MistApi Control', function () {
     
     it('shuold test control.read', function(done) {
         mist.request('mist.control.read', [peer, 'counter'], function (err, value) {
+            if (err) { return done(new Error(inspect(value))); }
+            
             //console.log("Got counter value:", err, value);
             if (typeof value === 'number') {
                 done();
@@ -91,6 +97,8 @@ describe('MistApi Control', function () {
     
     it('shuold test control.read', function(done) {
         mist.request('mist.control.read', [peer, 'lon'], function (err, value) {
+            if (err) { return done(new Error(inspect(value))); }
+            
             //console.log("Got counter value:", err, value);
             if (typeof value === 'number') {
                 done();
@@ -102,6 +110,10 @@ describe('MistApi Control', function () {
     
     it('shuold test control.read', function(done) {
         mist.request('mist.control.read', [peer, 'enabled'], function (err, value) {
+            if (err) { 
+                return done(new Error(inspect(value)));
+            }
+            
             //console.log("Got counter value:", err, value);
             if (typeof value === 'boolean') {
                 done();
@@ -113,7 +125,13 @@ describe('MistApi Control', function () {
     
     it('shuold test control.write', function(done) {
         mist.request('mist.control.write', [peer, 'non-existing'], function (err, data) {
-            if (err) { if (data.code === 104) { return done(); } }
+            if (err) { 
+                if (data.code === 104) { 
+                    return done(); 
+                } else {
+                    return done(new Error(inspect(data)));
+                }
+            }
             
             console.log("control.write did not return error as expected:", err, data);
             done(new Error('control.write to non-existing enpoint did not return error.'));
@@ -122,7 +140,13 @@ describe('MistApi Control', function () {
     
     it('shuold test control.write', function(done) {
         mist.request('mist.control.write', [peer, 'counter'], function (err, data) {
-            if (err) { if (data.code === 105) { return done(); } }
+            if (err) { 
+                if (data.code === 105) { 
+                    return done(); 
+                } else {
+                    return done(new Error(inspect(data)));
+                }
+            }
             
             console.log("control.write did not return error as expected:", err, data);
             done(new Error('control.write to non-existing enpoint did not return error.'));
@@ -131,7 +155,13 @@ describe('MistApi Control', function () {
     
     it('shuold test control.write', function(done) {
         mist.request('mist.control.write', [peer, 'enabled', 'not-a-bool-value'], function (err, data) {
-            if (err) { if (data.code === 105) { return done(); } }
+            if (err) { 
+                if (data.code === 105) { 
+                    return done(); 
+                } else {
+                    return done(new Error(inspect(data)));
+                }
+            }
             
             console.log("control.write did not return error as expected:", err, data);
             done(new Error('control.write to non-existing enpoint did not return error.'));

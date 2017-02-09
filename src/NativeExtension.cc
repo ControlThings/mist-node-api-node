@@ -252,8 +252,16 @@ private:
             char* name = strdup(nodeName.c_str());
 
             cout << "Going to call mist_addon_start\n";
+
+            if (apiType == 2) {
+                // This is a Node Api
+                mist_addon_start(name, apiType, ip, corePort);
+            } else {
+                // This is a Mist Api
+                mist_addon_start(name, apiType, ip, corePort);
+            }
             
-            mist_addon_start(name, apiType, ip, corePort);
+            
             
             StreamWorkerWrapper *obj = new StreamWorkerWrapper( create_worker(data_callback, complete_callback, error_callback, options));
 

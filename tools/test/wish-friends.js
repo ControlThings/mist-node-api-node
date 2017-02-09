@@ -1,6 +1,8 @@
 var Mist = require('../../index.js').Mist;
 var Sandboxed = require('../../index.js').Sandboxed;
 
+// run ../node_modules/mocha/bin/mocha test/wish-friends.js
+
 describe('MistApi Friends', function () {
     var mist;
     var bob;
@@ -9,19 +11,69 @@ describe('MistApi Friends', function () {
         mist = new Mist({ name: 'FriendManager', coreIp: '127.0.0.1', corePort: 9094 });
 
         mist.request('ready', [], function(err, data) {
-            bob = new Mist({ name: 'BobsFriendManager', coreIp: '127.0.0.1', corePort: 9096 });
-
-            bob.request('ready', [], function(err, data) {
-                done();
-            });
+            done();
         });
     });
     
     after(function(done) {
+        console.log("Calling mist.shutdown();");
         mist.shutdown();
         done();
     });
 
+    it('should wait', function(done) {
+        setTimeout(done, 1000);
+    });
+
+    it('should get bob', function(done) {
+        bob = new Mist({ name: 'BobsFriendManager', coreIp: '127.0.0.1', corePort: 9096 });
+
+        bob.request('ready', [], function(err, data) {
+            done();
+        });
+    });
+
+    /*
+    it('should wait', function(done) { console.log("Waiting..."); setTimeout(done, 1000); });
+    it('should wait', function(done) { console.log("Waiting..."); setTimeout(done, 1000); });
+    it('should wait', function(done) { console.log("Waiting..."); setTimeout(done, 1000); });
+    it('should wait', function(done) { console.log("Waiting..."); setTimeout(done, 1000); });
+    it('should wait', function(done) { console.log("Waiting..."); setTimeout(done, 1000); });
+    */
+
+    it('should wet bob', function(done) {
+        bob.wish('methods', [], function(err, data) {
+            console.log("methods", err, data);
+            done();
+        });
+    });
+
+    it('should wet bob', function(done) {
+        bob.wish('identity.list', [], function(err, data) {
+            console.log("identity.list", err, data);
+            
+            if(data.length === 0) {
+                bob.wish('identity.create', ['I am Bob'], function(err, data) {
+                    done();
+                });
+            } else {
+                done();
+            }
+        });
+    });
+
+    it('should wet bob', function(done) {
+        mist.wish('identity.list', [], function(err, data) {
+            console.log("alice: identity.list", err, data);
+            
+            done();
+        });
+    });
+
+    it('should wait', function(done) {
+        console.log("Waiting before shutdown...");
+        setTimeout(done, 1000);
+    });
 
     xit('should check identity in core', function (done) {
         console.log("====================Running");

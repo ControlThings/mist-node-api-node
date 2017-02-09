@@ -4,15 +4,19 @@ if (!process.version.substr(0, 3) === 'v6.') {
     process.exit(1);
 }
 
-if(process.env.BUILD) {
-    var MistApi = require('./build/Release/MistApi.node');
-} else if (process.arch === 'x64' && process.platform === 'linux' ) {
-    var MistApi = require('./bin/MistApi.node');
+if (process.env.DEBUG) {
+    var MistApi = require('./build/Debug/MistApi.node');
 } else {
-    console.log('MistApi is a native addon, which is not supported by your platform/arch ('+process.platform+'/'+process.arch+').');
-    process.exit(1);
+    if(process.env.BUILD) {
+        var MistApi = require('./build/Release/MistApi.node');
+    } else if (process.arch === 'x64' && process.platform === 'linux' ) {
+        var MistApi = require('./bin/MistApi.node');
+    } else {
+        console.log('MistApi is a native addon, which is not supported by your platform/arch ('+process.platform+'/'+process.arch+').');
+        process.exit(1);
+    }
 }
-
+    
 /*
 else if (process.arch === 'arm' && process.platform === 'linux' ) {
     var MistApi = require('./bin/MistApi-arm-eabi5.node');
