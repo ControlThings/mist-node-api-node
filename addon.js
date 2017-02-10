@@ -1,3 +1,7 @@
+var bson = require('bson-buffer');
+var BSON = new bson();
+
+var sharedId = 0;
 
 var addon = require('./build/Release/MistApi.node');
 
@@ -5,7 +9,18 @@ console.log("Addon:", addon);
 
 console.log("hello:", addon.hello(5,7));
 
-var test = new addon.tpl();
+var test = new addon.tpl(
+        function() { console.log("1:", arguments); }, 
+        function() { console.log("1:", arguments); }, 
+        function() { console.log("1:", arguments); }, 
+        { name: 'YOYO' });
+        
+var id = ++sharedId;
+var request = { op: "listPeers", args: [], id: id };
+
+test.sendToAddon("mist", 1, BSON.serialize(request));
+        
+//test.sendToAddon("test", "more", new Buffer("Nada"));
 
 
 //console.log("test:", test.sendToAddon("test","more"));

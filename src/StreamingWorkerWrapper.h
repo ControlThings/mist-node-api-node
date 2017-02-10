@@ -1,6 +1,7 @@
 #pragma once
 #include "nan.h"
 #include "StreamingWorker.h"
+#include "Mist.h"
 
 class StreamingWorkerWrapper : public Nan::ObjectWrap {
 public:
@@ -9,7 +10,7 @@ public:
 
 private:
 
-    explicit StreamingWorkerWrapper(StreamingWorker * worker);
+    explicit StreamingWorkerWrapper(Mist* mist);
 
     ~StreamingWorkerWrapper();
 
@@ -22,5 +23,7 @@ private:
     static inline Nan::Persistent<v8::Function> & constructor();
 
     StreamingWorker * _worker;
+    
+    Mist* _mist;
 };
 

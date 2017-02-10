@@ -1,3 +1,4 @@
+#include "Mist.h"
 #include "functions.h"
 #include "Test.h"
 #include "mist_app.h"
@@ -12,6 +13,19 @@
 
 #include <pthread.h>
 #include <stdio.h>
+#include <string>
+
+
+struct wish_app_core_opts {
+    Mist* mist;
+    mist_api_t* mist_api;
+    mist_app_t* mist_app;
+    wish_app_t* wish_app;
+    char* name;
+    char* ip;
+    uint16_t port;
+};
+
 
 /*
 static void init(wish_app_t* app) {
@@ -59,19 +73,28 @@ bool injectMessage(int type, uint8_t *msg, int len) {
 }
 
 static void mist_response_cb(struct wish_rpc_entry* req, void* ctx, uint8_t* data, size_t data_len) {
-    //printf("response going towards node.js.\n");
-    //bson_visit(data, elem_visitor);
+    printf("THITHI: response going towards node.js. ctx %p\n", ctx);
+    bson_visit(data, elem_visitor);
+    
+    Mist* mist = (Mist*) ctx;
 
-    Test::send(data, data_len);
+    std::string a = "even";
+    std::string b = "dummy";
+    
+    Message msg(a, b, (uint8_t*) data, data_len);
+    
+    mist->sendToNode(msg);
+
+    //Test::send(data, data_len);
     
     //static_cast<EvenOdd*>(evenodd_instance)->sendToNode(data, data_len);
 }
 
 static void sandboxed_response_cb(struct wish_rpc_entry* req, void* ctx, uint8_t* data, size_t data_len) {
-    //printf("response going towards node.js.\n");
+    printf("response going towards node.js. ctx %p\n", ctx);
     //bson_visit(data, elem_visitor);
     
-    Test::sendSandboxed(data, data_len);
+    //Test::sendSandboxed(data, data_len);
     
     //static_cast<EvenOdd*>(evenodd_instance)->sendToNode(data, data_len);
 }
@@ -140,7 +163,8 @@ static enum mist_error hw_invoke(mist_ep* ep, mist_buf args) {
 }
 
 static void mist_api_periodic_cb_impl(void* ctx) {
-    mist_api_t* mist_api = (mist_api_t*) ctx;
+    struct wish_app_core_opts* opts = (struct wish_app_core_opts*) ctx;
+    mist_api_t* mist_api = opts->mist_api;
     
     if (pthread_mutex_trylock(&mutex1)) {
         //WISHDEBUG(LOG_CRITICAL, "Failed trylock. Fail-safe worked!");
@@ -170,10 +194,11 @@ static void mist_api_periodic_cb_impl(void* ctx) {
                 node_api_plugin_kill = true;
             }
         } else {
-            //printf("Making mist_api_request\n");
-            
             bson bs;
             bson_init_buffer(&bs, input_buffer, input_buffer_len);
+
+            printf("Making mist_api_request\n");
+            bson_visit((uint8_t*)bson_data(&bs), elem_visitor);
             
             if(input_type == 1) { // WISH
                 //printf("### Wish\n");
@@ -190,7 +215,7 @@ static void mist_api_periodic_cb_impl(void* ctx) {
                     goto consume_and_unlock;
                 }
                 
-                mist_api_request(mist_api, &bs, mist_response_cb);
+                mist_api_request_context(mist_api, &bs, mist_response_cb, opts->mist);
             } else if (input_type == 3) { // MIST NODE API
                 printf("MistApi got message MistNodeApi command from node.js, not good!\n");
                 bson_visit((uint8_t*)bson_data(&bs), elem_visitor);
@@ -611,15 +636,6 @@ consume_and_unlock:
     pthread_mutex_unlock(&mutex1);
 }
 
-struct wish_app_core_opts {
-    mist_api_t* mist_api;
-    mist_app_t* mist_app;
-    wish_app_t* wish_app;
-    char* name;
-    char* ip;
-    uint16_t port;
-};
-
 static void* setupMistNodeApi(void* ptr) {
     struct wish_app_core_opts* opts = (struct wish_app_core_opts*) ptr;
 
@@ -696,7 +712,7 @@ static void* setupMistApi(void* ptr) {
     opts->mist_api = api;
     
     api->periodic = mist_api_periodic_cb_impl;
-    api->periodic_ctx = api;
+    api->periodic_ctx = opts;
 
     //app->ready = init;
     
@@ -705,7 +721,7 @@ static void* setupMistApi(void* ptr) {
     return NULL;
 }
 
-void mist_addon_start(char* name, int type, char* ip, uint16_t port) {
+void mist_addon_start(Mist* mist, char* name, int type, char* ip, uint16_t port) {
     wish_platform_set_malloc(malloc);
     
     int iret;

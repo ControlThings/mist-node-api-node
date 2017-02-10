@@ -5,13 +5,12 @@
 using namespace std;
 using namespace Nan;
 
-StreamingWorkerWrapper::StreamingWorkerWrapper(StreamingWorker * worker) : _worker(worker) {
+StreamingWorkerWrapper::StreamingWorkerWrapper(Mist* mist) : _worker(mist) {
+    _mist = mist;
 }
 
 StreamingWorkerWrapper::~StreamingWorkerWrapper() {
 }
-
-StreamingWorker * create_worker(Callback *, Callback *, Callback *, v8::Local<v8::Object> &);
 
 void
 StreamingWorkerWrapper::New(const Nan::FunctionCallbackInfo<v8::Value>& info) {
@@ -60,18 +59,20 @@ StreamingWorkerWrapper::New(const Nan::FunctionCallbackInfo<v8::Value>& info) {
         char* name = strdup(nodeName.c_str());
 
         cout << "Going to call mist_addon_start\n";
+        
+        Mist* mist = new Mist(data_callback, complete_callback, error_callback, options);
 
         if (apiType == 2) {
             // This is a Node Api
-            mist_addon_start(name, apiType, ip, corePort);
+            mist_addon_start(mist, name, apiType, ip, corePort);
         } else {
             // This is a Mist Api
-            mist_addon_start(name, apiType, ip, corePort);
+            mist_addon_start(mist, name, apiType, ip, corePort);
         }
 
 
 
-        StreamingWorkerWrapper *obj = new StreamingWorkerWrapper(create_worker(data_callback, complete_callback, error_callback, options));
+        StreamingWorkerWrapper *obj = new StreamingWorkerWrapper(mist);
 
         obj->Wrap(info.This());
         info.GetReturnValue().Set(info.This());
@@ -90,12 +91,13 @@ StreamingWorkerWrapper::New(const Nan::FunctionCallbackInfo<v8::Value>& info) {
 void
 StreamingWorkerWrapper::sendToAddon(const Nan::FunctionCallbackInfo<v8::Value>& info) {
     
-    if (info.Length() == 4) {
+    if (info.Length() != 3) {
+        printf("Number of args: %i\n", info.Length());
         Nan::ThrowTypeError("Wrong number of arguments");
         return;
     }
 
-    if (!info[0]->IsString() || !info[1]->IsString()) {
+    if (!info[0]->IsString() || !info[1]->IsNumber()) {
         Nan::ThrowTypeError("Wrong arguments");
         return;
     }

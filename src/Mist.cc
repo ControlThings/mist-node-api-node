@@ -26,7 +26,7 @@ Mist::Execute(const AsyncProgressWorker::ExecutionProgress& progress) {
     run = true;
     //inst = this;
 
-    //printf("Setting instance %p progress: %p\n", this, &progress);
+    printf("Setting instance %p progress: %p\n", this, &progress);
 
     while ( run ) {
         //cout << "going to read\n";
