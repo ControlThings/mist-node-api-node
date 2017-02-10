@@ -1,5 +1,4 @@
-#ifndef NATIVE_EXTENSION_GRAB_H
-#define NATIVE_EXTENSION_GRAB_H
+#pragma once
 
 #include <nan.h>
 #include "NativeExtension.h"
@@ -10,6 +9,3 @@ extern "C" {
     void set_evenodd(void* instance);
 }
 
-
-
-#endif
