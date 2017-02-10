@@ -41,18 +41,8 @@ StreamingWorker::close() {
 
 void
 StreamingWorker::writeToNode(const AsyncProgressWorker::ExecutionProgress& progress, Message & msg) {
-    printf("writeToNode 1\n");
-    
-    try {
-        toNode.write(msg);
-    } catch (const std::exception& e) { // reference to the base of a polymorphic object
-        std::cout << e.what(); // information from length_error printed
-    }    
-    
-    
-    printf("writeToNode 2\n");
+    toNode.write(msg);
     progress.Send(reinterpret_cast<const char*> (&toNode), sizeof (toNode));
-    printf("writeToNode 3\n");
 }
 
 bool

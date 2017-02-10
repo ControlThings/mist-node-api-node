@@ -61,6 +61,8 @@ StreamingWorkerWrapper::New(const Nan::FunctionCallbackInfo<v8::Value>& info) {
         cout << "Going to call mist_addon_start\n";
         
         Mist* mist = new Mist(data_callback, complete_callback, error_callback, options);
+        
+        printf("Mist instance %p\n", mist);
 
         if (apiType == 2) {
             // This is a Node Api

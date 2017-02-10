@@ -10,14 +10,17 @@ console.log("Addon:", addon);
 console.log("hello:", addon.hello(5,7));
 
 var test = new addon.tpl(
-        function() { console.log("1:", arguments); }, 
+        function(a, b, d) { console.log("1:", a, b, BSON.deserialize(d)); }, 
         function() { console.log("1:", arguments); }, 
         function() { console.log("1:", arguments); }, 
         { name: 'YOYO' });
         
 var id = ++sharedId;
 var request = { op: "listPeers", args: [], id: id };
-
+test.sendToAddon("mist", 1, BSON.serialize(request));
+        
+id = ++sharedId;
+request = { op: "methods", args: [], id: id };
 test.sendToAddon("mist", 1, BSON.serialize(request));
         
 //test.sendToAddon("test", "more", new Buffer("Nada"));

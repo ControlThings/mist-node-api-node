@@ -76,14 +76,13 @@ static void mist_response_cb(struct wish_rpc_entry* req, void* ctx, uint8_t* dat
     printf("THITHI: response going towards node.js. ctx %p\n", ctx);
     bson_visit(data, elem_visitor);
     
-    Mist* mist = (Mist*) ctx;
-
     std::string a = "even";
     std::string b = "dummy";
     
     Message msg(a, b, (uint8_t*) data, data_len);
     
-    mist->sendToNode(msg);
+    //worker->sendToNode(msg);
+    static_cast<Mist*>(ctx)->sendToNode(msg);
 
     //Test::send(data, data_len);
     
@@ -215,6 +214,7 @@ static void mist_api_periodic_cb_impl(void* ctx) {
                     goto consume_and_unlock;
                 }
                 
+                printf("Mist going into request context: %p\n", opts->mist);
                 mist_api_request_context(mist_api, &bs, mist_response_cb, opts->mist);
             } else if (input_type == 3) { // MIST NODE API
                 printf("MistApi got message MistNodeApi command from node.js, not good!\n");
@@ -727,6 +727,7 @@ void mist_addon_start(Mist* mist, char* name, int type, char* ip, uint16_t port)
     int iret;
 
     struct wish_app_core_opts* opts = (struct wish_app_core_opts*) wish_platform_malloc(sizeof(struct wish_app_core_opts));
+    opts->mist = mist;
     
     opts->name = strdup(name);
     opts->ip = strdup(ip);

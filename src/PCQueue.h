@@ -4,6 +4,8 @@
 #include <deque>
 #include <mutex>
 
+#include <iostream>
+
 template<typename Data>
 class PCQueue {
 public:
@@ -40,6 +42,11 @@ public:
     }
 
     PCQueue() {
+        std::cout << "PCQueue is created\n";
+    }
+    
+    ~PCQueue() {
+        std::cout << "PCQueue is destroyed\n";
     }
 private:
     std::mutex mu;
