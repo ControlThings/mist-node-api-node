@@ -78,7 +78,6 @@ StreamingWorkerWrapper::New(const Nan::FunctionCallbackInfo<v8::Value>& info) {
 
         // start the worker
         AsyncQueueWorker(obj->_worker);
-
     } else {
         cout << "StreamingWorkerWrapper another call\n";
         const int argc = 3;
@@ -90,6 +89,17 @@ StreamingWorkerWrapper::New(const Nan::FunctionCallbackInfo<v8::Value>& info) {
 
 void
 StreamingWorkerWrapper::sendToAddon(const Nan::FunctionCallbackInfo<v8::Value>& info) {
+    
+    if (info.Length() == 4) {
+        Nan::ThrowTypeError("Wrong number of arguments");
+        return;
+    }
+
+    if (!info[0]->IsString() || !info[1]->IsString()) {
+        Nan::ThrowTypeError("Wrong arguments");
+        return;
+    }
+    
     v8::String::Utf8Value name(info[0]->ToString());
     v8::String::Utf8Value data(info[1]->ToString());
     uint8_t* buf = (uint8_t*) node::Buffer::Data(info[2]->ToObject());
@@ -139,10 +149,11 @@ StreamingWorkerWrapper::Init(v8::Local<v8::Object> exports) {
     SetPrototypeMethod(tpl, "sendToAddon", sendToAddon);
     SetPrototypeMethod(tpl, "closeInput", closeInput);
 
-    constructor().Reset(Nan::GetFunction(tpl).ToLocalChecked());
+    constructor().Reset(tpl->GetFunction());
     
     //Nan::Set(target, Nan::New("StreamingWorker").ToLocalChecked(), Nan::GetFunction(tpl).ToLocalChecked());
 
     exports->Set(Nan::New("hello").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(Add)->GetFunction());
-    exports->Set(Nan::New("tpl").ToLocalChecked(), Nan::GetFunction(tpl).ToLocalChecked());
+    exports->Set(Nan::New("tpl").ToLocalChecked(), tpl->GetFunction());
+    //exports->Set(Nan::New("tpl").ToLocalChecked(), Nan::GetFunction(tpl).ToLocalChecked());
 }

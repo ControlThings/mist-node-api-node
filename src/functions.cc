@@ -1,4 +1,5 @@
 #include "functions.h"
+#include "Test.h"
 #include "mist_app.h"
 #include "mist_api.h"
 #include "mist_model.h"
@@ -650,7 +651,7 @@ static void* setupMistNodeApi(void* ptr) {
     wish_app_add_protocol(app, &mist_app->ucp_handler);
     mist_app->app = app;
     
-    app->periodic = mist_api_periodic_cb_impl;
+    app->periodic = mist_app_periodic_cb_impl;
     app->periodic_ctx = mist_app;
 
     app->port = opts->port;

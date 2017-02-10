@@ -8,6 +8,12 @@ console.log("hello:", addon.hello(5,7));
 var test = new addon.tpl();
 
 
+//console.log("test:", test.sendToAddon("test","more"));
+
+setTimeout(function() { var me = new addon.tpl(function() {}, function() {}, function() {}, { name: 'YOYO' }); }, 1000);
+
+//setTimeout(function() { test.shutdown(); }, 3000);
+
 /*
 var Mist = require('./index.js').Mist;
     
