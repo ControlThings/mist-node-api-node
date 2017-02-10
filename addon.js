@@ -22,14 +22,22 @@ test.sendToAddon("mist", 1, BSON.serialize(request));
 id = ++sharedId;
 request = { op: "methods", args: [], id: id };
 test.sendToAddon("mist", 1, BSON.serialize(request));
+test.printWrapped();
         
 //test.sendToAddon("test", "more", new Buffer("Nada"));
 
 
 //console.log("test:", test.sendToAddon("test","more"));
-
-setTimeout(function() { var me = new addon.tpl(function() {}, function() {}, function() {}, { name: 'YOYO' }); }, 1000);
-
+setTimeout(function() { 
+    var me = new addon.tpl(
+        function(a, b, d) { console.log("1:", a, b, BSON.deserialize(d)); }, 
+        function() { console.log("1:", arguments); }, 
+        function() { console.log("1:", arguments); }, 
+        { name: 'YOLO' }); 
+    //var request = { op: "listPeers", args: [], id: 1 };
+    //me.sendToAddon("mist", 1, BSON.serialize(request));
+    //me.printWrapped();
+}, 1000);
 //setTimeout(function() { test.shutdown(); }, 3000);
 
 /*

@@ -17,7 +17,7 @@ describe('MistApi Friends', function () {
     
     after(function(done) {
         console.log("Calling mist.shutdown();");
-        mist.shutdown();
+        bob.shutdown();
         done();
     });
 
@@ -33,6 +33,13 @@ describe('MistApi Friends', function () {
         });
     });
 
+    it('should wet bob', function(done) {
+        bob.request('listPeers', [], function(err, data) {
+            console.log("bob: listPeers", err, data);
+            done();
+        });
+    });
+
     /*
     it('should wait', function(done) { console.log("Waiting..."); setTimeout(done, 1000); });
     it('should wait', function(done) { console.log("Waiting..."); setTimeout(done, 1000); });
@@ -41,14 +48,14 @@ describe('MistApi Friends', function () {
     it('should wait', function(done) { console.log("Waiting..."); setTimeout(done, 1000); });
     */
 
-    it('should wet bob', function(done) {
+    xit('should wet bob', function(done) {
         bob.wish('methods', [], function(err, data) {
             console.log("methods", err, data);
             done();
         });
     });
 
-    it('should wet bob', function(done) {
+    xit('should wet bob', function(done) {
         bob.wish('identity.list', [], function(err, data) {
             console.log("identity.list", err, data);
             
@@ -62,7 +69,7 @@ describe('MistApi Friends', function () {
         });
     });
 
-    it('should wet bob', function(done) {
+    xit('should wet bob', function(done) {
         mist.wish('identity.list', [], function(err, data) {
             console.log("alice: identity.list", err, data);
             

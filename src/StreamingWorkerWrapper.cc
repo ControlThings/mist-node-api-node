@@ -5,8 +5,12 @@
 using namespace std;
 using namespace Nan;
 
-StreamingWorkerWrapper::StreamingWorkerWrapper(Mist* mist) : _worker(mist) {
+Nan::Persistent<v8::Function> StreamingWorkerWrapper::constructor;
+
+StreamingWorkerWrapper::StreamingWorkerWrapper(Mist* mist) {
     _mist = mist;
+    _worker = mist;
+    //cout << "Streaming worker constructor " << (void*)_mist << " w: " << (void*)_worker << "\n";
 }
 
 StreamingWorkerWrapper::~StreamingWorkerWrapper() {
@@ -58,11 +62,11 @@ StreamingWorkerWrapper::New(const Nan::FunctionCallbackInfo<v8::Value>& info) {
         char* ip = strdup(coreIp.c_str());
         char* name = strdup(nodeName.c_str());
 
-        cout << "Going to call mist_addon_start\n";
+        //cout << "Going to call mist_addon_start\n";
         
         Mist* mist = new Mist(data_callback, complete_callback, error_callback, options);
         
-        printf("Mist instance %p\n", mist);
+        //printf("Mist instance %p\n", mist);
 
         if (apiType == 2) {
             // This is a Node Api
@@ -75,7 +79,7 @@ StreamingWorkerWrapper::New(const Nan::FunctionCallbackInfo<v8::Value>& info) {
 
 
         StreamingWorkerWrapper *obj = new StreamingWorkerWrapper(mist);
-
+        
         obj->Wrap(info.This());
         info.GetReturnValue().Set(info.This());
 
@@ -83,10 +87,12 @@ StreamingWorkerWrapper::New(const Nan::FunctionCallbackInfo<v8::Value>& info) {
         AsyncQueueWorker(obj->_worker);
     } else {
         cout << "StreamingWorkerWrapper another call\n";
-        const int argc = 3;
-        v8::Local<v8::Value> argv[argc] = {info[0], info[1], info[2]};
-        v8::Local<v8::Function> cons = Nan::New(constructor());
+        /*
+        const int argc = 1;
+        v8::Local<v8::Value> argv[argc] = { info[0] };
+        v8::Local<v8::Function> cons = Nan::New<v8::Function>(constructor);
         info.GetReturnValue().Set(cons->NewInstance(argc, argv));
+        */
     }
 }
 
@@ -118,12 +124,6 @@ StreamingWorkerWrapper::closeInput(const Nan::FunctionCallbackInfo<v8::Value>& i
     obj->_worker->close();
 }
 
-Nan::Persistent<v8::Function> &
-StreamingWorkerWrapper::constructor() {
-    static Nan::Persistent<v8::Function> my_constructor;
-    return my_constructor;
-}
-
 void Add(const Nan::FunctionCallbackInfo<v8::Value>& info) {
 
   if (info.Length() < 2) {
@@ -153,11 +153,11 @@ StreamingWorkerWrapper::Init(v8::Local<v8::Object> exports) {
     SetPrototypeMethod(tpl, "sendToAddon", sendToAddon);
     SetPrototypeMethod(tpl, "closeInput", closeInput);
 
-    constructor().Reset(tpl->GetFunction());
+    constructor.Reset(tpl->GetFunction());
     
     //Nan::Set(target, Nan::New("StreamingWorker").ToLocalChecked(), Nan::GetFunction(tpl).ToLocalChecked());
 
     exports->Set(Nan::New("hello").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(Add)->GetFunction());
-    exports->Set(Nan::New("tpl").ToLocalChecked(), tpl->GetFunction());
+    exports->Set(Nan::New("StreamingWorker").ToLocalChecked(), tpl->GetFunction());
     //exports->Set(Nan::New("tpl").ToLocalChecked(), Nan::GetFunction(tpl).ToLocalChecked());
 }

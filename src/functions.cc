@@ -51,6 +51,7 @@ static bool node_api_plugin_kill = false;
 
 bool injectMessage(int type, uint8_t *msg, int len) {
     if (pthread_mutex_trylock(&mutex1)) {
+        printf("Unsuccessful injection lock.\n");
         return NULL;
     }
 
@@ -699,10 +700,10 @@ static void* setupMistApi(void* ptr) {
         printf("Failed creating wish app\n");
         return NULL;
     }
-    
+
     wish_app_add_protocol(app, &mist_app->ucp_handler);
     mist_app->app = app;
-
+    
     //app->periodic = periodic_cb;
     //app->periodic_ctx = mist_app;
     
@@ -710,7 +711,7 @@ static void* setupMistApi(void* ptr) {
 
     mist_api_t* api = mist_api_init(mist_app);
     opts->mist_api = api;
-    
+
     api->periodic = mist_api_periodic_cb_impl;
     api->periodic_ctx = opts;
 

@@ -17,7 +17,7 @@ Message::Message(string name, string data, uint8_t* m, int l) : name(name), data
 }
     
 Message::~Message() {
-    printf("Deconstructing: %p msg %p\n", this, msg);
+    //printf("Deconstructing: %p msg %p\n", this, msg);
     /*
     if (msg != NULL) {
         printf("freeing %p\n", msg);
