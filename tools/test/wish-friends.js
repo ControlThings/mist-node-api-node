@@ -11,13 +11,14 @@ describe('MistApi Friends', function () {
         mist = new Mist({ name: 'FriendManager', coreIp: '127.0.0.1', corePort: 9094 });
 
         mist.request('ready', [], function(err, data) {
-            done();
+            console.log("in ready cb", err, data);
+            if(data) { done(); } else { done(new Error('App not ready, bailing.')); }
         });
     });
     
     after(function(done) {
         console.log("Calling mist.shutdown();");
-        bob.shutdown();
+        //bob.shutdown();
         done();
     });
 

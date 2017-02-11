@@ -115,6 +115,9 @@ StreamingWorkerWrapper::sendToAddon(const Nan::FunctionCallbackInfo<v8::Value>& 
     uint8_t* buf = (uint8_t*) node::Buffer::Data(info[2]->ToObject());
     int buf_len = node::Buffer::Length(info[2]->ToObject());
     StreamingWorkerWrapper* obj = Nan::ObjectWrap::Unwrap<StreamingWorkerWrapper>(info.Holder());
+    
+    printf("sendToAddon Mist instance %p %p\n", obj->_mist, obj->_worker);
+    
     obj->_worker->fromNode.write(Message(*name, *data, buf, buf_len));
 }
 

@@ -48,8 +48,9 @@ static int input_buffer_len = 0;
 static char input_buffer[2048];
 static int input_type = 0;
 static bool node_api_plugin_kill = false;
+static Mist* mistInst;
 
-bool injectMessage(int type, uint8_t *msg, int len) {
+bool injectMessage(Mist* mist, int type, uint8_t *msg, int len) {
     if (pthread_mutex_trylock(&mutex1)) {
         printf("Unsuccessful injection lock.\n");
         return NULL;
@@ -63,6 +64,7 @@ bool injectMessage(int type, uint8_t *msg, int len) {
         input_type = type;
         memcpy(input_buffer, msg, len);
         input_buffer_len = len;
+        mistInst = mist;
         success = true;
     } else {
         // last message has not been consumed
@@ -165,6 +167,8 @@ static enum mist_error hw_invoke(mist_ep* ep, mist_buf args) {
 static void mist_api_periodic_cb_impl(void* ctx) {
     struct wish_app_core_opts* opts = (struct wish_app_core_opts*) ctx;
     mist_api_t* mist_api = opts->mist_api;
+
+    //printf("mist_api_periodic_cb_impl Mist instance: %p\n", opts->mist);
     
     if (pthread_mutex_trylock(&mutex1)) {
         //WISHDEBUG(LOG_CRITICAL, "Failed trylock. Fail-safe worked!");
@@ -172,13 +176,26 @@ static void mist_api_periodic_cb_impl(void* ctx) {
     }
     
     if(node_api_plugin_kill) {
-        //printf("killing loop from within.\n");
-        wish_core_client_close(NULL);
+        printf("killing loop from within.\n");
+        //wish_core_client_close(mist_api->wish_app);
+        pthread_mutex_unlock(&mutex1);
+        return;
     }
+    
 
     // check if we can inject a new message, i.e input buffer is consumed by Mist
 
     if (input_buffer_len > 0) {
+        
+        if(opts->mist != mistInst) {
+            printf("This message is NOT for this instance of Mist!! this: %p was for %p\n", opts->mist, mistInst);
+            pthread_mutex_unlock(&mutex1);
+            return;
+        } else {
+            printf("Right Mist!! this: %p was for %p\n", opts->mist, mistInst);
+        }
+
+        
         // last message was consumed, injecting new message
         // by writing new message to input buffer
         //printf("Lock acquired, consuming\n");
@@ -188,9 +205,9 @@ static void mist_api_periodic_cb_impl(void* ctx) {
         bson_find_from_buffer(&it, input_buffer, "kill");
         
         if (bson_iterator_type(&it) == BSON_BOOL) {
-            //printf("kill is bool\n");
+            printf("kill is bool\n");
             if (bson_iterator_bool(&it)) {
-                //printf("kill is true\n");
+                printf("kill is true\n");
                 node_api_plugin_kill = true;
             }
         } else {
@@ -374,8 +391,10 @@ static void mist_app_periodic_cb_impl(void* ctx) {
     }
     
     if(node_api_plugin_kill) {
-        //printf("killing loop from within.\n");
-        wish_core_client_close(NULL);
+        printf("killing loop from within.\n");
+        //wish_core_client_close(mist_app->app);
+        pthread_mutex_unlock(&mutex1);
+        return;
     }
 
     // check if we can inject a new message, i.e input buffer is consumed by Mist
@@ -390,9 +409,9 @@ static void mist_app_periodic_cb_impl(void* ctx) {
         bson_find_from_buffer(&it, input_buffer, "kill");
         
         if (bson_iterator_type(&it) == BSON_BOOL) {
-            //printf("kill is bool\n");
+            printf("kill is bool\n");
             if (bson_iterator_bool(&it)) {
-                //printf("kill is true\n");
+                printf("kill is true\n");
                 node_api_plugin_kill = true;
             }
         } else {
@@ -689,7 +708,7 @@ static void* setupMistApi(void* ptr) {
     //start wish apps
     mist_app_t* mist_app = opts->mist_app; // start_mist_app();
     
-    printf("setupMistApi has instance: %p\n", mist_app);
+    printf("setupMistApi has instance: %p and Mist %p\n", mist_app, opts->mist);
 
     mist_set_name(mist_app, name);
 

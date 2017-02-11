@@ -35,7 +35,13 @@ var emitter = new EventEmitter();
 // request id shared by all
 var sharedId = 0;
 
+var themist;
+
 function Mist(opts) {
+    
+    console.log("Nodejs new Mist()");
+    themist = this;
+    
     var self = this;
     this.requests = {};
     this.invokeCb = {};
@@ -53,7 +59,8 @@ function Mist(opts) {
 
     this.api = new MistApi.StreamingWorker(
         function (event, value, data) {
-            //console.log("Event from streaming worker", event, data);
+            console.log("Event from streaming worker", event, Buffer.isBuffer(data) ? BSON.deserialize(data) : 'Not Buffer');
+            
             if (event === 'write' && typeof self.writeCb === 'function') {
                 var msg = BSON.deserialize(data);
                 self.writeCb(msg.epid, msg.data);
@@ -116,6 +123,8 @@ function Mist(opts) {
                     if(!msg.sig) {
                         delete self.requests[id];
                     }
+                } else {
+                    console.log('Request not found for response:', id, self, themist.requests);
                 }
             }
         },
@@ -131,6 +140,7 @@ function Mist(opts) {
 }
 
 Mist.prototype.shutdown = function() {
+    console.log("Mist.shutdown();");
     this.api.sendToAddon("kill", 1, BSON.serialize({ kill: true }));
 };
 
@@ -156,6 +166,8 @@ Mist.prototype.request = function(op, args, cb) {
     
     // store callback for response
     this.requests[id] = cb;
+
+    console.log("Making request", request, this);
     
     this.api.sendToAddon("mist", 1, BSON.serialize(request));
     

@@ -30,7 +30,7 @@ Mist::Execute(const AsyncProgressWorker::ExecutionProgress& progress) {
         if(m.name == "kill") {
             // Execute got kill command
             run = false;
-            Test::kill();
+            //Test::kill();
         }
 
         while (true) {
@@ -45,7 +45,7 @@ Mist::Execute(const AsyncProgressWorker::ExecutionProgress& progress) {
                 type = 4;
             }
 
-            bool success = injectMessage(type, m.msg, m.msg_len);
+            bool success = injectMessage(this, type, m.msg, m.msg_len);
 
             if(success) { 
                 //printf("Success injecting message\n");

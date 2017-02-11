@@ -79,7 +79,7 @@ function done() {
                 return;
             }
 
-            var testFile = './test/'+file;
+            var testFile = file;
             console.log('\x1b[34mStarting test:', testFile);
             //var test = child.spawn('../node_modules/mocha/bin/mocha', ['--reporter', 'json', '-c', testFile]);
             var test = child.spawn('gdb', ['-batch', '-ex', 'run ../node_modules/mocha/bin/mocha --reporter json -c '+testFile, '-ex', 'bt', 'node']);
@@ -91,6 +91,7 @@ function done() {
             test.stdout.on('data', (data) => {
                 try {
                     results.push(JSON.parse(data));
+                    console.log("======="+data);
                 } catch(e) {
                     console.log('\x1b[36mtest>', data.toString().trim());
                 }                
@@ -110,19 +111,23 @@ function done() {
             });            
         }
 
-        var list = [];
-        const testFolder = './test/';
-        const fs = require('fs');
-        fs.readdir(testFolder, (err, files) => {
-            files.forEach(file => {
-                if(file.endsWith('.js')) {
-                    list.push(file);
-                }
+        if (process.argv[2]) {
+            console.log("testing:", process.argv[2]);
+            run([process.argv[2]]);
+        } else {
+            var list = [];
+            const testFolder = './test/';
+            const fs = require('fs');
+            fs.readdir(testFolder, (err, files) => {
+                files.forEach(file => {
+                    if(file.endsWith('.js')) {
+                        list.push(testFolder+file);
+                    }
+                });
+
+                run(list);
             });
-            
-            run(list);
-        });
-        
+        }        
         
     }
     
@@ -151,13 +156,18 @@ function done() {
     }
     
     console.log('Starting Wish Core for Bob.');
-    var coreBob = child.spawn('./wish-core', ['-p 38001', '-a 9096'], { cwd: './env/bob' });
+    var coreBob = child.spawn('../wish-core', ['-p 38001', '-a 9096'], { cwd: './env/bob' });
     
     var coreBobTimeout = setTimeout(() => { runningBob(); }, 200);
     
     coreBob.on('error', (err) => {
-        console.log('\x1b[35mwish> Failed to start wish-core process.');
+        console.log('\x1b[35mwish> Failed to start wish-core process for bob.', err);
         clearTimeout(coreBobTimeout);
+        
+        core.kill();
+        coreBob.kill();
+        
+        process.exit(0);
     });
     
     coreBob.stdout.on('data', (data) => {

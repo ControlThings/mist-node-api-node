@@ -10,8 +10,7 @@ describe('MistApi Control', function () {
         mist = new Mist({ name: 'Generic UI', coreIp: '127.0.0.1', corePort: 9094 });
 
         mist.request('ready', [], function(err, data) {
-            //console.log("ready", err, data);
-            done();
+            if(data) { done(); } else { done(new Error('App not ready, bailing.')); }
         });
     });
     
