@@ -66,7 +66,7 @@ StreamingWorkerWrapper::New(const Nan::FunctionCallbackInfo<v8::Value>& info) {
         
         Mist* mist = new Mist(data_callback, complete_callback, error_callback, options);
         
-        //printf("Mist instance %p\n", mist);
+        printf("Mist instance %p\n", mist);
 
         if (apiType == 2) {
             // This is a Node Api
@@ -116,7 +116,7 @@ StreamingWorkerWrapper::sendToAddon(const Nan::FunctionCallbackInfo<v8::Value>& 
     int buf_len = node::Buffer::Length(info[2]->ToObject());
     StreamingWorkerWrapper* obj = Nan::ObjectWrap::Unwrap<StreamingWorkerWrapper>(info.Holder());
     
-    printf("sendToAddon Mist instance %p %p\n", obj->_mist, obj->_worker);
+    //printf("sendToAddon Mist instance %p %p\n", obj->_mist, obj->_worker);
     
     obj->_worker->fromNode.write(Message(*name, *data, buf, buf_len));
 }

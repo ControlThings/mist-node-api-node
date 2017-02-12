@@ -55,11 +55,11 @@ function Mist(opts) {
     
     this.opts = opts;
     
-    console.log('Starting with opts:', opts);
+    //console.log('Starting with opts:', opts);
 
     this.api = new MistApi.StreamingWorker(
         function (event, value, data) {
-            console.log("Event from streaming worker", event, Buffer.isBuffer(data) ? BSON.deserialize(data) : 'Not Buffer');
+            //console.log("Event from streaming worker", event, Buffer.isBuffer(data) ? BSON.deserialize(data) : 'Not Buffer');
             
             if (event === 'write' && typeof self.writeCb === 'function') {
                 var msg = BSON.deserialize(data);
@@ -167,7 +167,7 @@ Mist.prototype.request = function(op, args, cb) {
     // store callback for response
     this.requests[id] = cb;
 
-    console.log("Making request", request, this);
+    //console.log("Making request", request, this);
     
     this.api.sendToAddon("mist", 1, BSON.serialize(request));
     

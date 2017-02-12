@@ -76,8 +76,16 @@ bool injectMessage(Mist* mist, int type, uint8_t *msg, int len) {
 }
 
 static void mist_response_cb(struct wish_rpc_entry* req, void* ctx, uint8_t* data, size_t data_len) {
-    printf("THITHI: response going towards node.js. ctx %p\n", ctx);
-    bson_visit(data, elem_visitor);
+    if(ctx == NULL) {
+        printf("req passthru_ctx2 %p\n", req->passthru_ctx2);
+        if (req->passthru_ctx2 != NULL) {
+            ctx = req->passthru_ctx2;
+        } else {
+            printf("NULL ctx in response going towards node.js. ctx %p\n", ctx);
+            bson_visit(data, elem_visitor);
+            return;
+        }
+    }
     
     std::string a = "even";
     std::string b = "dummy";
@@ -188,11 +196,11 @@ static void mist_api_periodic_cb_impl(void* ctx) {
     if (input_buffer_len > 0) {
         
         if(opts->mist != mistInst) {
-            printf("This message is NOT for this instance of Mist!! this: %p was for %p\n", opts->mist, mistInst);
+            //printf("This message is NOT for this instance of Mist!! this: %p was for %p\n", opts->mist, mistInst);
             pthread_mutex_unlock(&mutex1);
             return;
         } else {
-            printf("Right Mist!! this: %p was for %p\n", opts->mist, mistInst);
+            //printf("Right Mist!! this: %p was for %p\n", opts->mist, mistInst);
         }
 
         
@@ -214,12 +222,14 @@ static void mist_api_periodic_cb_impl(void* ctx) {
             bson bs;
             bson_init_buffer(&bs, input_buffer, input_buffer_len);
 
-            printf("Making mist_api_request\n");
-            bson_visit((uint8_t*)bson_data(&bs), elem_visitor);
+            //printf("Making mist_api_request\n");
+            //bson_visit((uint8_t*)bson_data(&bs), elem_visitor);
             
             if(input_type == 1) { // WISH
                 //printf("### Wish\n");
-                wish_api_request(mist_api, &bs, mist_response_cb);
+                printf("Making wish_api_request\n");
+                bson_visit((uint8_t*)bson_data(&bs), elem_visitor);
+                wish_api_request_context(mist_api, &bs, mist_response_cb, opts->mist);
             } else if (input_type == 2) { // MIST
                 //printf("### Mist\n");
                 
@@ -232,7 +242,7 @@ static void mist_api_periodic_cb_impl(void* ctx) {
                     goto consume_and_unlock;
                 }
                 
-                printf("Mist going into request context: %p\n", opts->mist);
+                //printf("Mist going into request context: %p\n", opts->mist);
                 mist_api_request_context(mist_api, &bs, mist_response_cb, opts->mist);
             } else if (input_type == 3) { // MIST NODE API
                 printf("MistApi got message MistNodeApi command from node.js, not good!\n");

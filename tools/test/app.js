@@ -26,6 +26,14 @@ describe('MistApi Friends', function () {
     });
 
     it('should start bob', function(done) {
+        console.log("getting bobs identity list");
+        bob.wish('identity.list', [], function(err, data) {
+            console.log("bob identity.list cb", err, data);
+            done();
+        });
+    });
+
+    it('should start bob', function(done) {
         process.nextTick(function() { bob.shutdown(); });
         process.nextTick(function() { mist.shutdown(); });
         done();
