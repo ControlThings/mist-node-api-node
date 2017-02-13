@@ -42,11 +42,11 @@ public:
     }
 
     PCQueue() {
-        std::cout << "PCQueue is created\n";
+        //std::cout << "PCQueue is created\n";
     }
     
     ~PCQueue() {
-        std::cout << "PCQueue is destroyed\n";
+        //std::cout << "PCQueue is destroyed\n";
     }
 private:
     std::mutex mu;

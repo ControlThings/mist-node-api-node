@@ -39,7 +39,7 @@ var themist;
 
 function Mist(opts) {
     
-    console.log("Nodejs new Mist()");
+    //console.log("Nodejs new Mist()");
     themist = this;
     
     var self = this;
@@ -59,8 +59,8 @@ function Mist(opts) {
 
     this.api = new MistApi.StreamingWorker(
         function (event, value, data) {
-            console.log("Event from streaming worker", event);
-            console.log("Event from streaming worker", event, Buffer.isBuffer(data) ? BSON.deserialize(data) : 'Not Buffer');
+            //console.log("Event from streaming worker", event);
+            //console.log("Event from streaming worker", event, Buffer.isBuffer(data) ? BSON.deserialize(data) : 'Not Buffer');
             
             if (event === 'write' && typeof self.writeCb === 'function') {
                 var msg = BSON.deserialize(data);
@@ -81,7 +81,10 @@ function Mist(opts) {
             }
             
             if (event === 'sandboxed') {
+                console.log("Sandbox event from StreamingWorker: ", Buffer.isBuffer(data) ? BSON.deserialize(data) : 'Not Buffer');
+                
                 if( Buffer.isBuffer(data) && data.length >= 5 ) {
+                    
                     var msg = BSON.deserialize(data);
 
                     var id = msg.ack || msg.sig || msg.end || msg.err;

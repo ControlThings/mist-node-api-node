@@ -172,6 +172,17 @@ describe('MistApi Control', function () {
         });
     });
     
+    it('shuold test control.write', function(done) {
+        mist.request('mist.control.write', [peer, 'enabled', false], function (err, data) {
+            if (err) {
+                return done(new Error(inspect(data)));
+            }
+            
+            console.log("mist.control.write:", err, data);
+            done();
+        });
+    });
+    
     it('shuold test control.invoke', function(done) {
         mist.request('mist.control.invoke', [peer, 'config', 'a-string'], function (err, data) {
             if (err) { return done(new Error(data.msg)); }

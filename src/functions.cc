@@ -143,12 +143,24 @@ static void wish_response_cb(struct wish_rpc_entry* req, void* ctx, uint8_t* dat
 }
 
 static void sandboxed_response_cb(struct wish_rpc_entry* req, void* ctx, uint8_t* data, size_t data_len) {
-    printf("response going towards node.js. ctx %p\n", ctx);
-    //bson_visit(data, elem_visitor);
+    printf("sandboxed response going towards node.js. ctx %p req %p\n", ctx, req);
     
-    //Test::sendSandboxed(data, data_len);
+    if (req == NULL) {
+        // regular request
+    } else {
+        // request came from passthrough
+        ctx = ((wish_rpc_ctx *)ctx)->context;
+        printf("   mist is here %p", ctx);
+    }
     
-    //static_cast<EvenOdd*>(evenodd_instance)->sendToNode(data, data_len);
+    bson_visit(data, elem_visitor);
+    
+    std::string a = "sandboxed";
+    std::string b = "dummy";
+    
+    Message msg(a, b, (uint8_t*) data, data_len);
+    
+    static_cast<Mist*>(ctx)->sendToNode(msg);
 }
 
 static enum mist_error hw_read(mist_ep* ep, void* result) {
@@ -172,6 +184,22 @@ static enum mist_error hw_read(mist_ep* ep, void* result) {
 
 static enum mist_error hw_write(mist_ep* ep, void* value) {
     if (ep->data == NULL) { return MIST_ERROR; }
+    
+    Mist* mist = NULL;
+    struct wish_app_core_opt* opts;
+    
+    DL_FOREACH(wish_app_core_opts, opts) {
+        if(opts->mist_app == ep->model->mist_app) {
+            mist = opts->mist;
+            printf("    found Mist* %p\n", mist);
+            break;
+        }
+    }
+    
+    if (mist == NULL) {
+        printf("Failed finding mist instance to call write... bailing out!\n");
+        return MIST_ERROR;
+    }
     
     bson bs;
     bson_init(&bs);
@@ -197,8 +225,15 @@ static enum mist_error hw_write(mist_ep* ep, void* value) {
     }
     
     bson_finish(&bs);
-        
-    Test::write((uint8_t*) bson_data(&bs), bson_size(&bs));
+
+    string a = "write";
+    string b = "dummy";
+    
+    Message msg(a, b, (uint8_t*) bson_data(&bs), bson_size(&bs));
+    
+    static_cast<Mist*>(mist)->sendToNode(msg);
+    
+    //Test::write((uint8_t*) bson_data(&bs), bson_size(&bs));
     
     return MIST_NO_ERROR;
 }
@@ -292,7 +327,7 @@ static void mist_api_periodic_cb_impl(void* ctx) {
             
             if(input_type == 1) { // WISH
                 //printf("### Wish\n");
-                printf("Making wish_api_request\n");
+                //printf("Making wish_api_request\n");
                 bson_visit((uint8_t*)bson_data(&bs), elem_visitor);
                 wish_api_request_context(mist_api, &bs, wish_response_cb, opts->mist);
             } else if (input_type == 2) { // MIST
@@ -307,15 +342,15 @@ static void mist_api_periodic_cb_impl(void* ctx) {
                     goto consume_and_unlock;
                 }
                 
-                printf("Mist going into request context: %p cb %p\n", opts->mist, mist_response_cb);
+                //printf("Mist going into request context: %p cb %p\n", opts->mist, mist_response_cb);
                 mist_api_request_context(mist_api, &bs, mist_response_cb, opts->mist);
             } else if (input_type == 3) { // MIST NODE API
                 printf("MistApi got message MistNodeApi command from node.js, not good!\n");
                 bson_visit((uint8_t*)bson_data(&bs), elem_visitor);
             } else if (input_type == 4) { // MIST SANDBOXED API
-                //printf("### Sandboxed Api\n");
-                //WISHDEBUG(LOG_CRITICAL, "sandbox_api-request:");
-                //bson_visit((uint8_t*)bson_data(&bs), elem_visitor);
+                printf("### Sandboxed Api\n");
+                WISHDEBUG(LOG_CRITICAL, "sandbox_api-request:");
+                bson_visit((uint8_t*)bson_data(&bs), elem_visitor);
                 
                 const char* sandbox_id = "";
                 
@@ -386,13 +421,14 @@ static void mist_api_periodic_cb_impl(void* ctx) {
                 //   i.e Do not exceed 8 with the index. Rewrite indexing if you must!
                 for(i=0; i<9; i++) {
 
-                    char* src;
+                    char src[21];
                     BSON_NUMSTR(src, i+1);
 
-                    char* dst;
+                    char dst[21];
                     BSON_NUMSTR(dst, i);
 
-
+                    printf("args array src %s dst %s\n", src, dst);
+                    
                     // init the sub iterator from args array iterator
                     bson_iterator_subiterator(&ait, &sit);
 
@@ -435,11 +471,12 @@ static void mist_api_periodic_cb_impl(void* ctx) {
                 bson_append_int(&b, "id", id);
                 bson_finish(&b);
 
-                //WISHDEBUG(LOG_CRITICAL, "sandbox_api-request re-written:");
-                //bson_visit((uint8_t*)bson_data(&b), elem_visitor);                    
+                WISHDEBUG(LOG_CRITICAL, "sandbox_api-request re-written:");
+                bson_visit((uint8_t*)bson_data(&b), elem_visitor);                    
                 
-                //printf("Node/C99: sandboxed %02x %02x %02x\n", sandbox_id[0], sandbox_id[1], sandbox_id[2]);
-                sandboxed_api_request(mist_api, sandbox_id, &b, sandboxed_response_cb);
+                printf("Node/C99: sandboxed %02x %02x %02x\n", sandbox_id[0], sandbox_id[1], sandbox_id[2]);
+                sandboxed_api_request_context(mist_api, sandbox_id, &b, sandboxed_response_cb, opts->mist);
+                //sandboxed_api_request(mist_api, sandbox_id, &b, sandboxed_response_cb);
             }
         }
         
@@ -745,7 +782,7 @@ static void* setupMistNodeApi(void* ptr) {
     mist_app_t* mist_app = opts->mist_app; // start_mist_app();
     opts->mist_app = mist_app;
     
-    printf("setupMistNodeApi has instance: %p\n", mist_app);
+    //printf("setupMistNodeApi has instance: %p\n", mist_app);
 
     mist_model_t* model = &(mist_app->model);
     
@@ -785,7 +822,7 @@ static void* setupMistApi(void* ptr) {
     //start wish apps
     mist_app_t* mist_app = opts->mist_app; // start_mist_app();
     
-    printf("setupMistApi has instance: %p and Mist %p\n", mist_app, opts->mist);
+    //printf("setupMistApi has instance: %p and Mist %p\n", mist_app, opts->mist);
 
     mist_set_name(mist_app, name);
 
@@ -842,13 +879,13 @@ void mist_addon_start(Mist* mist, char* name, int type, char* ip, uint16_t port)
     opts->mist_app = start_mist_app();
 
     if(type == 2) {
-        printf("mist_addon_start(setupMistApi, %s, core: %s:%d)\n", name, ip, port);
+        //printf("mist_addon_start(setupMistApi, %s, core: %s:%d)\n", name, ip, port);
         iret = pthread_create(thread, NULL, setupMistApi, (void*) opts);
     } else if ( type == 3 ) {
-        printf("mist_addon_start(setupMistNodeApi, %s, core: %s:%d)\n", name, ip, port);
+        //printf("mist_addon_start(setupMistNodeApi, %s, core: %s:%d)\n", name, ip, port);
         iret = pthread_create(thread, NULL, setupMistNodeApi, (void*) opts);
     } else if ( type == 4 ) {
-        printf("mist_addon_start(setupMistNodeApi, %s, core: %s:%d)\n", name, ip, port);
+        //printf("mist_addon_start(setupMistNodeApi, %s, core: %s:%d)\n", name, ip, port);
         iret = pthread_create(thread, NULL, setupMistApi, (void*) opts);
     } else {
         printf("mist_addon_start received unrecognized type %i, (expecting 2, 3 or 4)\n", type);

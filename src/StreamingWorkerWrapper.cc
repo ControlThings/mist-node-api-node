@@ -22,7 +22,7 @@ StreamingWorkerWrapper::New(const Nan::FunctionCallbackInfo<v8::Value>& info) {
 
     if (info.IsConstructCall()) {
 
-        cout << "3. StreamingWorkerWrapper construct call\n";
+        //cout << "3. StreamingWorkerWrapper construct call\n";
         Callback *data_callback = new Callback(info[0].As<v8::Function>());
         Callback *complete_callback = new Callback(info[1].As<v8::Function>());
         Callback *error_callback = new Callback(info[2].As<v8::Function>());
@@ -66,7 +66,7 @@ StreamingWorkerWrapper::New(const Nan::FunctionCallbackInfo<v8::Value>& info) {
         
         Mist* mist = new Mist(data_callback, complete_callback, error_callback, options);
         
-        printf("Mist instance %p\n", mist);
+        //printf("Mist instance %p\n", mist);
 
         if (apiType == 2) {
             // This is a Node Api
@@ -148,7 +148,7 @@ void Add(const Nan::FunctionCallbackInfo<v8::Value>& info) {
 
 void
 StreamingWorkerWrapper::Init(v8::Local<v8::Object> exports) {
-    cout << "1. class StreamingWorkerWrapper::Init {\n";
+    //cout << "1. class StreamingWorkerWrapper::Init {\n";
     v8::Local<v8::FunctionTemplate> tpl = Nan::New<v8::FunctionTemplate>(StreamingWorkerWrapper::New);
     tpl->SetClassName(Nan::New("StreamingWorker").ToLocalChecked());
     tpl->InstanceTemplate()->SetInternalFieldCount(2);
