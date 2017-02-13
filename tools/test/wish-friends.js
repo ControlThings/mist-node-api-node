@@ -23,10 +23,6 @@ describe('MistApi Friends', function () {
         done();
     });
 
-    it('should wait', function(done) {
-        setTimeout(done, 1000);
-    });
-
     it('should get bob', function(done) {
         bob = new Mist({ name: 'BobsFriendManager', coreIp: '127.0.0.1', corePort: 9096 });
 
@@ -77,11 +73,6 @@ describe('MistApi Friends', function () {
             
             done();
         });
-    });
-
-    it('should wait', function(done) {
-        console.log("Waiting before shutdown...");
-        setTimeout(done, 1000);
     });
 
     xit('should check identity in core', function (done) {

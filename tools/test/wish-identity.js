@@ -20,7 +20,7 @@ describe('MistApi RPC', function () {
     
     after(function(done) {
         mist.shutdown();
-        setTimeout(function() { process.exit(0); }, 150);
+        //setTimeout(function() { process.exit(0); }, 150);
         done();
     });    
 
