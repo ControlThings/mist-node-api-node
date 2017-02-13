@@ -82,8 +82,8 @@ function done() {
 
             var testFile = file;
             console.log('\x1b[34mStarting test:', testFile);
-            //var test = child.spawn('../node_modules/mocha/bin/mocha', ['--reporter', 'json', '-c', testFile]);
-            var test = child.spawn('gdb', ['-batch', '-ex', 'run ../node_modules/mocha/bin/mocha --reporter json -c '+testFile, '-ex', 'bt', 'node']);
+            var test = child.spawn('../node_modules/mocha/bin/mocha', ['--reporter', 'json', '-c', testFile]);
+            //var test = child.spawn('gdb', ['-batch', '-ex', 'run ../node_modules/mocha/bin/mocha --reporter json -c '+testFile, '-ex', 'bt', 'node']);
 
             test.on('error', (err) => {
                 console.log('\x1b[36mtest> Failed to start test process.');

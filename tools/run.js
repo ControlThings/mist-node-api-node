@@ -9,7 +9,7 @@ var mist = new Mist({ name: model.device, corePort: 9094 });
 
 // callback 
 mist.write(function(epid, data) {
-    console.log(":::::::::::::::mist write:", epid, data);
+    //console.log("mist write:", epid, data);
 });
 
 // callback 

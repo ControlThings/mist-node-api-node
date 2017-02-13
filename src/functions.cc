@@ -81,45 +81,24 @@ bool injectMessage(Mist* mist, int type, uint8_t *msg, int len) {
 }
 
 static void mist_response_cb(struct wish_rpc_entry* req, void* ctx, uint8_t* data, size_t data_len) {
-    printf("mist_response_cb. ctx %p\n", ctx);
-    //printf("response going towards node.js. ctx %p req %p cb_context %p id: %i\n", ctx, req, req->cb_context, req->id);
-    printf("response going towards node.js. ctx %p req %p mist?: %p\n", ctx, req, ((wish_rpc_ctx *)ctx)->context );
-    bson_visit(data, elem_visitor);
     
-    if (req != NULL) {
+    if (req == NULL) {
+        // regular request
+    } else {
+        // passthru request
         ctx = ((wish_rpc_ctx *)ctx)->context;
     }
     
-    /*
-    if(ctx == NULL) {
-        printf("req passthru_ctx2 %p\n", req->passthru_ctx2);
-        if (req->passthru_ctx2 != NULL) {
-            ctx = req->passthru_ctx2;
-        } else {
-            printf("NULL ctx in response going towards node.js. ctx %p\n", ctx);
-            bson_visit(data, elem_visitor);
-            return;
-        }
-    }
-    */
-    
     std::string a = "even";
     std::string b = "dummy";
     
     Message msg(a, b, (uint8_t*) data, data_len);
     
-    //worker->sendToNode(msg);
     static_cast<Mist*>(ctx)->sendToNode(msg);
-
-    //Test::send(data, data_len);
-    
-    //static_cast<EvenOdd*>(evenodd_instance)->sendToNode(data, data_len);
 }
 
 static void wish_response_cb(struct wish_rpc_entry* req, void* ctx, uint8_t* data, size_t data_len) {
-    printf("wish_response_cb. ctx %p\n", ctx);
     if(ctx == NULL) {
-        printf("req passthru_ctx2 %p\n", req->passthru_ctx2);
         if (req->passthru_ctx2 != NULL) {
             ctx = req->passthru_ctx2;
         } else {
@@ -134,26 +113,19 @@ static void wish_response_cb(struct wish_rpc_entry* req, void* ctx, uint8_t* dat
     
     Message msg(a, b, (uint8_t*) data, data_len);
     
-    //worker->sendToNode(msg);
     static_cast<Mist*>(ctx)->sendToNode(msg);
-
-    //Test::send(data, data_len);
-    
-    //static_cast<EvenOdd*>(evenodd_instance)->sendToNode(data, data_len);
 }
 
 static void sandboxed_response_cb(struct wish_rpc_entry* req, void* ctx, uint8_t* data, size_t data_len) {
-    printf("sandboxed response going towards node.js. ctx %p req %p\n", ctx, req);
+    //printf("sandboxed response going towards node.js. ctx %p req %p\n", ctx, req);
     
     if (req == NULL) {
         // regular request
     } else {
         // request came from passthrough
         ctx = ((wish_rpc_ctx *)ctx)->context;
-        printf("   mist is here %p", ctx);
+        //printf("   mist is here %p", ctx);
     }
-    
-    bson_visit(data, elem_visitor);
     
     std::string a = "sandboxed";
     std::string b = "dummy";
@@ -191,7 +163,7 @@ static enum mist_error hw_write(mist_ep* ep, void* value) {
     DL_FOREACH(wish_app_core_opts, opts) {
         if(opts->mist_app == ep->model->mist_app) {
             mist = opts->mist;
-            printf("    found Mist* %p\n", mist);
+            //printf("    found Mist* %p\n", mist);
             break;
         }
     }
@@ -239,7 +211,7 @@ static enum mist_error hw_write(mist_ep* ep, void* value) {
 }
 
 static enum mist_error hw_invoke(mist_ep* ep, mist_buf args) {
-    printf("in hw_invoke %p\n", ep->model->mist_app);
+    //printf("in hw_invoke %p\n", ep->model->mist_app);
     
     struct wish_app_core_opt* opts;
     Mist* mist = NULL;
@@ -247,7 +219,7 @@ static enum mist_error hw_invoke(mist_ep* ep, mist_buf args) {
     DL_FOREACH(wish_app_core_opts, opts) {
         if(opts->mist_app == ep->model->mist_app) {
             mist = opts->mist;
-            printf("    found Mist* %p\n", mist);
+            //printf("    found Mist* %p\n", mist);
             break;
         }
     }
@@ -267,8 +239,6 @@ static enum mist_error hw_invoke(mist_ep* ep, mist_buf args) {
     
     static_cast<Mist*>(mist)->sendToNode(msg);
     
-    printf("  hw_invoke done.\n");
-    
     return MIST_NO_ERROR;
 }
 
@@ -284,7 +254,7 @@ static void mist_api_periodic_cb_impl(void* ctx) {
     }
     
     if(node_api_plugin_kill) {
-        printf("killing loop from within.\n");
+        //printf("killing loop from within.\n");
         //wish_core_client_close(mist_api->wish_app);
         pthread_mutex_unlock(&mutex1);
         return;
@@ -313,22 +283,18 @@ static void mist_api_periodic_cb_impl(void* ctx) {
         bson_find_from_buffer(&it, input_buffer, "kill");
         
         if (bson_iterator_type(&it) == BSON_BOOL) {
-            printf("kill is bool\n");
+            //printf("kill is bool\n");
             if (bson_iterator_bool(&it)) {
-                printf("kill is true\n");
+                //printf("kill is true\n");
                 node_api_plugin_kill = true;
             }
         } else {
             bson bs;
             bson_init_buffer(&bs, input_buffer, input_buffer_len);
 
-            //printf("Making mist_api_request\n");
-            //bson_visit((uint8_t*)bson_data(&bs), elem_visitor);
-            
             if(input_type == 1) { // WISH
-                //printf("### Wish\n");
                 //printf("Making wish_api_request\n");
-                bson_visit((uint8_t*)bson_data(&bs), elem_visitor);
+                //bson_visit((uint8_t*)bson_data(&bs), elem_visitor);
                 wish_api_request_context(mist_api, &bs, wish_response_cb, opts->mist);
             } else if (input_type == 2) { // MIST
                 //printf("### Mist\n");
@@ -348,9 +314,9 @@ static void mist_api_periodic_cb_impl(void* ctx) {
                 printf("MistApi got message MistNodeApi command from node.js, not good!\n");
                 bson_visit((uint8_t*)bson_data(&bs), elem_visitor);
             } else if (input_type == 4) { // MIST SANDBOXED API
-                printf("### Sandboxed Api\n");
-                WISHDEBUG(LOG_CRITICAL, "sandbox_api-request:");
-                bson_visit((uint8_t*)bson_data(&bs), elem_visitor);
+                //printf("### Sandboxed Api\n");
+                //WISHDEBUG(LOG_CRITICAL, "sandbox_api-request:");
+                //bson_visit((uint8_t*)bson_data(&bs), elem_visitor);
                 
                 const char* sandbox_id = "";
                 
@@ -427,8 +393,6 @@ static void mist_api_periodic_cb_impl(void* ctx) {
                     char dst[21];
                     BSON_NUMSTR(dst, i);
 
-                    printf("args array src %s dst %s\n", src, dst);
-                    
                     // init the sub iterator from args array iterator
                     bson_iterator_subiterator(&ait, &sit);
 
@@ -471,10 +435,10 @@ static void mist_api_periodic_cb_impl(void* ctx) {
                 bson_append_int(&b, "id", id);
                 bson_finish(&b);
 
-                WISHDEBUG(LOG_CRITICAL, "sandbox_api-request re-written:");
-                bson_visit((uint8_t*)bson_data(&b), elem_visitor);                    
+                //WISHDEBUG(LOG_CRITICAL, "sandbox_api-request re-written:");
+                //bson_visit((uint8_t*)bson_data(&b), elem_visitor);                    
                 
-                printf("Node/C99: sandboxed %02x %02x %02x\n", sandbox_id[0], sandbox_id[1], sandbox_id[2]);
+                //printf("Node/C99: sandboxed %02x %02x %02x\n", sandbox_id[0], sandbox_id[1], sandbox_id[2]);
                 sandboxed_api_request_context(mist_api, sandbox_id, &b, sandboxed_response_cb, opts->mist);
                 //sandboxed_api_request(mist_api, sandbox_id, &b, sandboxed_response_cb);
             }
@@ -504,7 +468,7 @@ static void mist_app_periodic_cb_impl(void* ctx) {
     }
     
     if(node_api_plugin_kill) {
-        printf("killing loop from within.\n");
+        //printf("killing loop from within.\n");
         //wish_core_client_close(mist_app->app);
         pthread_mutex_unlock(&mutex1);
         return;
@@ -522,9 +486,9 @@ static void mist_app_periodic_cb_impl(void* ctx) {
         bson_find_from_buffer(&it, input_buffer, "kill");
         
         if (bson_iterator_type(&it) == BSON_BOOL) {
-            printf("kill is bool\n");
+            //printf("kill is bool\n");
             if (bson_iterator_bool(&it)) {
-                printf("kill is true\n");
+                //printf("kill is true\n");
                 node_api_plugin_kill = true;
             }
         } else {
@@ -539,8 +503,8 @@ static void mist_app_periodic_cb_impl(void* ctx) {
             } else if (input_type == 2) { // MIST
                 printf("### MistApi call from a Node instance, this is not good!\n");
             } else if (input_type == 3) { // MIST NODE API
-                printf("MistNodeApi got message from node.js:\n");
-                bson_visit((uint8_t*)bson_data(&bs), elem_visitor);
+                //printf("MistNodeApi got message from node.js:\n");
+                //bson_visit((uint8_t*)bson_data(&bs), elem_visitor);
                     
                 bson_find_from_buffer(&it, input_buffer, "model");
                 

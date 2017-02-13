@@ -81,8 +81,6 @@ function Mist(opts) {
             }
             
             if (event === 'sandboxed') {
-                console.log("Sandbox event from StreamingWorker: ", Buffer.isBuffer(data) ? BSON.deserialize(data) : 'Not Buffer');
-                
                 if( Buffer.isBuffer(data) && data.length >= 5 ) {
                     
                     var msg = BSON.deserialize(data);
@@ -144,7 +142,6 @@ function Mist(opts) {
 }
 
 Mist.prototype.shutdown = function() {
-    console.log("Mist.shutdown();");
     this.api.sendToAddon("kill", 1, BSON.serialize({ kill: true }));
 };
 

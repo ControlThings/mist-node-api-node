@@ -60,5 +60,5 @@ Mist::Execute(const AsyncProgressWorker::ExecutionProgress& progress) {
         }
     };
 
-    printf("Plugin Execute is returning\n");
+    //printf("Plugin Execute is returning\n");
 }
