@@ -18,7 +18,8 @@ describe('MistApi Friends', function () {
     
     after(function(done) {
         console.log("Calling mist.shutdown();");
-        //bob.shutdown();
+        bob.shutdown();
+        mist.shutdown();
         done();
     });
 
