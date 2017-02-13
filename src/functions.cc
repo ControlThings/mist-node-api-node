@@ -10,13 +10,15 @@
 #include "wish_platform.h"
 #include "bson_visitor.h"
 #include "bson.h"
+#include "utlist.h"
 
 #include <pthread.h>
 #include <stdio.h>
 #include <string>
 
+using namespace std;
 
-struct wish_app_core_opts {
+struct wish_app_core_opt {
     Mist* mist;
     mist_api_t* mist_api;
     mist_app_t* mist_app;
@@ -24,8 +26,11 @@ struct wish_app_core_opts {
     char* name;
     char* ip;
     uint16_t port;
+    struct wish_app_core_opt* next;
+    struct wish_app_core_opt* prev;
 };
 
+struct wish_app_core_opt* wish_app_core_opts;
 
 /*
 static void init(wish_app_t* app) {
@@ -199,18 +204,41 @@ static enum mist_error hw_write(mist_ep* ep, void* value) {
 }
 
 static enum mist_error hw_invoke(mist_ep* ep, mist_buf args) {
-    //printf("in hw_invoke\n");
+    printf("in hw_invoke %p\n", ep->model->mist_app);
+    
+    struct wish_app_core_opt* opts;
+    Mist* mist = NULL;
+    
+    DL_FOREACH(wish_app_core_opts, opts) {
+        if(opts->mist_app == ep->model->mist_app) {
+            mist = opts->mist;
+            printf("    found Mist* %p\n", mist);
+            break;
+        }
+    }
+    
+    if (mist == NULL) {
+        printf("Failed finding mist instance to call... bailing out!\n");
+        return MIST_ERROR;
+    }
     
     bson bs;
     bson_init_data(&bs, args.base);
     
-    Test::invoke((uint8_t*) bson_data(&bs), bson_size(&bs));
+    string a = "invoke";
+    string b = "dummy";
+    
+    Message msg(a, b, (uint8_t*) bson_data(&bs), bson_size(&bs));
+    
+    static_cast<Mist*>(mist)->sendToNode(msg);
+    
+    printf("  hw_invoke done.\n");
     
     return MIST_NO_ERROR;
 }
 
 static void mist_api_periodic_cb_impl(void* ctx) {
-    struct wish_app_core_opts* opts = (struct wish_app_core_opts*) ctx;
+    struct wish_app_core_opt* opts = (struct wish_app_core_opt*) ctx;
     mist_api_t* mist_api = opts->mist_api;
 
     //printf("mist_api_periodic_cb_impl Mist instance: %p\n", opts->mist);
@@ -429,7 +457,8 @@ consume_and_unlock:
 
 
 static void mist_app_periodic_cb_impl(void* ctx) {
-    mist_app_t* mist_app = (mist_app_t*) ctx;
+    struct wish_app_core_opt* opts = (struct wish_app_core_opt*) ctx;
+    mist_app_t* mist_app = opts->mist_app;
     mist_model_t* model = (mist_model_t*) &mist_app->model;
     
     if (pthread_mutex_trylock(&mutex1)) {
@@ -473,7 +502,8 @@ static void mist_app_periodic_cb_impl(void* ctx) {
             } else if (input_type == 2) { // MIST
                 printf("### MistApi call from a Node instance, this is not good!\n");
             } else if (input_type == 3) { // MIST NODE API
-                //printf("MistNodeApi got message from node.js:\n");
+                printf("MistNodeApi got message from node.js:\n");
+                bson_visit((uint8_t*)bson_data(&bs), elem_visitor);
                     
                 bson_find_from_buffer(&it, input_buffer, "model");
                 
@@ -704,7 +734,7 @@ consume_and_unlock:
 }
 
 static void* setupMistNodeApi(void* ptr) {
-    struct wish_app_core_opts* opts = (struct wish_app_core_opts*) ptr;
+    struct wish_app_core_opt* opts = (struct wish_app_core_opt*) ptr;
 
     //printf("ip:port %s, %d\n", opts->ip, opts->port);
 
@@ -735,7 +765,7 @@ static void* setupMistNodeApi(void* ptr) {
     mist_app->app = app;
     
     app->periodic = mist_app_periodic_cb_impl;
-    app->periodic_ctx = mist_app;
+    app->periodic_ctx = opts;
 
     app->port = opts->port;
     
@@ -745,7 +775,7 @@ static void* setupMistNodeApi(void* ptr) {
 }
 
 static void* setupMistApi(void* ptr) {
-    struct wish_app_core_opts* opts = (struct wish_app_core_opts*) ptr;
+    struct wish_app_core_opt* opts = (struct wish_app_core_opt*) ptr;
     
     //printf("ip:port %s, %d\n", opts->ip, opts->port);
     
@@ -793,7 +823,10 @@ void mist_addon_start(Mist* mist, char* name, int type, char* ip, uint16_t port)
     
     int iret;
 
-    struct wish_app_core_opts* opts = (struct wish_app_core_opts*) wish_platform_malloc(sizeof(struct wish_app_core_opts));
+    struct wish_app_core_opt* opts = (struct wish_app_core_opt*) wish_platform_malloc(sizeof(struct wish_app_core_opt));
+    
+    DL_APPEND(wish_app_core_opts, opts);
+    
     opts->mist = mist;
     
     opts->name = strdup(name);

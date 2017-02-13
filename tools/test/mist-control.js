@@ -68,7 +68,6 @@ describe('MistApi Control', function () {
     it('shuold test control.model', function(done) {
         console.log("goin into third test,");
         mist.request('mist.control.model', [peer], function (err, model) {
-            console.log('mist.control.model', err, data);
             if (err) { return done(new Error(inspect(model))); }
             //console.log("Got a model:", err, model);
             done();

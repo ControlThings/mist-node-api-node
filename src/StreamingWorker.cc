@@ -1,5 +1,6 @@
 #include "StreamingWorker.h"
 #include <iostream>
+#include <cstdio>
 
 using namespace Nan;
 
@@ -31,6 +32,7 @@ StreamingWorker::HandleOKCallback() {
 
 void
 StreamingWorker::HandleProgressCallback(const char *data, size_t size) {
+    printf("HandleProgressCallback\n");
     drainQueue();
 }
 
@@ -41,6 +43,7 @@ StreamingWorker::close() {
 
 void
 StreamingWorker::writeToNode(const AsyncProgressWorker::ExecutionProgress& progress, Message & msg) {
+    printf("StreamingWorker::writeToNode()\n");
     toNode.write(msg);
     progress.Send(reinterpret_cast<const char*> (&toNode), sizeof (toNode));
 }
@@ -54,7 +57,7 @@ void
 StreamingWorker::drainQueue() {
     HandleScope scope;
 
-    //printf("drain queue...\n");
+    printf("drain queue...\n");
 
     // drain the queue - since we might only get called once for many writes
     std::deque<Message> contents;
@@ -66,6 +69,7 @@ StreamingWorker::drainQueue() {
             New<v8::String>(msg.data.c_str()).ToLocalChecked(),
             Nan::NewBuffer((char*) msg.msg, (uint32_t) msg.msg_len).ToLocalChecked()
         };
+        printf("  progress->Call()\n");
         progress->Call(3, argv);
     }
 }

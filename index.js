@@ -59,7 +59,8 @@ function Mist(opts) {
 
     this.api = new MistApi.StreamingWorker(
         function (event, value, data) {
-            //console.log("Event from streaming worker", event, Buffer.isBuffer(data) ? BSON.deserialize(data) : 'Not Buffer');
+            console.log("Event from streaming worker", event);
+            console.log("Event from streaming worker", event, Buffer.isBuffer(data) ? BSON.deserialize(data) : 'Not Buffer');
             
             if (event === 'write' && typeof self.writeCb === 'function') {
                 var msg = BSON.deserialize(data);

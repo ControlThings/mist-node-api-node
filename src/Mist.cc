@@ -16,6 +16,7 @@ Mist::~Mist() {
 
 void
 Mist::sendToNode(Message& message) {
+    printf("Mist::sendToNode()\n");
     writeToNode(*_progress, message);
 }
 
@@ -48,14 +49,16 @@ Mist::Execute(const AsyncProgressWorker::ExecutionProgress& progress) {
             bool success = injectMessage(this, type, m.msg, m.msg_len);
 
             if(success) { 
-                //printf("Success injecting message\n");
+                printf("Success injecting message\n");
                 break; 
             } else {
-                //printf("Injecting message waiting for my turn. Mist is busy.\n");
-                this_thread::sleep_for(chrono::milliseconds(100));
+                printf("Injecting message waiting for my turn. Mist is busy.\n");
+                this_thread::sleep_for(chrono::milliseconds(50));
+                //Message msg("fun", "sun", NULL, 0);
+                //writeToNode(progress, msg);
             }
         }
     };
 
-    //printf("Plugin Execute is returning\n");
+    printf("Plugin Execute is returning\n");
 }
