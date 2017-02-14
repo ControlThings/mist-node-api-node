@@ -1,28 +1,28 @@
-#include "StreamingWorkerWrapper.h"
+#include "MistWrapper.h"
 #include "functions.h"
 #include <iostream>
 
 using namespace std;
 using namespace Nan;
 
-Nan::Persistent<v8::Function> StreamingWorkerWrapper::constructor;
+Nan::Persistent<v8::Function> MistWrapper::constructor;
 
-StreamingWorkerWrapper::StreamingWorkerWrapper(Mist* mist) {
+MistWrapper::MistWrapper(Mist* mist) {
     _mist = mist;
     _worker = mist;
     //cout << "Streaming worker constructor " << (void*)_mist << " w: " << (void*)_worker << "\n";
 }
 
-StreamingWorkerWrapper::~StreamingWorkerWrapper() {
+MistWrapper::~MistWrapper() {
 }
 
 void
-StreamingWorkerWrapper::New(const Nan::FunctionCallbackInfo<v8::Value>& info) {
+MistWrapper::New(const Nan::FunctionCallbackInfo<v8::Value>& info) {
     //info.GetReturnValue().Set(Nan::New("world").ToLocalChecked());
 
     if (info.IsConstructCall()) {
 
-        //cout << "3. StreamingWorkerWrapper construct call\n";
+        //cout << "3. MistWrapper construct call\n";
         Callback *data_callback = new Callback(info[0].As<v8::Function>());
         Callback *complete_callback = new Callback(info[1].As<v8::Function>());
         Callback *error_callback = new Callback(info[2].As<v8::Function>());
@@ -45,9 +45,9 @@ StreamingWorkerWrapper::New(const Nan::FunctionCallbackInfo<v8::Value>& info) {
 
             if (_coreIp->IsString()) {
                 coreIp = string(*v8::String::Utf8Value(_coreIp->ToString()));
-                //cout << "4. a) StreamingWorkerWrapper constructor: opts: " << coreIp << "\n";
+                //cout << "4. a) MistWrapper constructor: opts: " << coreIp << "\n";
             } else {
-                //cout << "4. b) StreamingWorkerWrapper constructor: opts.core not string\n";
+                //cout << "4. b) MistWrapper constructor: opts.core not string\n";
             }
 
             if (_corePort->IsNumber()) {
@@ -78,7 +78,7 @@ StreamingWorkerWrapper::New(const Nan::FunctionCallbackInfo<v8::Value>& info) {
 
 
 
-        StreamingWorkerWrapper *obj = new StreamingWorkerWrapper(mist);
+        MistWrapper *obj = new MistWrapper(mist);
         
         obj->Wrap(info.This());
         info.GetReturnValue().Set(info.This());
@@ -89,7 +89,7 @@ StreamingWorkerWrapper::New(const Nan::FunctionCallbackInfo<v8::Value>& info) {
 }
 
 void
-StreamingWorkerWrapper::sendToAddon(const Nan::FunctionCallbackInfo<v8::Value>& info) {
+MistWrapper::sendToAddon(const Nan::FunctionCallbackInfo<v8::Value>& info) {
     
     if (info.Length() != 3) {
         printf("Number of args: %i\n", info.Length());
@@ -106,7 +106,7 @@ StreamingWorkerWrapper::sendToAddon(const Nan::FunctionCallbackInfo<v8::Value>& 
     v8::String::Utf8Value data(info[1]->ToString());
     uint8_t* buf = (uint8_t*) node::Buffer::Data(info[2]->ToObject());
     int buf_len = node::Buffer::Length(info[2]->ToObject());
-    StreamingWorkerWrapper* obj = Nan::ObjectWrap::Unwrap<StreamingWorkerWrapper>(info.Holder());
+    MistWrapper* obj = Nan::ObjectWrap::Unwrap<MistWrapper>(info.Holder());
     
     //printf("sendToAddon Mist instance %p %p\n", obj->_mist, obj->_worker);
     
@@ -114,8 +114,8 @@ StreamingWorkerWrapper::sendToAddon(const Nan::FunctionCallbackInfo<v8::Value>& 
 }
 
 void
-StreamingWorkerWrapper::Init(v8::Local<v8::Object> exports) {
-    v8::Local<v8::FunctionTemplate> tpl = Nan::New<v8::FunctionTemplate>(StreamingWorkerWrapper::New);
+MistWrapper::Init(v8::Local<v8::Object> exports) {
+    v8::Local<v8::FunctionTemplate> tpl = Nan::New<v8::FunctionTemplate>(MistWrapper::New);
     tpl->SetClassName(Nan::New("StreamingWorker").ToLocalChecked());
     tpl->InstanceTemplate()->SetInternalFieldCount(2);
 

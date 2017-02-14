@@ -3,16 +3,16 @@
 #include "StreamingWorker.h"
 #include "Mist.h"
 
-class StreamingWorkerWrapper : public Nan::ObjectWrap {
+class MistWrapper : public Nan::ObjectWrap {
 public:
 
     static void Init(v8::Local<v8::Object> exports);
 
 private:
 
-    explicit StreamingWorkerWrapper(Mist* mist);
+    explicit MistWrapper(Mist* mist);
 
-    ~StreamingWorkerWrapper();
+    ~MistWrapper();
 
     static void New(const Nan::FunctionCallbackInfo<v8::Value>& info);
     

@@ -1,4 +1,4 @@
 #include <nan.h>
-#include "StreamingWorkerWrapper.h"
+#include "MistWrapper.h"
 
-NODE_MODULE(MistApi, StreamingWorkerWrapper::Init)
+NODE_MODULE(MistApi, MistWrapper::Init)
