@@ -157,7 +157,7 @@ function done() {
     }
     
     console.log('Starting Wish Core for Bob.');
-    var coreBob = child.spawn('../wish-core', ['-p 38001', '-a 9096'], { cwd: './env/bob' });
+    var coreBob = child.spawn('../wish-core', ['-p 38001', '-a 9096', '-b', '-l', '-r'], { cwd: './env/bob' });
     
     var coreBobTimeout = setTimeout(() => { runningBob(); }, 200);
     

@@ -1,11 +1,19 @@
 var Mist = require('../../index.js').Mist;
 var Sandboxed = require('../../index.js').Sandboxed;
 
+var BsonParser = require('bson-buffer');
+var BSON = new BsonParser();
+
+var inspect = require('util').inspect;
+
 // run ../node_modules/mocha/bin/mocha test/wish-friends.js
 
 describe('MistApi Friends', function () {
     var mist;
     var bob;
+    var aliceIdentity;
+    var bobIdentity;
+    var bobWldEntry;
     
     before(function (done) {
         mist = new Mist({ name: 'FriendManager', coreIp: '127.0.0.1', corePort: 9094 });
@@ -38,77 +46,123 @@ describe('MistApi Friends', function () {
         });
     });
 
-    /*
-    it('should wait', function(done) { console.log("Waiting..."); setTimeout(done, 1000); });
-    it('should wait', function(done) { console.log("Waiting..."); setTimeout(done, 1000); });
-    it('should wait', function(done) { console.log("Waiting..."); setTimeout(done, 1000); });
-    it('should wait', function(done) { console.log("Waiting..."); setTimeout(done, 1000); });
-    it('should wait', function(done) { console.log("Waiting..."); setTimeout(done, 1000); });
-    */
-
-    xit('should wet bob', function(done) {
-        bob.wish('methods', [], function(err, data) {
-            console.log("methods", err, data);
+    it('should get alice identity', function(done) {
+        mist.wish('identity.list', [], function(err, data) {
+            if (err) { return done(new Error(inspect(data))); }
+            
+            aliceIdentity = data[0];
             done();
         });
     });
 
-    xit('should wet bob', function(done) {
+    it('should export alice identity', function(done) {
+        mist.wish('identity.export', [aliceIdentity.uid, 'binary'], function(err, data) {
+            if (err) { return done(new Error(inspect(data))); }
+            
+            console.log("Alice cert", err, BSON.deserialize(data));
+            done();
+        });
+    });
+
+    it('should get bobs identity', function(done) {
         bob.wish('identity.list', [], function(err, data) {
-            console.log("identity.list", err, data);
+            if (err) { return done(new Error(inspect(data))); }
             
-            if(data.length === 0) {
-                bob.wish('identity.create', ['I am Bob'], function(err, data) {
-                    done();
-                });
-            } else {
-                done();
-            }
-        });
-    });
-
-    xit('should wet bob', function(done) {
-        mist.wish('identity.list', [], function(err, data) {
-            console.log("alice: identity.list", err, data);
-            
+            bobIdentity = data[0];
             done();
         });
     });
 
-    xit('should check identity in core', function (done) {
-        console.log("====================Running");
-        mist.wish('identity.list', [], function(err, data) {
-            if (err) { return done(new Error('wish rpc returned error')); }
+    it('should export bobs identity', function(done) {
+        bob.wish('identity.export', [bobIdentity.uid, 'binary'], function(err, data) {
+            if (err) { return done(new Error(inspect(data))); }
             
-            if (data.length === 0) {
-                //console.log("Created identity.");
-                mist.wish('identity.create', ['Mr. Andersson'], function(err, data) {
-                    console.log("Wish core had no identities. One has been created. Re-run test.");
-                    process.exit(1);
-                    //done();
-                });
-            } else {
-                done();
-            }
+            console.log("Bobs cert", err, BSON.deserialize(data));
+            done();
         });
     });
     
-    xit('should find a identity to befriend using local discovery', function(done) {
-        console.log("====================Running 2");
-        mist.wish('signals', [], function(err, signal) {
-            var args;
-            if( Array.isArray(signal) ) { args = signal[1]; signal = signal[0]; }
-            
-            console.log('wish-core signal:', err, signal);
-        });
+    it('should find alice in wld', function(done) {
+        this.timeout(35000);
         
-        mist.wish('wld.list', [], function(err, list) {
-            if(err) { done(new Error('Error getting list.')); }
+        function poll() {
+            mist.wish('wld.list', [], function(err, data) {
+                if (err) { return done(new Error(inspect(data))); }
+
+                console.log("Bobs wld", err, data);
+                
+                for (var i in data) {
+                    if(data[i].alias === 'I am Bob') {
+                        bobWldEntry = data[i];
+                        done();
+                        return;
+                    }
+                }
+                
+                setTimeout(poll, 1000);
+            });
+        };
+        
+        setTimeout(poll, 100);
+    });
+    
+    it('should delete Bob from Alice if he already exists', function(done) {
+        mist.wish('identity.remove', [bobIdentity.uid], function(err, data) {
+            if (err) { return done(new Error(inspect(data))); }
             
-            for (var i in list) {
-                console.log('  * '+list[i].alias);
-            }
+            console.log("Bob deleted from Alice", err, data);
             done();
         });
-    });    
+    });
+    
+    it('should delete Alice from Bob if he already exists', function(done) {
+        bob.wish('identity.remove', [aliceIdentity.uid], function(err, data) {
+            if (err) { return done(new Error(inspect(data))); }
+            
+            console.log("Alice deleted from Bob", err, data);
+            done();
+        });
+    });
+    
+    xit('should add Bob as a friend to Alice', function(done) {
+        console.log("Friend request params:", [aliceIdentity.uid, bobWldEntry.ruid, bobWldEntry.rhid]);
+        mist.wish('wld.friendRequest', [aliceIdentity.uid, bobWldEntry.ruid, bobWldEntry.rhid], function(err, data) {
+            if (err) { return done(new Error(inspect(data))); }
+            
+            console.log("Bobs cert", err, data);
+            
+            setTimeout(function() {
+                bob.wish('identity.list', [], function(err, data) {
+                    if (err) { return done(new Error(inspect(data))); }
+
+                    console.log("Alice's identity.list", err,data);
+                    done();
+                });
+            }, 250);
+        });
+    });
+    
+    xit('shuold get a connection between Alice and Bob', function(done) {
+        this.timeout(35000);
+        
+        function poll() {
+            mist.wish('connections.list', [], function(err, data) {
+                if (err) { return done(new Error(inspect(data))); }
+
+                console.log("Alice connections", err, data);
+                
+                for (var i in data) {
+                    if(data[i].alias === 'I am Bob') {
+                        bobWldEntry = data[i];
+                        done();
+                        return;
+                    }
+                }
+                
+                setTimeout(poll, 1000);
+            });
+        };
+        
+        setTimeout(poll, 1000);        
+    });
 });
