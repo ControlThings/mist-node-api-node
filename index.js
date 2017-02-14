@@ -61,6 +61,11 @@ function Mist(opts) {
         function (event, value, data) {
             //console.log("Event from streaming worker", event);
             //console.log("Event from streaming worker", event, Buffer.isBuffer(data) ? BSON.deserialize(data) : 'Not Buffer');
+
+            if (event === 'done') {
+                // Streaming worker is done and has shut down
+                return;
+            }
             
             if (event === 'write' && typeof self.writeCb === 'function') {
                 var msg = BSON.deserialize(data);

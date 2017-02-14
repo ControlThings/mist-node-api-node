@@ -1,6 +1,5 @@
 #include "Mist.h"
 #include "functions.h"
-#include "Test.h"
 #include "mist_app.h"
 #include "mist_api.h"
 #include "mist_model.h"
@@ -204,8 +203,6 @@ static enum mist_error hw_write(mist_ep* ep, void* value) {
     Message msg(a, b, (uint8_t*) bson_data(&bs), bson_size(&bs));
     
     static_cast<Mist*>(mist)->sendToNode(msg);
-    
-    //Test::write((uint8_t*) bson_data(&bs), bson_size(&bs));
     
     return MIST_NO_ERROR;
 }

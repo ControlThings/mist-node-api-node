@@ -85,14 +85,6 @@ StreamingWorkerWrapper::New(const Nan::FunctionCallbackInfo<v8::Value>& info) {
 
         // start the worker
         AsyncQueueWorker(obj->_worker);
-    } else {
-        cout << "StreamingWorkerWrapper another call\n";
-        /*
-        const int argc = 1;
-        v8::Local<v8::Value> argv[argc] = { info[0] };
-        v8::Local<v8::Function> cons = Nan::New<v8::Function>(constructor);
-        info.GetReturnValue().Set(cons->NewInstance(argc, argv));
-        */
     }
 }
 
@@ -122,45 +114,14 @@ StreamingWorkerWrapper::sendToAddon(const Nan::FunctionCallbackInfo<v8::Value>& 
 }
 
 void
-StreamingWorkerWrapper::closeInput(const Nan::FunctionCallbackInfo<v8::Value>& info) {
-    StreamingWorkerWrapper* obj = Nan::ObjectWrap::Unwrap<StreamingWorkerWrapper>(info.Holder());
-    obj->_worker->close();
-}
-
-void Add(const Nan::FunctionCallbackInfo<v8::Value>& info) {
-
-  if (info.Length() < 2) {
-    Nan::ThrowTypeError("Wrong number of arguments");
-    return;
-  }
-
-  if (!info[0]->IsNumber() || !info[1]->IsNumber()) {
-    Nan::ThrowTypeError("Wrong arguments");
-    return;
-  }
-
-  double arg0 = info[0]->NumberValue();
-  double arg1 = info[1]->NumberValue();
-  v8::Local<v8::Number> num = Nan::New(arg0 + arg1);
-
-  info.GetReturnValue().Set(num);
-}
-
-void
 StreamingWorkerWrapper::Init(v8::Local<v8::Object> exports) {
-    //cout << "1. class StreamingWorkerWrapper::Init {\n";
     v8::Local<v8::FunctionTemplate> tpl = Nan::New<v8::FunctionTemplate>(StreamingWorkerWrapper::New);
     tpl->SetClassName(Nan::New("StreamingWorker").ToLocalChecked());
     tpl->InstanceTemplate()->SetInternalFieldCount(2);
 
     SetPrototypeMethod(tpl, "sendToAddon", sendToAddon);
-    SetPrototypeMethod(tpl, "closeInput", closeInput);
 
     constructor.Reset(tpl->GetFunction());
     
-    //Nan::Set(target, Nan::New("StreamingWorker").ToLocalChecked(), Nan::GetFunction(tpl).ToLocalChecked());
-
-    exports->Set(Nan::New("hello").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(Add)->GetFunction());
     exports->Set(Nan::New("StreamingWorker").ToLocalChecked(), tpl->GetFunction());
-    //exports->Set(Nan::New("tpl").ToLocalChecked(), Nan::GetFunction(tpl).ToLocalChecked());
 }

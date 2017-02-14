@@ -2,7 +2,7 @@
     "targets": [
         {
             "target_name": "MistApi",
-            "sources": [ "src/NativeExtension.cc", "src/Mist.cc", "src/functions.cc", "src/Test.cc", "src/Message.cc", "src/StreamingWorker.cc", "src/StreamingWorkerWrapper.cc" ],
+            "sources": [ "src/NativeExtension.cc", "src/Mist.cc", "src/functions.cc", "src/Message.cc", "src/StreamingWorker.cc", "src/StreamingWorkerWrapper.cc" ],
             "cflags": [ "-g -O0" ],
             "cflags_cc": [ "-g -O0" ],
             "ldflags": [ ],

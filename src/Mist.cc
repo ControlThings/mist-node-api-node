@@ -1,5 +1,4 @@
 #include "Mist.h"
-#include "Test.h"
 #include <thread>
 #include <chrono>
 #include "functions.h"
@@ -31,7 +30,8 @@ Mist::Execute(const AsyncProgressWorker::ExecutionProgress& progress) {
         if(m.name == "kill") {
             // Execute got kill command
             run = false;
-            //Test::kill();
+            Message msg("done", "", NULL, 0);
+            writeToNode(progress, msg);            
         }
 
         while (true) {
