@@ -4,35 +4,17 @@
 
 using namespace Nan;
 
-StreamingWorker::StreamingWorker(Callback *progress, Callback *callback, Callback *error_callback)
-: AsyncProgressWorker(callback), progress(progress), error_callback(error_callback) {
+StreamingWorker::StreamingWorker(Callback *progress)
+: AsyncProgressWorker(progress), progress(progress) {
     input_closed = false;
 }
 
 StreamingWorker::~StreamingWorker() {
-    delete progress;
-    delete error_callback;
-}
-
-void
-StreamingWorker::HandleErrorCallback() {
-    HandleScope scope;
-
-    v8::Local<v8::Value> argv[] = {
-        v8::Exception::Error(New<v8::String>(ErrorMessage()).ToLocalChecked())
-    };
-    error_callback->Call(1, argv);
-}
-
-void
-StreamingWorker::HandleOKCallback() {
-    drainQueue();
-    callback->Call(0, NULL);
+    //delete progress;
 }
 
 void
 StreamingWorker::HandleProgressCallback(const char *data, size_t size) {
-    //printf("HandleProgressCallback\n");
     drainQueue();
 }
 
@@ -43,7 +25,6 @@ StreamingWorker::close() {
 
 void
 StreamingWorker::writeToNode(const AsyncProgressWorker::ExecutionProgress& progress, Message & msg) {
-    //printf("StreamingWorker::writeToNode()\n");
     toNode.write(msg);
     progress.Send(reinterpret_cast<const char*> (&toNode), sizeof (toNode));
 }
@@ -69,7 +50,6 @@ StreamingWorker::drainQueue() {
             New<v8::String>(msg.data.c_str()).ToLocalChecked(),
             Nan::NewBuffer((char*) msg.msg, (uint32_t) msg.msg_len).ToLocalChecked()
         };
-        //printf("  progress->Call()\n");
         progress->Call(3, argv);
     }
 }

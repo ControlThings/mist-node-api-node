@@ -1,3 +1,12 @@
+var SegfaultHandler = require('segfault-handler');
+
+SegfaultHandler.registerHandler("crash.log"); // With no argument, SegfaultHandler will generate a generic log file name
+
+// Optionally specify a callback function for custom logging. This feature is currently only supported for Node.js >= v0.12 running on Linux.
+SegfaultHandler.registerHandler("crash.log", function(signal, address, stack) {
+    // Do what you want with the signal, address, or stack (array)
+    // This callback will execute before the signal is forwarded on.
+});
 
 if (!process.version.substr(0, 3) === 'v6.') {
     console.log('MistApi is a native addon, which is not supported by Node.js version ('+process.version+'), requires v6.x.x., tested on v6.9.2.');
@@ -59,7 +68,7 @@ function Mist(opts) {
 
     this.api = new MistApi.StreamingWorker(
         function (event, value, data) {
-            //console.log("Event from streaming worker", event);
+            //console.log("Event from streaming worker", arguments);
             //console.log("Event from streaming worker", event, Buffer.isBuffer(data) ? BSON.deserialize(data) : 'Not Buffer');
 
             if (event === 'done') {
@@ -134,12 +143,6 @@ function Mist(opts) {
                     console.log('Request not found for response:', id, self, themist.requests);
                 }
             }
-        },
-        function () {
-            emitter.emit("close");
-        },
-        function (error) {
-            emitter.emit("error", error);
         },
         opts);
 

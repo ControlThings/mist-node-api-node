@@ -22,17 +22,11 @@ MistWrapper::New(const Nan::FunctionCallbackInfo<v8::Value>& info) {
 
     if (info.IsConstructCall()) {
 
-        //cout << "3. MistWrapper construct call\n";
         Callback *data_callback = new Callback(info[0].As<v8::Function>());
-        Callback *complete_callback = new Callback(info[1].As<v8::Function>());
-        Callback *error_callback = new Callback(info[2].As<v8::Function>());
-        v8::Local<v8::Object> options = info[3].As<v8::Object>();
+        v8::Local<v8::Object> options = info[1].As<v8::Object>();
 
-        string nodeName = "Node";
-        string coreIp = "127.0.0.1";
-        uint16_t corePort = 9094;
-        uint16_t apiType = 2;
-
+        Mist* mist = new Mist(data_callback, options);
+        
         if (options->IsObject()) {
             v8::Local<v8::Value> _nodeName = options->Get(Nan::New<v8::String>("name").ToLocalChecked());
             v8::Local<v8::Value> _coreIp = options->Get(Nan::New<v8::String>("coreIp").ToLocalChecked());
@@ -40,40 +34,31 @@ MistWrapper::New(const Nan::FunctionCallbackInfo<v8::Value>& info) {
             v8::Local<v8::Value> _apiType = options->Get(Nan::New<v8::String>("type").ToLocalChecked());
 
             if (_nodeName->IsString()) {
-                nodeName = string(*v8::String::Utf8Value(_nodeName->ToString()));
+                mist->name = string(*v8::String::Utf8Value(_nodeName->ToString()));
             }
 
             if (_coreIp->IsString()) {
-                coreIp = string(*v8::String::Utf8Value(_coreIp->ToString()));
+                mist->coreIp = string(*v8::String::Utf8Value(_coreIp->ToString()));
                 //cout << "4. a) MistWrapper constructor: opts: " << coreIp << "\n";
             } else {
                 //cout << "4. b) MistWrapper constructor: opts.core not string\n";
             }
 
             if (_corePort->IsNumber()) {
-                corePort = (uint16_t) _corePort->NumberValue();
+                mist->corePort = (int) _corePort->NumberValue();
             }
 
             if (_apiType->IsNumber()) {
-                apiType = (uint16_t) _apiType->NumberValue();
+                mist->apiType = (int) _apiType->NumberValue();
             }
-        }
+        }        
 
-        char* ip = strdup(coreIp.c_str());
-        char* name = strdup(nodeName.c_str());
-
-        //cout << "Going to call mist_addon_start\n";
-        
-        Mist* mist = new Mist(data_callback, complete_callback, error_callback, options);
-        
-        //printf("Mist instance %p\n", mist);
-
-        if (apiType == 2) {
+        if (mist->apiType == 2) {
             // This is a Node Api
-            mist_addon_start(mist, name, apiType, ip, corePort);
+            mist_addon_start(mist);
         } else {
             // This is a Mist Api
-            mist_addon_start(mist, name, apiType, ip, corePort);
+            mist_addon_start(mist);
         }
 
 

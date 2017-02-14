@@ -24,7 +24,7 @@ struct wish_app_core_opt {
     wish_app_t* wish_app;
     char* name;
     char* ip;
-    uint16_t port;
+    int port;
     struct wish_app_core_opt* next;
     struct wish_app_core_opt* prev;
 };
@@ -40,13 +40,6 @@ static void init(wish_app_t* app) {
 pthread_mutex_t mutex1 = PTHREAD_MUTEX_INITIALIZER;
 
 #define SANDBOX_RPC_MSG_LEN_MAX     (16*1024)
-
-bool relay_state = false;
-
-//static wish_app_t *app;
-//static mist_app_t* mist_app;
-//static mist_api_t* api;
-//static struct mist_model* model;
 
 static int input_buffer_len = 0;
 static char input_buffer[2048];
@@ -767,6 +760,8 @@ static void* setupMistNodeApi(void* ptr) {
 
     app->port = opts->port;
     
+    printf("Starting libuv tcp client for NodeApi.\n");
+    
     wish_core_client_init(app);
     
     return NULL;
@@ -779,7 +774,7 @@ static void* setupMistApi(void* ptr) {
     
     // name used for WishApp and MistNode name
     char* name = (char*) (opts->name != NULL ? opts->name : "MistApi");
-
+    
     //start wish apps
     mist_app_t* mist_app = opts->mist_app; // start_mist_app();
     
@@ -816,7 +811,7 @@ static void* setupMistApi(void* ptr) {
     return NULL;
 }
 
-void mist_addon_start(Mist* mist, char* name, int type, char* ip, uint16_t port) {
+void mist_addon_start(Mist* mist) {
     wish_platform_set_malloc(malloc);
     
     int iret;
@@ -827,10 +822,10 @@ void mist_addon_start(Mist* mist, char* name, int type, char* ip, uint16_t port)
     
     opts->mist = mist;
     
-    opts->name = strdup(name);
-    opts->ip = strdup(ip);
-    opts->port = port;
-
+    opts->name = strdup(mist->name.c_str());
+    opts->ip = strdup(mist->coreIp.c_str());
+    opts->port = mist->corePort;
+    
     /* Create independent threads each of which will execute function */
     
     // FIXME This is never freed!
@@ -839,17 +834,17 @@ void mist_addon_start(Mist* mist, char* name, int type, char* ip, uint16_t port)
 
     opts->mist_app = start_mist_app();
 
-    if(type == 2) {
+    if ( mist->apiType == 2 ) {
         //printf("mist_addon_start(setupMistApi, %s, core: %s:%d)\n", name, ip, port);
         iret = pthread_create(thread, NULL, setupMistApi, (void*) opts);
-    } else if ( type == 3 ) {
+    } else if ( mist->apiType == 3 ) {
         //printf("mist_addon_start(setupMistNodeApi, %s, core: %s:%d)\n", name, ip, port);
         iret = pthread_create(thread, NULL, setupMistNodeApi, (void*) opts);
-    } else if ( type == 4 ) {
+    } else if ( mist->apiType == 4 ) {
         //printf("mist_addon_start(setupMistNodeApi, %s, core: %s:%d)\n", name, ip, port);
         iret = pthread_create(thread, NULL, setupMistApi, (void*) opts);
     } else {
-        printf("mist_addon_start received unrecognized type %i, (expecting 2, 3 or 4)\n", type);
+        printf("mist_addon_start received unrecognized type %i, (expecting 2, 3 or 4)\n", mist->apiType);
         exit(EXIT_FAILURE);
     }
     

@@ -8,13 +8,9 @@
 class StreamingWorker : public Nan::AsyncProgressWorker {
 public:
 
-    StreamingWorker(Nan::Callback *progress, Nan::Callback *callback, Nan::Callback *error_callback);
+    StreamingWorker(Nan::Callback *progress);
 
     ~StreamingWorker();
-
-    void HandleErrorCallback();
-
-    void HandleOKCallback();
 
     void HandleProgressCallback(const char *data, size_t size);
 
@@ -29,9 +25,7 @@ protected:
 
     bool closed();
 
-
     Nan::Callback *progress;
-    Nan::Callback *error_callback;
     PCQueue<Message> toNode;
     bool input_closed;
 

@@ -6,11 +6,12 @@
 using namespace Nan;
 using namespace std;
 
-Mist::Mist(Callback *data, Callback *complete, Callback *error_callback, v8::Local<v8::Object> & options) 
-: StreamingWorker(data, complete, error_callback) {
+Mist::Mist(Callback *data, v8::Local<v8::Object> & options) 
+: StreamingWorker(data) {
 }
 
 Mist::~Mist() {
+    printf("Destroying Mist instance.");
 }
 
 void
@@ -30,8 +31,8 @@ Mist::Execute(const AsyncProgressWorker::ExecutionProgress& progress) {
         if(m.name == "kill") {
             // Execute got kill command
             run = false;
-            Message msg("done", "", NULL, 0);
-            writeToNode(progress, msg);            
+            //Message msg("done", "", NULL, 0);
+            //writeToNode(progress, msg);            
         }
 
         while (true) {
