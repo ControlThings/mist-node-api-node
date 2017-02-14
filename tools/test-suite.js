@@ -14,7 +14,7 @@ function done() {
     function running() {
         console.log('Starting node.');
         var node = child.spawn('node', ['./run.js']);
-        //var node = child.spawn('gdb', ['-batch', '-ex', 'run ../node_modules/mocha/bin/mocha --reporter json -c '+'./run.js', '-ex', 'bt', 'node']);
+        //var node = child.spawn('gdb', ['-batch', '-ex', 'set follow-fork-mode child', '-ex', 'run ./run.js', '-ex', 'bt', 'node']);
 
         node.on('error', (err) => {
             process('Failed to start node process.');
