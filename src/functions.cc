@@ -760,7 +760,7 @@ static void* setupMistNodeApi(void* ptr) {
 
     app->port = opts->port;
     
-    printf("Starting libuv tcp client for NodeApi.\n");
+    //printf("Starting libuv tcp client for NodeApi.\n");
     
     wish_core_client_init(app);
     

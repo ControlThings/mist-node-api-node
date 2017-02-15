@@ -7,10 +7,10 @@ var testStartTime = Date.now();
 var wishBinaryUrl = 'https://mist.controlthings.fi/dist/wish-core-v0.6.6-stable3-linux-x64';
 
 function done() {
-    
+
     console.log('Starting Wish Core.');
-    var core = child.spawn('./wish-core', [], { cwd: './env' });
-    
+    var core = child.spawn('./wish-core', [], { cwd: './env', stdio: 'inherit' });
+
     function running() {
         console.log('Starting node.');
         var node = child.spawn('node', ['./run.js']);
@@ -131,14 +131,14 @@ function done() {
         }        
         
     }
-    
+
     var coreTimeout = setTimeout(() => { running(); }, 200);
     
     core.on('error', (err) => {
         console.log('\x1b[35mwish> Failed to start wish-core process.');
         clearTimeout(coreTimeout);
     });
-    
+    /*
     core.stdout.on('data', (data) => {
         console.log('\x1b[35mwish>', data.toString().trim());
     });
@@ -146,6 +146,7 @@ function done() {
     core.stderr.on('data', (data) => {
         console.log('wish>', data.toString().trim());
     });
+    */
     
     core.on('exit', (code) => {
         console.log("wish exited with code:", code);
@@ -153,11 +154,11 @@ function done() {
     });
     
     function runningBob() {
-        
+
     }
     
     console.log('Starting Wish Core for Bob.');
-    var coreBob = child.spawn('../wish-core', ['-p 38001', '-a 9096', '-b', '-l', '-r'], { cwd: './env/bob' });
+    var coreBob = child.spawn('../wish-core', ['-p 38001', '-a 9096', '-b', '-l', '-r'], { cwd: './env/bob', stdio: 'inherit' });
     
     var coreBobTimeout = setTimeout(() => { runningBob(); }, 200);
     
@@ -171,6 +172,7 @@ function done() {
         process.exit(0);
     });
     
+    /*
     coreBob.stdout.on('data', (data) => {
         console.log('\x1b[35mwish>', data.toString().trim());
     });
@@ -178,6 +180,7 @@ function done() {
     coreBob.stderr.on('data', (data) => {
         console.log('wish>', data.toString().trim());
     });
+    */
     
     coreBob.on('exit', (code) => {
         console.log("wish exited with code:", code);
