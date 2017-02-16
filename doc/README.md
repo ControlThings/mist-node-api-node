@@ -19,8 +19,17 @@ To test new features of mist-api you need to:
 
   # have mist-esp softlinked to the mist-node-api-node directory
   # build the libmist.a using make -f linux-static...mk in mist-esp
+  # work from the tools directory
   cd .. && node-gyp rebuild && cd tools
   BUILD=1 node test-suite.js
+  
+To work with debugging and new builds
+
+  # build the libmist.a with -g -O0
+  # check test-suite.js child.spawn uses gdb version of the start commands
+
+  cd .. && node-gyp rebuild --debug && cd tools
+  DEBUG=1 node test-suite.js
   
 
 Write more tests by copying one of the test in tools/test
