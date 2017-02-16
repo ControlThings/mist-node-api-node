@@ -1,6 +1,5 @@
 var Mist = require('../../index.js').Mist;
 var Sandboxed = require('../../index.js').Sandboxed;
-
 var inspect = require('util').inspect;
 
 describe('MistApi Control', function () {
@@ -19,8 +18,7 @@ describe('MistApi Control', function () {
         done();
     });
 
-    it('should get veersion string', function(done) {
-        
+    it('should get version string', function(done) {
         mist.request('version', [], function(err, data) { 
             if (err) { return done(new Error(inspect(data))); }
             
