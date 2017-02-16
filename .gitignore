@@ -4,5 +4,6 @@
 /build
 /npm-debug.log
 /*.tgz
+/tools/env
 mappings.bin
 sandbox.bin

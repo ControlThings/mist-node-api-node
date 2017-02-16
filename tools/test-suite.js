@@ -1,5 +1,6 @@
 const https = require('https');
 const fs = require('fs');
+const mkdirp = require('mkdirp');
 const child = require('child_process');
 
 var testStartTime = Date.now();
@@ -194,14 +195,16 @@ try {
 } catch (e) {}
 
 var fileName = './env/wish-core';
+mkdirp('./env/bob');
 
 if (process.env.WISH) {
     try {
         fs.writeFileSync(fileName, fs.readFileSync(process.env.WISH));
-        done();
+        fs.chmodSync(fileName, '755');
     } catch(e) {
         console.log('Could not find Wish binary from WISH='+process.env.WISH, e);
     }
+    done();
 } else {
 
     https.get(wishBinaryUrl, (res) => {
@@ -210,7 +213,6 @@ if (process.env.WISH) {
 
         var downloadTime = Date.now();
 
-        var fileName = './env/wish-core';
         var file = fs.createWriteStream(fileName);
 
         if (res.statusCode === 200) {

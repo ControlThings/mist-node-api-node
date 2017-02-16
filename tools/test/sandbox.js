@@ -75,9 +75,11 @@ describe('MistApi Sandbox', function () {
         mist.request('sandbox.addPeer', [gpsSandboxId, peer], function(err, data) {
             console.log("addPeer response for gpsSandbox", err, data);
             
+            var ended = false;
+            
             mist.request('sandbox.listPeers', [gpsSandboxId], function(err, data) {
                 console.log("peers allowed for gpsSandbox", err, data);
-                done();
+                if(!ended) { ended = true; done(); }
             });
         });
     });
@@ -98,6 +100,8 @@ describe('MistApi Sandbox', function () {
         sandboxedGps.request('login', ['Gps App'], function(err, data) {
             console.log("Sandbox login reponse:", err, data);
 
+            var ended = false;
+
             sandboxedGps.request('signals', [], function(err, data) {
                 console.log("sandboxedGps signals:", err, data);
                 
@@ -108,7 +112,7 @@ describe('MistApi Sandbox', function () {
                         for(var i in data) {
                             sandboxedGps.request('mist.control.model', [data[i], 'enabled'], function(err, data) {
                                 console.log("sandboxedGps model:", err, data);
-                                done();
+                                if(!ended) { ended = true; done(); }
                             });
                         }
                     });

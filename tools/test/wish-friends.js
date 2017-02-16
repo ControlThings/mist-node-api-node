@@ -12,6 +12,7 @@ describe('MistApi Friends', function () {
     var mist;
     var bob;
     var aliceIdentity;
+    var bobAlias = 'I am Bob';
     var bobIdentity;
     var bobWldEntry;
     
@@ -36,6 +37,44 @@ describe('MistApi Friends', function () {
 
         bob.request('ready', [], function(err, data) {
             done();
+        });
+    });
+
+    it('should ensure identity', function(done) {
+        function createIdentity(alias) {
+            bob.wish('identity.create', [alias], function(err, data) {
+                if (err) { return done(new Error(inspect(data))); }
+                bobIdentity = data[0];
+                done();
+            });
+        }
+        
+        bob.wish('identity.list', [], function(err, data) {
+            if (err) { return done(new Error(inspect(data))); }
+            
+            console.log("Ensuring identity of Bob.", data);
+
+            var c = 0;
+            var t = 0;
+            
+            for(var i in data) {
+                c++;
+                t++;
+                bob.wish('identity.remove', [data[i].uid], function(err, data) {
+                    if (err) { return done(new Error(inspect(data))); }
+
+                    c--;
+                    
+                    if ( c===0 ) {
+                        console.log("Deleted ", t, 'identities. Now creating Bob');
+                        createIdentity(bobAlias, done);
+                    }
+                });
+            }
+            
+            if(t===0) {
+                createIdentity(bobAlias, done);
+            }
         });
     });
 

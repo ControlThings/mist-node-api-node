@@ -5,6 +5,7 @@ var inspect = require('util').inspect;
 
 describe('MistApi Control', function () {
     var mist;
+    var mistIdentity;
     
     before(function (done) {
         mist = new Mist({ name: 'Generic UI', coreIp: '127.0.0.1', corePort: 9094 });
@@ -23,15 +24,60 @@ describe('MistApi Control', function () {
     var peer;
     var end = false;
 
+
+    function removeIdentity(alias, done) {
+        mist.wish('identity.list', [], function(err, data) {
+            if (err) { return done(new Error(inspect(data))); }
+            
+            console.log("removeIdentity has data", data);
+            
+            for(var i in data) {
+                if (data[i].alias === alias) {
+                    mist.wish('identity.remove', [data[i].uid], function(err, data) {
+                        if (err) { return done(new Error(inspect(data))); }
+
+                        console.log("Deleted.", err, data);
+                        done();
+                    });
+                    return;
+                }
+            }
+            
+            console.log("Identity does not exist.");
+            done();
+        });
+    }
+    
+    it('should ensure identity', function(done) {
+        var name = 'Mr. Andersson';
+        removeIdentity(name, function() {
+            console.log("should create identity: getting identity list");
+            mist.wish('identity.create', [name], function(err, data) {
+                console.log("identity.create('"+name+"'): cb", err, data);
+                mistIdentity = data;
+                done();
+            });
+        });
+    });
+
+    it('should wait', function(done) { setTimeout(done, 250); });
+
     it('should find the peer', function(done) {
         function peers(err, data) {
-            if (!data[0] || !data[0].online) { console.log('peer[0] -- but not online'); return; }
-            
-            
-            peer = data[0];
-            //console.log("The peers is:", peer);
-            done();
-            done = function() {};
+            for(var i in data) {
+                if ( Buffer.compare(data[i].luid, mistIdentity.uid) === 0 
+                        && Buffer.compare(data[i].ruid, mistIdentity.uid) === 0 ) 
+                {
+                    if (!data[i] || !data[i].online) { console.log('peer -- but not online'); return; }
+
+                    peer = data[0];
+                    //console.log("The peers is:", peer);
+                    done();
+                    done = function() {};
+                    
+                    break;
+                }
+            }
         }
         
         mist.request('signals', [], function(err, signal) { 
