@@ -6,6 +6,7 @@ var inspect = require('util').inspect;
 describe('MistApi Friends', function () {
     var mist;
     var bob;
+    var joystick;
     
     before(function(done) {
         mist = new Mist({ name: 'FriendManager', coreIp: '127.0.0.1', corePort: 9094 });
@@ -17,12 +18,13 @@ describe('MistApi Friends', function () {
     });
     
     after('should start bob', function(done) {
-        process.nextTick(function() { mist.shutdown(); });
+        process.nextTick(function() { mist.shutdown(); joystick ? joystick.shutdown() : ''; });
         done();
     });
 
     function removeIdentity(alias, done) {
         mist.wish('identity.list', [], function(err, data) {
+            if (err) { return done(new Error(inspect(data))); }
             
             for(var i in data) {
                 if (data[i].alias === alias) {
@@ -41,20 +43,20 @@ describe('MistApi Friends', function () {
         });
     }
     
-    it('should delete identity', function(done) {
+    it('should delete identity before', function(done) {
         removeIdentity('Master', done);
     });
 
-    it('should start bob', function(done) {
-        console.log("getting bobs identity list");
+    xit('should create identity', function(done) {
+        console.log("should create identity: getting identity list");
         mist.wish('identity.create', ['Master'], function(err, data) {
             console.log("identity.create('Master'): cb", err, data);
             done();
         });
     });
 
-    it('should start bob', function(done) {
-        console.log("getting bobs identity list");
+    xit('should create device', function(done) {
+        console.log("should create device: signals req");
 
         mist.request('signals', [], function(err, data) {
             if (err) { return done(new Error(inspect(data))); }
@@ -65,7 +67,7 @@ describe('MistApi Friends', function () {
         });
         
         
-        var joystick = new MistNode({ name: 'Joystick', coreIp: '127.0.0.1', corePort: 9094 });
+        joystick = new MistNode({ name: 'Joystick', coreIp: '127.0.0.1', corePort: 9094 });
         
         joystick.create({
             device: "Joystick",
@@ -81,7 +83,7 @@ describe('MistApi Friends', function () {
         
     });
     
-    it('should delete identity', function(done) {
+    it('should delete identity after', function(done) {
         removeIdentity('Master', done);
     });
 });
