@@ -9,16 +9,16 @@
             "include_dirs" : [
                 "src",
                 "<!(node -e \"require('nan')\")",
-                "mist-esp/apps/mist-api",
-                "mist-esp/wish_app_deps",
-                "mist-esp/wish_app",
-                "mist-esp/wish_rpc",
-                "mist-esp/mist",
-                "mist-esp/deps/bson",
-                "mist-esp/deps/cBSON"
+                "mist-c99/src",
+                "mist-c99/mist",
+                "mist-c99/wish_app_deps",
+                "mist-c99/wish_app",
+                "mist-c99/deps/wish-rpc-c99/src",
+                "mist-c99/deps/bson",
+                "mist-c99/deps/cBSON"
             ],
             "libraries": [
-              "-lmist", "-L/home/akaustel/work/wh/mist-esp"
+              "-lmist", "-L/home/akaustel/work/mist/mist-c99"
             ],
         }
     ],
