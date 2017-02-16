@@ -107,9 +107,10 @@ describe('MistApi Sandbox', function () {
                 
                 if (data === 'ready') {
                     sandboxedGps.request('listPeers', [], function(err, data) {
-                        console.log("sandboxedGps listPeers:", err, data);
+                        //console.log("sandboxedGps listPeers:", err, data);
                         
                         for(var i in data) {
+                            if(!data[i].online) { continue; }
                             sandboxedGps.request('mist.control.model', [data[i], 'enabled'], function(err, data) {
                                 console.log("sandboxedGps model:", err, data);
                                 if(!ended) { ended = true; done(); }

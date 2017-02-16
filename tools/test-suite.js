@@ -5,7 +5,7 @@ const child = require('child_process');
 
 var testStartTime = Date.now();
 
-var wishBinaryUrl = 'https://mist.controlthings.fi/dist/wish-core-v0.6.6-stable3-linux-x64';
+var wishBinaryUrl = 'https://mist.controlthings.fi/dist/wish-core-v0.6.7-linux-x64';
 
 function done() {
 
@@ -195,7 +195,7 @@ try {
 } catch (e) {}
 
 var fileName = './env/wish-core';
-mkdirp('./env/bob');
+mkdirp.sync('./env/bob');
 
 if (process.env.WISH) {
     try {
