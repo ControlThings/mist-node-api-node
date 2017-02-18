@@ -12,6 +12,7 @@ describe('MistApi Friends', function () {
     var mist;
     var bob;
     var aliceIdentity;
+    var aliceAlias = 'Mr. Andersson';
     var bobAlias = 'I am Bob';
     var bobIdentity;
     var bobWldEntry;
@@ -44,7 +45,8 @@ describe('MistApi Friends', function () {
         function createIdentity(alias) {
             bob.wish('identity.create', [alias], function(err, data) {
                 if (err) { return done(new Error(inspect(data))); }
-                bobIdentity = data[0];
+                console.log("Setting Bobs identity to:", data);
+                bobIdentity = data;
                 done();
             });
         }
@@ -52,7 +54,7 @@ describe('MistApi Friends', function () {
         bob.wish('identity.list', [], function(err, data) {
             if (err) { return done(new Error(inspect(data))); }
             
-            console.log("Ensuring identity of Bob.", data);
+            //console.log("Ensuring identity of Bob.", data);
 
             var c = 0;
             var t = 0;
@@ -78,41 +80,57 @@ describe('MistApi Friends', function () {
         });
     });
 
+    it('shuold wait', function(done) { setTimeout(done, 500); });
+
+    it('should ensure identity for Mr. Andersson', function(done) {
+        function createIdentity(alias) {
+            mist.wish('identity.create', [alias], function(err, data) {
+                if (err) { return done(new Error(inspect(data))); }
+                console.log("Setting Alice identity to:", err, data);
+                aliceIdentity = data;
+                done();
+            });
+        }
+        
+        mist.wish('identity.list', [], function(err, data) {
+            if (err) { return done(new Error(inspect(data))); }
+            
+            //console.log("Ensuring identity of Alice.", data);
+
+            var c = 0;
+            var t = 0;
+            
+            for(var i in data) {
+                c++;
+                t++;
+                mist.wish('identity.remove', [data[i].uid], function(err, data) {
+                    if (err) { return done(new Error(inspect(data))); }
+
+                    c--;
+                    
+                    if ( c===0 ) {
+                        console.log("Deleted ", t, 'identities. Now creating Alice (Mr. Andersson)');
+                        createIdentity(aliceAlias, done);
+                    }
+                });
+            }
+            
+            if(t===0) {
+                createIdentity(aliceAlias, done);
+            }
+        });
+    });
+    
+    /*
     it('should wet bob', function(done) {
         bob.request('listPeers', [], function(err, data) {
             console.log("bob: listPeers", err, data);
             done();
         });
     });
+    */
 
-    it('should get alice identity', function(done) {
-        mist.wish('identity.list', [], function(err, data) {
-            if (err) { return done(new Error(inspect(data))); }
-            
-            aliceIdentity = data[0];
-            done();
-        });
-    });
-
-    it('should export alice identity', function(done) {
-        mist.wish('identity.export', [aliceIdentity.uid, 'binary'], function(err, data) {
-            if (err) { return done(new Error(inspect(data))); }
-            
-            console.log("Alice cert", err, BSON.deserialize(data));
-            done();
-        });
-    });
-
-    it('should get bobs identity', function(done) {
-        bob.wish('identity.list', [], function(err, data) {
-            if (err) { return done(new Error(inspect(data))); }
-            
-            bobIdentity = data[0];
-            done();
-        });
-    });
-
-    it('should export bobs identity', function(done) {
+    xit('should export bobs identity', function(done) {
         bob.wish('identity.export', [bobIdentity.uid, 'binary'], function(err, data) {
             if (err) { return done(new Error(inspect(data))); }
             
@@ -131,7 +149,7 @@ describe('MistApi Friends', function () {
                 console.log("Bobs wld", err, data);
                 
                 for (var i in data) {
-                    if(data[i].alias === 'I am Bob') {
+                    if ( Buffer.compare(data[i].ruid, bobIdentity.uid) === 0) {
                         bobWldEntry = data[i];
                         done();
                         return;
@@ -145,7 +163,7 @@ describe('MistApi Friends', function () {
         setTimeout(poll, 100);
     });
     
-    it('should delete Bob from Alice if he already exists', function(done) {
+    xit('should delete Bob from Alice if he already exists', function(done) {
         mist.wish('identity.remove', [bobIdentity.uid], function(err, data) {
             if (err) { return done(new Error(inspect(data))); }
             
@@ -154,7 +172,7 @@ describe('MistApi Friends', function () {
         });
     });
     
-    it('should delete Alice from Bob if he already exists', function(done) {
+    xit('should delete Alice from Bob if he already exists', function(done) {
         bob.wish('identity.remove', [aliceIdentity.uid], function(err, data) {
             if (err) { return done(new Error(inspect(data))); }
             
@@ -163,7 +181,7 @@ describe('MistApi Friends', function () {
         });
     });
     
-    xit('should add Bob as a friend to Alice', function(done) {
+    it('should add Bob as a friend to Alice', function(done) {
         console.log("Friend request params:", [aliceIdentity.uid, bobWldEntry.ruid, bobWldEntry.rhid]);
         mist.wish('wld.friendRequest', [aliceIdentity.uid, bobWldEntry.ruid, bobWldEntry.rhid], function(err, data) {
             if (err) { return done(new Error(inspect(data))); }
@@ -171,7 +189,7 @@ describe('MistApi Friends', function () {
             console.log("Bobs cert", err, data);
             
             setTimeout(function() {
-                bob.wish('identity.list', [], function(err, data) {
+                mist.wish('identity.list', [], function(err, data) {
                     if (err) { return done(new Error(inspect(data))); }
 
                     console.log("Alice's identity.list", err,data);
@@ -180,8 +198,24 @@ describe('MistApi Friends', function () {
             }, 250);
         });
     });
+
+    it('should get bobs identity list', function(done) {
+        bob.wish('identity.list', [], function(err, data) {
+            if (err) { return done(new Error(inspect(data))); }
+            console.log("Bobs identity.list:", inspect(data, {colors:true}));
+            done();
+        });
+    });
+
+    it('should get Alices identity list', function(done) {
+        mist.wish('identity.list', [], function(err, data) {
+            if (err) { return done(new Error(inspect(data))); }
+            console.log("Alices identity.list:", inspect(data, {colors:true}));
+            done();
+        });
+    });
     
-    xit('shuold get a connection between Alice and Bob', function(done) {
+    it('shuold get a connection between Alice and Bob', function(done) {
         this.timeout(35000);
         
         function poll() {

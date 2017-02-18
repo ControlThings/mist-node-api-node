@@ -22,11 +22,11 @@ function done() {
         });
 
         node.stdout.on('data', (data) => {
-            console.log('\x1b[37mnode>', data.toString().trim());
+            console.log('\x1b[37mnode>', data.toString().trim(),'\x1b[39m');
         });
 
         node.on('exit', (code, signal) => {
-            console.log('\x1b[36mnode> Exited with code:', signal ? signal : code);
+            console.log('\x1b[36mnode> Exited with code:', signal ? signal : code,'\x1b[39m');
         });
 
         var results = [];
@@ -42,7 +42,7 @@ function done() {
                 for(var i in results) {
                     for(var j in results[i].passes) {
                         var it = results[i].passes[j];
-                        console.log('  \x1b[34m✓ \x1b[37m', it.fullTitle, '\x1b[32m('+it.duration+'ms)');
+                        console.log('  \x1b[34m✓ \x1b[37m', it.fullTitle, '\x1b[32m('+it.duration+'ms)','\x1b[39m');
                     }
                     console.log();
                 }
@@ -72,7 +72,7 @@ function done() {
                     }
                 }
 
-                console.log();
+                console.log('\x1b[39m');
 
                 //fs.writeFileSync('./results.json', JSON.stringify(results, null, 2));
                 node.kill();
@@ -95,18 +95,18 @@ function done() {
                     results.push(JSON.parse(data));
                     //console.log("======="+data);
                 } catch(e) {
-                    console.log('\x1b[36mtest>', data.toString().trim());
+                    console.log('\x1b[36mtest>', data.toString().trim(),'\x1b[39m');
                 }                
             });
 
             test.stderr.on('data', (data) => {
-                console.log('\x1b[36mtest>', data.toString().trim());
+                console.log('\x1b[36mtest>', data.toString().trim(),'\x1b[39m');
             });
 
             test.on('exit', (code, signal) => {
-                console.log('\x1b[36mtest> Exited with code:', code, signal);
+                console.log('\x1b[36mtest> Exited with code:', code, signal,'\x1b[39m');
                 if( code === 0 ) {
-                    console.log('\x1b[35mTest run completed successfully in '+(Date.now()-testStartTime)+'ms');
+                    console.log('\x1b[35mTest run completed successfully in '+(Date.now()-testStartTime)+'ms','\x1b[39m');
                 }
                 
                 process.nextTick(function() { run(list); });
@@ -159,12 +159,12 @@ function done() {
     }
     
     console.log('Starting Wish Core for Bob.');
-    var coreBob = child.spawn('../wish-core', ['-p 38001', '-a 9096', '-b', '-l', '-r'], { cwd: './env/bob', stdio: 'inherit' });
+    var coreBob = child.spawn('../wish-core', ['-p 38002', '-a 9096', '-b', '-l', '-r', '-s'], { cwd: './env/bob', stdio: 'inherit' });
     
     var coreBobTimeout = setTimeout(() => { runningBob(); }, 200);
     
     coreBob.on('error', (err) => {
-        console.log('\x1b[35mwish> Failed to start wish-core process for bob.', err);
+        console.log('\x1b[35mwish> Failed to start wish-core process for bob.', err,'\x1b[39m');
         clearTimeout(coreBobTimeout);
         
         core.kill();
@@ -189,42 +189,50 @@ function done() {
     });
 }
 
-try {
-    //fs.unlinkSync('./env/wish_hostid.raw');
-    //fs.unlinkSync('./env/wish_id_db.bson');
-} catch (e) {}
+function start() {
 
-var fileName = './env/wish-core';
-mkdirp.sync('./env/bob');
-
-if (process.env.WISH) {
     try {
-        fs.writeFileSync(fileName, fs.readFileSync(process.env.WISH));
-        fs.chmodSync(fileName, '755');
-    } catch(e) {
-        console.log('Could not find Wish binary from WISH='+process.env.WISH, e);
-    }
-    done();
-} else {
+        //fs.unlinkSync('./env/wish_hostid.raw');
+        //fs.unlinkSync('./env/wish_id_db.bson');
+    } catch (e) {}
 
-    https.get(wishBinaryUrl, (res) => {
-        //console.log('statusCode:', res.statusCode);
-        //console.log('headers:', res.headers);
+    var fileName = './env/wish-core';
+    mkdirp.sync('./env/bob');
 
-        var downloadTime = Date.now();
-
-        var file = fs.createWriteStream(fileName);
-
-        if (res.statusCode === 200) {
-            file.on('close', () => { console.log('Downloaded Wish binary '+(Date.now()-downloadTime)+'ms'); fs.chmodSync(fileName, '755'); done(); });
-            res.pipe(file);
-        } else if ( res.statusCode === 404 ) {
-            console.error('Wish binary not found '+wishBinaryUrl);
-        } else {
-            console.error('Failed downloading Wish binary '+wishBinaryUrl+'. HTTP response code', res.statusCode);
+    if (process.env.WISH) {
+        try {
+            fs.writeFileSync(fileName, fs.readFileSync(process.env.WISH));
+            fs.chmodSync(fileName, '755');
+        } catch(e) {
+            console.log('Could not find Wish binary from WISH='+process.env.WISH, e);
+            process.exit(0);
+            return;
         }
-    }).on('error', (e) => {
-        console.error('Failed downloading wish binary.', e);
-    });
+        done();
+    } else {
 
+        https.get(wishBinaryUrl, (res) => {
+            //console.log('statusCode:', res.statusCode);
+            //console.log('headers:', res.headers);
+
+            var downloadTime = Date.now();
+
+            var file = fs.createWriteStream(fileName);
+
+            if (res.statusCode === 200) {
+                file.on('close', () => { console.log('Downloaded Wish binary '+(Date.now()-downloadTime)+'ms'); fs.chmodSync(fileName, '755'); done(); });
+                res.pipe(file);
+            } else if ( res.statusCode === 404 ) {
+                console.error('Wish binary not found '+wishBinaryUrl);
+            } else {
+                console.error('Failed downloading Wish binary '+wishBinaryUrl+'. HTTP response code', res.statusCode);
+            }
+        }).on('error', (e) => {
+            console.error('Failed downloading wish binary.', e);
+        });
+
+    }
+    
 }
+
+start();
