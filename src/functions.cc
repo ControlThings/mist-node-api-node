@@ -95,7 +95,7 @@ static void wish_response_cb(struct wish_rpc_entry* req, void* ctx, uint8_t* dat
             ctx = req->passthru_ctx2;
         } else {
             printf("NULL ctx in response going towards node.js. ctx %p\n", ctx);
-            bson_visit(data, elem_visitor);
+            bson_visit("NULL ctx request:", (uint8_t*)data);
             return;
         }
     }
@@ -301,8 +301,7 @@ static void mist_api_periodic_cb_impl(void* ctx) {
                 //printf("Mist going into request context: %p cb %p\n", opts->mist, mist_response_cb);
                 mist_api_request_context(mist_api, &bs, mist_response_cb, opts->mist);
             } else if (input_type == 3) { // MIST NODE API
-                printf("MistApi got message MistNodeApi command from node.js, not good!\n");
-                bson_visit((uint8_t*)bson_data(&bs), elem_visitor);
+                bson_visit("MistApi got message MistNodeApi command from node.js, not good!", (uint8_t*)bson_data(&bs));
             } else if (input_type == 4) { // MIST SANDBOXED API
                 //printf("### Sandboxed Api\n");
                 //WISHDEBUG(LOG_CRITICAL, "sandbox_api-request:");

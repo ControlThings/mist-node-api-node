@@ -15,7 +15,7 @@
                 "mist-c99/wish_app",
                 "mist-c99/deps/wish-rpc-c99/src",
                 "mist-c99/deps/bson",
-                "mist-c99/deps/cBSON"
+                "mist-c99/deps/cbson/src"
             ],
             "libraries": [
               "-lmist", "-L/home/akaustel/work/mist/mist-c99"
