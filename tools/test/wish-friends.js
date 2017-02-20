@@ -216,7 +216,7 @@ describe('MistApi Friends', function () {
     });
     
     it('shuold get a connection between Alice and Bob', function(done) {
-        this.timeout(35000);
+        this.timeout(45000);
         
         function poll() {
             mist.wish('connections.list', [], function(err, data) {
@@ -225,8 +225,7 @@ describe('MistApi Friends', function () {
                 console.log("Alice connections", err, data);
                 
                 for (var i in data) {
-                    if(data[i].alias === 'I am Bob') {
-                        bobWldEntry = data[i];
+                    if( Buffer.compare(data[i].ruid, bobIdentity.uid) === 0 ) {
                         done();
                         return;
                     }

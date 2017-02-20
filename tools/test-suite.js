@@ -10,7 +10,8 @@ var wishBinaryUrl = 'https://mist.controlthings.fi/dist/wish-core-v0.6.7-linux-x
 function done() {
 
     console.log('Starting Wish Core.');
-    var core = child.spawn('./wish-core', [], { cwd: './env', stdio: 'inherit' });
+    //var core = child.spawn('./wish-core', [], { cwd: './env', stdio: 'inherit' });
+    var core = child.spawn('gdb', ['-batch', '-ex', 'run', '-ex', 'bt', './wish-core'], { cwd: './env', stdio: 'inherit' });
 
     function running() {
         console.log('Starting node.');
@@ -160,6 +161,7 @@ function done() {
     
     console.log('Starting Wish Core for Bob.');
     var coreBob = child.spawn('../wish-core', ['-p 38002', '-a 9096', '-b', '-l', '-r', '-s'], { cwd: './env/bob', stdio: 'inherit' });
+    //var coreBob = child.spawn('gdb', ['-batch', '-ex', 'run -p 38002 -a 9096 -b -l -r -s', '-ex', 'bt', '../wish-core'], { cwd: './env/bob', stdio: 'inherit' });
     
     var coreBobTimeout = setTimeout(() => { runningBob(); }, 200);
     
