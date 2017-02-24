@@ -39,6 +39,25 @@ describe('MistApi Friends', function () {
         bob.request('ready', [], function(err, data) {
             done();
         });
+        
+        
+        // subscribe to signals from core and automatically accept friend request from Alice
+        bob.wish('signals', [], function(err, data) {
+            if (data[0] && data[0] === 'friendRequest') {
+                bob.wish('identity.friendRequestList', [], function(err, data) {
+                    for (var i in data) {
+                        if( Buffer.compare(data[i].luid, bobIdentity.uid) === 0 
+                                && Buffer.compare(data[i].ruid, aliceIdentity.uid) === 0 ) 
+                        {
+                            bob.wish('identity.friendRequestAccept', [data[i].luid, data[i].ruid], function(err, data) {
+                                console.log("Accepted friend request from Alice:", err, data);
+                            });
+                            break;
+                        }
+                    }
+                });
+            }
+        });
     });
 
     it('should ensure identity', function(done) {
@@ -184,7 +203,7 @@ describe('MistApi Friends', function () {
             mist.wish('connections.list', [], function(err, data) {
                 if (err) { return done(new Error(inspect(data))); }
 
-                //console.log("Alice connections", err, data);
+                console.log("Alice connections", err, data);
                 
                 for (var i in data) {
                     if( Buffer.compare(data[i].ruid, bobIdentity.uid) === 0 ) {
