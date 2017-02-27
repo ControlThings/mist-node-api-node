@@ -49,7 +49,7 @@ static Mist* mistInst;
 
 bool injectMessage(Mist* mist, int type, uint8_t *msg, int len) {
     if (pthread_mutex_trylock(&mutex1)) {
-        printf("Unsuccessful injection lock.\n");
+        //printf("Unsuccessful injection lock.\n");
         return NULL;
     }
 
@@ -739,7 +739,7 @@ static void* setupMistNodeApi(void* ptr) {
 
     mist_model_t* model = &(mist_app->model);
     
-    model->custom_ui_url = (char*) "https://mist.controlthings.fi/mist-io-switch-0.0.2.tgz";
+    //model->custom_ui_url = (char*) "https://mist.controlthings.fi/mist-io-switch-0.0.2.tgz";
     
     mist_set_name(mist_app, name);
     
