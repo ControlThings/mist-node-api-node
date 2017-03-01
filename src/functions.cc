@@ -78,7 +78,7 @@ static void mist_response_cb(struct wish_rpc_entry* req, void* ctx, uint8_t* dat
         // regular request
     } else {
         // passthru request
-        ctx = ((wish_rpc_ctx *)ctx)->context;
+        ctx = ((rpc_server_req *)ctx)->context;
     }
     
     std::string a = "even";
@@ -115,7 +115,7 @@ static void sandboxed_response_cb(struct wish_rpc_entry* req, void* ctx, uint8_t
         // regular request
     } else {
         // request came from passthrough
-        ctx = ((wish_rpc_ctx *)ctx)->context;
+        ctx = ((rpc_server_req *)ctx)->context;
         //printf("   mist is here %p", ctx);
     }
     
