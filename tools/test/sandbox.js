@@ -27,6 +27,7 @@ describe('MistApi Sandbox', function () {
 
     var aliceAlias = 'Alice';
     var aliceIdentity;
+    var unimportantIdentity;
 
     it('should ensure identity for Alice', function(done) {
         mist.wish('identity.list', [], function(err, data) {
@@ -68,6 +69,7 @@ describe('MistApi Sandbox', function () {
     it('should ensure identity for Mr. Unimportant', function(done) {
         mist.wish('identity.create', ['Mr. Unimportant'], function(err, data) {
             if (err) { return done(new Error(inspect(data))); }
+            unimportantIdentity = data;
             done();
         });
     });
@@ -84,11 +86,15 @@ describe('MistApi Sandbox', function () {
             var list = [];
             
             for (var i in data) {
-                list.push(data[i]);
+                if( Buffer.compare(data[i].luid, aliceIdentity.uid) === 0 ) {
+                    list.push(data[i]);
+                }
             }
+            
             
             if(list.length>0) {
                 peer = list[0];
+                console.log("Here is alice and the peer we added:", aliceIdentity, peer);
                 done();
             } else {
                 done(new Error('No peer found!'));
@@ -121,11 +127,14 @@ describe('MistApi Sandbox', function () {
             mist.request('sandbox.addPeer', [gpsSandboxId, peer], function(err, data) {
                 console.log("addPeer response for gpsSandbox", err, data);
 
-                var ended = false;
+                var bogusPeer = { luid: peer.luid, ruid: unimportantIdentity.uid, rhid: peer.rhid, rsid: peer.rsid, protocol: peer.protocol, online: false };
 
-                mist.request('sandbox.listPeers', [gpsSandboxId], function(err, data) {
-                    console.log("peers allowed for gpsSandbox", err, data);
-                    if(!ended) { ended = true; done(); }
+                mist.request('sandbox.addPeer', [gpsSandboxId, bogusPeer], function(err, data) {
+                    console.log("addPeer response for gpsSandbox", err, data);
+                    mist.request('sandbox.listPeers', [gpsSandboxId], function(err, data) {
+                        console.log("peers allowed for gpsSandbox", err, data);
+                        done();
+                    });
                 });
             });
         });
@@ -173,7 +182,7 @@ describe('MistApi Sandbox', function () {
     });
     
     it('shuold list identities in sandbox', function(done) {
-        sandboxedGps.request('login', ['ControlThings App'], function(err, data) {
+        sandboxedGps.request('login', ['Gps App'], function(err, data) {
             console.log("ControlThings Sandbox login reponse:", err, data);
 
             sandboxedGps.request('listPeers', [], function(err, data) {
