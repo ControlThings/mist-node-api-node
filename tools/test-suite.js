@@ -84,7 +84,7 @@ function done() {
 
             var testFile = file;
             console.log('\x1b[34mStarting test:', testFile);
-            var test = child.spawn('../node_modules/mocha/bin/mocha', ['--reporter', 'json', '-c', testFile]);
+            var test = child.spawn('../../node_modules/mocha/bin/mocha', ['--reporter', 'json', '-c', '../'+testFile], { cwd: './env' });
             //var test = child.spawn('gdb', ['-batch', '-ex', 'set follow-fork-mode child', '-ex', 'run ../node_modules/mocha/bin/mocha --reporter json -c '+testFile, '-ex', 'bt', 'node']);
 
             test.on('error', (err) => {
@@ -193,12 +193,14 @@ function done() {
 
 function start() {
 
+
     try {
         //fs.unlinkSync('./env/wish_hostid.raw');
         //fs.unlinkSync('./env/wish_id_db.bson');
     } catch (e) {}
 
     var fileName = './env/wish-core';
+    mkdirp.sync('./env/alice');
     mkdirp.sync('./env/bob');
 
     if (process.env.WISH) {
@@ -234,7 +236,17 @@ function start() {
         });
 
     }
-    
 }
+/*
+child.exec('rm -r ./env', function (err, stdout, stderr) {
+    if (err) { 
+        console.log("Failed to remove the working directory './env' using rm -r ./env, trying to run tests anyway"); 
+        setTimeout(start, 2000);
+        return;
+    }
+    
+    start();
+});
+*/
 
 start();
