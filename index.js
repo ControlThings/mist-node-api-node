@@ -95,7 +95,11 @@ function Mist(opts) {
 
                     if(typeof self.requests[id] === 'function') {
                         if (msg.err) {
-                            self.requests[id](true, { code: msg.code, msg: msg.msg });
+                            if(typeof msg.data === 'object') {
+                                self.requests[id](true, { code: msg.data.code, msg: msg.data.msg });
+                            } else {
+                                self.requests[id](true, { code: 100, msg: "Invalid error returned." });
+                            }
                         } else {
                             self.requests[id](null, msg.data);
                         }
@@ -121,7 +125,11 @@ function Mist(opts) {
                 
                 if(typeof self.requests[id] === 'function') {
                     if (msg.err) {
-                        self.requests[id](true, { code: msg.code, msg: msg.msg });
+                        if(typeof msg.data === 'object') {
+                            self.requests[id](true, { code: msg.data.code, msg: msg.data.msg });
+                        } else {
+                            self.requests[id](true, { code: 100, msg: "Invalid error returned." });
+                        }
                     } else {
                         self.requests[id](null, msg.data);
                     }

@@ -33,6 +33,14 @@ describe('MistApi RPC', function () {
             done(new Error('Not the expected error.'));
         });
     });
+
+    it('should get error on invalid parameters', function(done) {
+        mist.wish('identity.export', [], function (err, data) {
+            if(err) { if (data.code === 8) { return done(); } }
+            
+            done(new Error('Not the expected error. '+inspect(data)));
+        });
+    });
     
     it('should get version string', function(done) {
         mist.wish('version', [], function(err, data) { 
