@@ -25,7 +25,7 @@ describe('MistApi RPC', function () {
         done();
     });    
 
-    it('should get error on undefined command', function(done) {
+    it('should get a localdiscovery signal', function(done) {
         this.timeout(10000);
         mist.wish('signals', [], function (err, data) {
             if (err) { return done(new Error('Signals returned error.')); }
