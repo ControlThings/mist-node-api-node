@@ -198,6 +198,11 @@ Mist.prototype.wish = function(op, args, cb) {
     return id;
 };
 
+Mist.prototype.wishCancel = function(id) {
+    var request = { cancel: id };
+    this.api.sendToAddon("wish", 1, BSON.serialize(request));
+};
+
 Mist.prototype.write = function(cb) {
     this.writeCb = cb;
 };

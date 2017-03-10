@@ -164,6 +164,12 @@ describe('MistApi Friends', function () {
     
     it('should add Bob as a friend to Alice', function(done) {
         //console.log("Friend request params:", [aliceIdentity.uid, bobWldEntry.ruid, bobWldEntry.rhid]);
+        
+        var signals = mist.wish('signals', [], function(err, data) {
+            console.log("A signals message, upon which we cancel wish signals", signals);
+            mist.wishCancel(signals);
+        });
+        
         mist.wish('wld.friendRequest', [aliceIdentity.uid, bobWldEntry.ruid, bobWldEntry.rhid], function(err, data) {
             if (err) { return done(new Error(inspect(data))); }
             
@@ -218,4 +224,6 @@ describe('MistApi Friends', function () {
         
         setTimeout(poll, 1000);        
     });
+    
+    it('should wait for things to settle', function(done) { setTimeout(done,1500); });
 });

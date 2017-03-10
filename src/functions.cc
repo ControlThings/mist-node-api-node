@@ -285,6 +285,16 @@ static void mist_api_periodic_cb_impl(void* ctx) {
             if(input_type == 1) { // WISH
                 //printf("Making wish_api_request\n");
                 //bson_visit((uint8_t*)bson_data(&bs), elem_visitor);
+                
+                bson_iterator it;
+                bson_find_from_buffer(&it, input_buffer, "cancel");
+
+                if (bson_iterator_type(&it) == BSON_INT) {
+                    printf("wish_cancel %i\n", bson_iterator_int(&it));
+                    wish_api_request_cancel(mist_api, bson_iterator_int(&it));
+                    goto consume_and_unlock;
+                }
+                
                 wish_api_request_context(mist_api, &bs, wish_response_cb, opts->mist);
             } else if (input_type == 2) { // MIST
                 //printf("### Mist\n");
