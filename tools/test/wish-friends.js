@@ -18,7 +18,7 @@ describe('MistApi Friends', function () {
     var bobWldEntry;
     
     before(function (done) {
-        mist = new Mist({ name: 'FriendManager', coreIp: '127.0.0.1', corePort: 9094 });
+        mist = new Mist({ name: 'AliceFriendManager', coreIp: '127.0.0.1', corePort: 9094 });
 
         mist.request('ready', [], function(err, data) {
             console.log("in ready cb", err, data);

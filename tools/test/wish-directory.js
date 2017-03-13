@@ -26,28 +26,19 @@ describe('MistApi RPC', function () {
         done();
     });    
 
-    it('should get error on undefined command', function(done) {
-        mist.request('this-does-not-exist', [], function (err, data) {
-            if(err) { if (data.code === 8) { return done(); } }
-            
-            done(new Error('Not the expected error. '+inspect(data)));
-        });
-    });
-
-    it('should get error on invalid parameters', function(done) {
-        mist.wish('identity.export', [], function (err, data) {
-            if(err) { if (data.code === 8) { return done(); } }
-            
-            done(new Error('Not the expected error. '+inspect(data)));
-        });
-    });
-    
     it('should get version string', function(done) {
-        mist.wish('version', [], function(err, data) { 
+        this.timeout(5000);
+        
+        var count = 0;
+        mist.wish('directory.find', ['Bob', 2000], function(err, data) {
             if (err) { return done(new Error(inspect(data))); }
             
-            console.log("wish-core version string:", err, data);
-            done();
+            count++;
+            
+            if (count === 2000) {
+                console.log("All done:", err, data);
+                done();
+            }
         });
     });
 });

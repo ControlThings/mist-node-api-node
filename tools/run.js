@@ -18,16 +18,16 @@ mist.invoke('config', function(data, cb) {
     
     switch(typeof data) {
         case 'number':
-            cb({ an: 'object-response', echo: data });
+            cb({ an: 'object-response', to: 'a number', echo: data });
             break;
         case 'boolean':
-            cb({ an: 'object-response', echo: data });
+            cb({ an: 'object-response', to: 'a bool', echo: data });
             break;
         case 'string':
-            cb({ an: 'object-response', echo: data });
+            cb({ an: 'object-response', to: 'a string', echo: data });
             break;
         case 'object':
-            cb({ an: 'object-response', echo: data });
+            cb({ an: 'object-response', to: 'an object', echo: data });
             break;
         default:
             cb("I did not get that.");
