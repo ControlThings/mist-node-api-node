@@ -22,7 +22,8 @@
         "counter": {
             "label": "Dummy Counter",
             "type": "int",
-            "read": true
+            "read": true,
+            "write": true
         },
         "config": {
             "label": "Configuration",

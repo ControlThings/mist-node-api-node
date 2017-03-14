@@ -9,7 +9,10 @@ var mist = new Mist({ name: model.device, corePort: 9094 });
 
 // callback 
 mist.write(function(epid, data) {
-    //console.log("mist write:", epid, data);
+    console.log("mist write:", epid, data);
+    if(epid === 'counter') {
+        c = data;
+    }
 });
 
 // callback 
@@ -74,7 +77,7 @@ function MistGps() {
         mist.update('lon', data.lon);
         mist.update('lat', data.lat);
         mist.update('accuracy', data.accuracy);
-        mist.update('counter', c++);
+        mist.update('counter', ++c);
         console.log("GPS update", data);
     });
 }
