@@ -2,9 +2,9 @@ var Mist = require('../../index.js').Mist;
 var Sandboxed = require('../../index.js').Sandboxed;
 var inspect = require('util').inspect;
 
-describe('MistApi RPC', function () {
+describe('Wish Directory', function () {
     var mist;
-    
+
     before(function (done) {
         mist = new Mist({ name: 'Generic UI', coreIp: '127.0.0.1', corePort: 9094 });
 
@@ -26,7 +26,7 @@ describe('MistApi RPC', function () {
         done();
     });    
 
-    it('should get version string', function(done) {
+    xit('should get version string', function(done) {
         this.timeout(5000);
         
         var count = 0;

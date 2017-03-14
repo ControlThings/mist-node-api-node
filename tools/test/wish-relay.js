@@ -2,7 +2,7 @@ var Mist = require('../../index.js').Mist;
 var Sandboxed = require('../../index.js').Sandboxed;
 var inspect = require('util').inspect;
 
-describe('MistApi RPC', function () {
+describe('Wish Relay', function () {
     var mist;
     
     before(function (done) {

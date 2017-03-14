@@ -94,8 +94,8 @@ static void wish_response_cb(struct wish_rpc_entry* req, void* ctx, uint8_t* dat
         if (req->passthru_ctx2 != NULL) {
             ctx = req->passthru_ctx2;
         } else {
-            printf("NULL ctx in response going towards node.js. ctx %p\n", ctx);
-            bson_visit("NULL ctx request:", (uint8_t*)data);
+            //printf("NULL ctx in response going towards node.js. ctx %p\n", ctx);
+            //bson_visit("NULL ctx request:", data);
             return;
         }
     }
@@ -280,14 +280,14 @@ static void mist_api_periodic_cb_impl(void* ctx) {
             }
         } else {
             bson bs;
-            bson_init_buffer(&bs, input_buffer, input_buffer_len);
+            bson_init_with_data(&bs, input_buffer);
 
             if(input_type == 1) { // WISH
                 //printf("Making wish_api_request\n");
-                //bson_visit((uint8_t*)bson_data(&bs), elem_visitor);
+                //bson_visit("Making wish_api_request bson data:", (uint8_t*)bson_data(&bs));
                 
                 bson_iterator it;
-                bson_find_from_buffer(&it, input_buffer, "cancel");
+                bson_find(&it, &bs, "cancel");
 
                 if (bson_iterator_type(&it) == BSON_INT) {
                     printf("wish_cancel %i\n", bson_iterator_int(&it));
@@ -311,7 +311,8 @@ static void mist_api_periodic_cb_impl(void* ctx) {
                 //printf("Mist going into request context: %p cb %p\n", opts->mist, mist_response_cb);
                 mist_api_request_context(mist_api, &bs, mist_response_cb, opts->mist);
             } else if (input_type == 3) { // MIST NODE API
-                bson_visit("MistApi got message MistNodeApi command from node.js, not good!", (uint8_t*)bson_data(&bs));
+                printf("MistApi got message MistNodeApi command from node.js, not good!\n");
+                //bson_visit("MistApi got message MistNodeApi command from node.js, not good!", (uint8_t*)bson_data(&bs));
             } else if (input_type == 4) { // MIST SANDBOXED API
                 //printf("### Sandboxed Api\n");
                 //WISHDEBUG(LOG_CRITICAL, "sandbox_api-request:");
@@ -736,20 +737,12 @@ consume_and_unlock:
 static void* setupMistNodeApi(void* ptr) {
     struct wish_app_core_opt* opts = (struct wish_app_core_opt*) ptr;
 
-    //printf("ip:port %s, %d\n", opts->ip, opts->port);
-
     // name used for WishApp and MistNode name
     char* name = (char*) (opts->name != NULL ? opts->name : "Node");
 
     //start wish apps
     mist_app_t* mist_app = opts->mist_app; // start_mist_app();
     opts->mist_app = mist_app;
-    
-    //printf("setupMistNodeApi has instance: %p\n", mist_app);
-
-    mist_model_t* model = &(mist_app->model);
-    
-    //model->custom_ui_url = (char*) "https://mist.controlthings.fi/mist-io-switch-0.0.2.tgz";
     
     mist_set_name(mist_app, name);
     
@@ -769,8 +762,6 @@ static void* setupMistNodeApi(void* ptr) {
 
     app->port = opts->port;
     
-    //printf("Starting libuv tcp client for NodeApi.\n");
-    
     wish_core_client_init(app);
     
     return NULL;
@@ -779,16 +770,12 @@ static void* setupMistNodeApi(void* ptr) {
 static void* setupMistApi(void* ptr) {
     struct wish_app_core_opt* opts = (struct wish_app_core_opt*) ptr;
     
-    //printf("ip:port %s, %d\n", opts->ip, opts->port);
-    
     // name used for WishApp and MistNode name
     char* name = (char*) (opts->name != NULL ? opts->name : "MistApi");
     
     //start wish apps
     mist_app_t* mist_app = opts->mist_app; // start_mist_app();
     
-    //printf("setupMistApi has instance: %p and Mist %p\n", mist_app, opts->mist);
-
     mist_set_name(mist_app, name);
 
     wish_app_t* app = wish_app_create((char*)name);
@@ -802,9 +789,6 @@ static void* setupMistApi(void* ptr) {
     wish_app_add_protocol(app, &mist_app->ucp_handler);
     mist_app->app = app;
     
-    //app->periodic = periodic_cb;
-    //app->periodic_ctx = mist_app;
-    
     app->port = opts->port;
 
     mist_api_t* api = mist_api_init(mist_app);
@@ -813,8 +797,6 @@ static void* setupMistApi(void* ptr) {
     api->periodic = mist_api_periodic_cb_impl;
     api->periodic_ctx = opts;
 
-    //app->ready = init;
-    
     wish_core_client_init(app);
     
     return NULL;

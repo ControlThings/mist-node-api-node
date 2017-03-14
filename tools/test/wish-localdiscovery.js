@@ -2,7 +2,7 @@ var Mist = require('../../index.js').Mist;
 var Sandboxed = require('../../index.js').Sandboxed;
 var inspect = require('util').inspect;
 
-describe('MistApi RPC', function () {
+describe('Wish Local Discovery', function () {
     var mist;
     
     before(function (done) {
@@ -23,7 +23,7 @@ describe('MistApi RPC', function () {
         //process.nextTick(function() { console.log('exiting.'); process.exit(0); });
         setTimeout(function() { /*console.log('exiting.');*/ process.exit(0); }, 150);
         done();
-    });    
+    });
 
     it('should get a localdiscovery signal', function(done) {
         this.timeout(10000);
