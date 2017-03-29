@@ -15,21 +15,11 @@ if (process.env.DEBUG) {
         try {
             var MistApi = require('./bin/MistApi-'+arch+'-'+platform+'.node');
         } catch (e) {
-            console.log('MistApi is a native addon, which is not supported or currently bundled for your arch/platform ('+arch+'/'+platform+').');
+            console.log('MistApi is a native addon, which is not supported or currently not bundled for your arch/platform ('+arch+'/'+platform+').');
             process.exit(1);
         }
     }
 }
-    
-/*
-else if (process.arch === 'arm' && process.platform === 'linux' ) {
-    var MistApi = require('./bin/MistApi-arm-eabi5.node');
-} else if (process.platform === 'darwin') {
-    var MistApi = require('./bin/MistApi-osx.node');
-} else {
-    var MistApi = require('./bin/MistApi.node');
-}
-*/
 
 var bson = require('bson-buffer');
 var BSON = new bson();
