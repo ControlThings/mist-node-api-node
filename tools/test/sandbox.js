@@ -7,13 +7,15 @@ describe('MistApi Sandbox', function () {
     before(function (done) {
         mist = new Mist({ name: 'Generic UI', coreIp: '127.0.0.1', corePort: 9094 });
 
-        mist.request('ready', [], function(err, ready) {
-            if (ready) {
-                done();
-            } else {
-                done(new Error('MistApi not ready, bailing.'));
-            }
-        });
+        setTimeout(function() {
+            mist.request('ready', [], function(err, ready) {
+                if (ready) {
+                    done();
+                } else {
+                    done(new Error('MistApi not ready, bailing.'));
+                }
+            });
+        }, 200);
     });
 
     
@@ -195,7 +197,22 @@ describe('MistApi Sandbox', function () {
             });
         });
     });
-    
+
+    it('shuold be sandboxed ', function(done) {
+        sandboxedGps.request('mist.control.model', [peer], function(err, data) {
+            if (err) { return done(new Error('Could not get model from peer, before remove peer test.')); }
+            
+            mist.request('sandbox.removePeer', [gpsSandboxId, peer], function(err, data) {
+                console.log("Peer was removed?: ", err, data);
+
+                sandboxedGps.request('mist.control.model', [peer], function(err, data) {
+                    console.log("model", err, data);
+                    done();
+                });
+            });
+        });
+    });
+
     /*
     it('shuold test a second sandbox', function(done) {
         var sandboxedControlThings = new Sandboxed(mist, controlThingsSandboxId);

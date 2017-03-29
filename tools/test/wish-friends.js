@@ -20,10 +20,12 @@ describe('MistApi Friends', function () {
     before(function (done) {
         mist = new Mist({ name: 'AliceFriendManager', coreIp: '127.0.0.1', corePort: 9094 });
 
-        mist.request('ready', [], function(err, data) {
-            console.log("in ready cb", err, data);
-            if(data) { done(); } else { done(new Error('App not ready, bailing.')); }
-        });
+        setTimeout(function() {
+            mist.request('ready', [], function(err, data) {
+                console.log("in ready cb", err, data);
+                if(data) { done(); } else { done(new Error('App not ready, bailing.')); }
+            });
+        }, 200);
     });
     
     after(function(done) {
