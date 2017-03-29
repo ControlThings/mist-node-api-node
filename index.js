@@ -9,10 +9,13 @@ if (process.env.DEBUG) {
     if(process.env.BUILD) {
         var MistApi = require('./build/Release/MistApi.node');
     } else {
+        var arch = process.arch;
+        var platform = process.platform === 'darwin' ? 'osx' : process.platform;
+        
         try {
-            var MistApi = require('./bin/MistApi-'+process.arch+'-'+process.platform+'.node');
+            var MistApi = require('./bin/MistApi-'+arch+'-'+platform+'.node');
         } catch (e) {
-            console.log('MistApi is a native addon, which is not supported or currently bundled for your platform/arch ('+process.platform+'/'+process.arch+').');
+            console.log('MistApi is a native addon, which is not supported or currently bundled for your arch/platform ('+arch+'/'+platform+').');
             process.exit(1);
         }
     }
