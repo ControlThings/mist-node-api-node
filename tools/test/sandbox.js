@@ -197,7 +197,22 @@ describe('MistApi Sandbox', function () {
             });
         });
     });
-    
+
+    it('shuold be sandboxed ', function(done) {
+        sandboxedGps.request('mist.control.model', [peer], function(err, data) {
+            if (err) { return done(new Error('Could not get model from peer, before remove peer test.')); }
+            
+            mist.request('sandbox.removePeer', [gpsSandboxId, peer], function(err, data) {
+                console.log("Peer was removed?: ", err, data);
+
+                sandboxedGps.request('mist.control.model', [peer], function(err, data) {
+                    console.log("model", err, data);
+                    done();
+                });
+            });
+        });
+    });
+
     /*
     it('shuold test a second sandbox', function(done) {
         var sandboxedControlThings = new Sandboxed(mist, controlThingsSandboxId);
