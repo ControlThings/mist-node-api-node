@@ -8,11 +8,13 @@ if (process.env.DEBUG) {
 } else {
     if(process.env.BUILD) {
         var MistApi = require('./build/Release/MistApi.node');
-    } else if (process.arch === 'x64' && process.platform === 'linux' ) {
-        var MistApi = require('./bin/MistApi.node');
     } else {
-        console.log('MistApi is a native addon, which is not supported by your platform/arch ('+process.platform+'/'+process.arch+').');
-        process.exit(1);
+        try {
+            var MistApi = require('./bin/MistApi-'+process.arch+'-'+process.platform+'.node');
+        } catch (e) {
+            console.log('MistApi is a native addon, which is not supported or currently bundled for your platform/arch ('+process.platform+'/'+process.arch+').');
+            process.exit(1);
+        }
     }
 }
     
