@@ -1,6 +1,6 @@
 # Mist Developer Course
 
-Mist 10h developer course is based on the concept developed 
+Mist 1-day developer course. 
 
 ## Theory
 
@@ -8,7 +8,7 @@ Mist 10h developer course is based on the concept developed
 
 Wish is a framework for building distributed apps. It features high security, user management, access control and much more. It provides the developer with everything to quickly get started developing completely distributed applications
 
-Mist is a IoT layer built on top of Wish. It provides an intuitive way of interacting with devices, and is very easy to get started with. Mist can run on everything from ESP8288 Wifi SoC with 64KiB of memory to 64 bit linux servers with hundreds of GiBs. We provide sample applications and SDK for Android (Java interface), Node.js (JavaScript), but there are not many limitations to where it can run. In it's core Mist is a C-library which can be compiled for almost any modern platform.
+Mist is a IoT layer built on top of Wish. It provides an intuitive way of interacting with devices, and is very easy to get started with. Mist can run on everything from ESP8266 Wifi SoC with 64KiB of memory to 64 bit linux servers with hundreds of GiBs. We provide sample applications and SDK for Android (Java interface), Node.js (JavaScript), but there are not many limitations to where it can run. In it's core Mist is a C-library which can be compiled for almost any modern platform.
 
 ### Mist 
 
@@ -60,7 +60,7 @@ This is a remarkably versatile library. Security by design. No 3-rd parties need
 
 ### Developer resources
 
-At the time of writing there is nothing here, but it will be the entry point for developers, when we get going, chech it out.
+At the time of writing there is nothing here, but it will be the entry point for developers, when we get going, check it out.
 
 https://mist.controlthings.fi/developer
 
