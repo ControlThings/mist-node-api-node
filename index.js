@@ -183,7 +183,6 @@ Mist.prototype.requestCancel = function(id) {
 
 Mist.prototype.wish = function(op, args, cb) {
     var id = ++sharedId;
-    console.log("wish request in mist-api:", args);
     var request = { op: op, args: typeof args === 'undefined' ? [] : args, id: id };
     
     // store callback for response
@@ -198,6 +197,10 @@ Mist.prototype.wishCancel = function(id) {
     var request = { cancel: id };
     this.api.sendToAddon("wish", 1, BSON.serialize(request));
 };
+
+Mist.prototype.core = Mist.prototype.wish;
+
+Mist.prototype.coreCancel = Mist.prototype.wishCancel;
 
 Mist.prototype.write = function(cb) {
     this.writeCb = cb;

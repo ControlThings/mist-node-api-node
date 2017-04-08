@@ -234,6 +234,76 @@ static enum mist_error hw_invoke(mist_ep* ep, mist_buf args) {
     return MIST_NO_ERROR;
 }
 
+static void wish_periodic_cb_impl(void* ctx) {
+    struct wish_app_core_opt* opts = (struct wish_app_core_opt*) ctx;
+
+    if (opts->mist_api == NULL) {
+        WISHDEBUG(LOG_CRITICAL, "There is no MistApi here, is this a pure wish-app? %p", opts->app);
+        return;
+    }
+    
+    if (pthread_mutex_trylock(&mutex1)) {
+        return;
+    }
+    
+    if(node_api_plugin_kill) {
+        printf("killing loop from within.\n");
+        pthread_mutex_unlock(&mutex1);
+        return;
+    }
+    
+    // check if we can inject a new message, i.e input buffer is consumed by Mist
+
+    if (input_buffer_len > 0) {
+        
+        if(opts->mist != mistInst) {
+            printf("This message is NOT for this instance of Mist!! this: %p was for %p\n", opts->mist, mistInst);
+            pthread_mutex_unlock(&mutex1);
+            return;
+        } else {
+            //printf("Right Mist!! this: %p was for %p\n", opts->mist, mistInst);
+        }
+
+        bson_iterator it;
+        bson_find_from_buffer(&it, input_buffer, "kill");
+        
+        if (bson_iterator_type(&it) == BSON_BOOL) {
+            //printf("kill is bool\n");
+            if (bson_iterator_bool(&it)) {
+                //printf("kill is true\n");
+                node_api_plugin_kill = true;
+            }
+        } else {
+            bson bs;
+            bson_init_with_data(&bs, input_buffer);
+
+            if(input_type == 1) { // WISH
+                bson_iterator it;
+                bson_find(&it, &bs, "cancel");
+
+                if (bson_iterator_type(&it) == BSON_INT) {
+                    printf("wish_cancel %i\n", bson_iterator_int(&it));
+                    wish_core_request_cancel(opts->wish_app, bson_iterator_int(&it));
+                    goto consume_and_unlock;
+                }
+                
+                wish_core_request_context(opts->wish_app, &bs, wish_response_cb, opts->mist);
+            }
+        }
+        
+consume_and_unlock:
+        
+        input_buffer_len = 0;
+    } else {
+        // last message has not been consumed
+        //printf("Lock acquired, but no data.\n");
+    }
+
+    // release lock   
+    pthread_mutex_unlock(&mutex1);
+}
+
+
 static void mist_api_periodic_cb_impl(void* ctx) {
     struct wish_app_core_opt* opts = (struct wish_app_core_opt*) ctx;
 
@@ -835,7 +905,7 @@ static void* setupWishApi(void* ptr) {
     
     wish_app->port = opts->port;
 
-    wish_app->periodic = mist_api_periodic_cb_impl;
+    wish_app->periodic = wish_periodic_cb_impl;
     wish_app->periodic_ctx = opts;
 
     wish_core_client_init(wish_app);
