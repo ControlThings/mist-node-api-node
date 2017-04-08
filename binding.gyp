@@ -13,6 +13,7 @@
                 "mist-c99/mist",
                 "mist-c99/wish_app_deps",
                 "mist-c99/wish_app",
+                "mist-c99/wish",
                 "mist-c99/deps/wish-rpc-c99/src",
                 "mist-c99/deps/bson",
                 "mist-c99/deps/cbson/src"

@@ -1,5 +1,6 @@
 #include "Mist.h"
 #include "functions.h"
+#include "app.h"
 #include "mist_app.h"
 #include "mist_api.h"
 #include "mist_model.h"
@@ -21,6 +22,7 @@ struct wish_app_core_opt {
     Mist* mist;
     mist_api_t* mist_api;
     mist_app_t* mist_app;
+    app_t* app;
     wish_app_t* wish_app;
     char* name;
     char* ip;
@@ -234,6 +236,14 @@ static enum mist_error hw_invoke(mist_ep* ep, mist_buf args) {
 
 static void mist_api_periodic_cb_impl(void* ctx) {
     struct wish_app_core_opt* opts = (struct wish_app_core_opt*) ctx;
+
+    printf("mist_api_periodic_cb_impl\n");
+    
+    if (opts->mist_api == NULL) {
+        WISHDEBUG(LOG_CRITICAL, "There is no MistApi here, is this a pure wish-app? %p", opts->app);
+        return;
+    }
+    
     mist_api_t* mist_api = opts->mist_api;
 
     //printf("mist_api_periodic_cb_impl Mist instance: %p\n", opts->mist);
@@ -283,8 +293,8 @@ static void mist_api_periodic_cb_impl(void* ctx) {
             bson_init_with_data(&bs, input_buffer);
 
             if(input_type == 1) { // WISH
-                //printf("Making wish_api_request\n");
-                //bson_visit("Making wish_api_request bson data:", (uint8_t*)bson_data(&bs));
+                printf("Making wish_api_request\n");
+                bson_visit("Making wish_api_request bson data:", (uint8_t*)bson_data(&bs));
                 
                 bson_iterator it;
                 bson_find(&it, &bs, "cancel");
@@ -802,6 +812,37 @@ static void* setupMistApi(void* ptr) {
     return NULL;
 }
 
+static void* setupWishApi(void* ptr) {
+    struct wish_app_core_opt* opts = (struct wish_app_core_opt*) ptr;
+    
+    // name used for WishApp and MistNode name
+    char* name = (char*) (opts->name != NULL ? opts->name : "WishApi");
+    
+    app_t* app = opts->app;
+    
+    //mist_set_name(mist_app, name);
+
+    wish_app_t* wish_app = wish_app_create((char*)name);
+    opts->wish_app = wish_app;
+
+    if (wish_app == NULL) {
+        printf("Failed creating wish app\n");
+        return NULL;
+    }
+
+    wish_app_add_protocol(wish_app, &app->protocol);
+    app->app = wish_app;
+    
+    wish_app->port = opts->port;
+
+    wish_app->periodic = mist_api_periodic_cb_impl;
+    wish_app->periodic_ctx = opts;
+
+    wish_core_client_init(wish_app);
+    
+    return NULL;
+}
+
 void mist_addon_start(Mist* mist) {
     wish_platform_set_malloc(malloc);
     
@@ -823,17 +864,21 @@ void mist_addon_start(Mist* mist) {
     pthread_t* thread = (pthread_t*) wish_platform_malloc(sizeof(pthread_t));
     memset(thread, 0, sizeof(pthread_t));
 
-    opts->mist_app = start_mist_app();
-
     if ( mist->apiType == 2 ) {
         //printf("mist_addon_start(setupMistApi, %s, core: %s:%d)\n", name, ip, port);
+        opts->mist_app = start_mist_app();
+        opts->app = NULL;
         iret = pthread_create(thread, NULL, setupMistApi, (void*) opts);
     } else if ( mist->apiType == 3 ) {
         //printf("mist_addon_start(setupMistNodeApi, %s, core: %s:%d)\n", name, ip, port);
+        opts->mist_app = start_mist_app();
+        opts->app = NULL;
         iret = pthread_create(thread, NULL, setupMistNodeApi, (void*) opts);
     } else if ( mist->apiType == 4 ) {
         //printf("mist_addon_start(setupMistNodeApi, %s, core: %s:%d)\n", name, ip, port);
-        iret = pthread_create(thread, NULL, setupMistApi, (void*) opts);
+        opts->mist_app = NULL;
+        opts->app = app_init();
+        iret = pthread_create(thread, NULL, setupWishApi, (void*) opts);
     } else {
         printf("mist_addon_start received unrecognized type %i, (expecting 2, 3 or 4)\n", mist->apiType);
         exit(EXIT_FAILURE);

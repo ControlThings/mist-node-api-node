@@ -183,7 +183,8 @@ Mist.prototype.requestCancel = function(id) {
 
 Mist.prototype.wish = function(op, args, cb) {
     var id = ++sharedId;
-    var request = { op: op, args: args, id: id };
+    console.log("wish request in mist-api:", args);
+    var request = { op: op, args: typeof args === 'undefined' ? [] : args, id: id };
     
     // store callback for response
     this.requests[id] = cb;
