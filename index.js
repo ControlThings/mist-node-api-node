@@ -61,6 +61,18 @@ function Mist(opts) {
                 return;
             }
             
+            if (event === 'online') {
+                var msg = BSON.deserialize(data);
+                console.log('online:', msg);
+                return;
+            }
+            
+            if (event === 'offline') {
+                var msg = BSON.deserialize(data);
+                console.log('offline:', msg);
+                return;
+            }
+            
             if (event === 'write' && typeof self.writeCb === 'function') {
                 var msg = BSON.deserialize(data);
                 self.writeCb(msg.epid, msg.data);

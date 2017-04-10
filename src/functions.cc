@@ -234,6 +234,115 @@ static enum mist_error hw_invoke(mist_ep* ep, mist_buf args) {
     return MIST_NO_ERROR;
 }
 
+static void online(app_t* app, wish_protocol_peer_t* peer) {
+    Mist* mist = NULL;
+    struct wish_app_core_opt* opts;
+    
+    DL_FOREACH(wish_app_core_opts, opts) {
+        if(opts->app == app) {
+            mist = opts->mist;
+            //printf("    found Mist* %p\n", mist);
+            break;
+        }
+    }
+    
+    if (mist == NULL) {
+        printf("Failed finding mist instance to call write... bailing out!\n");
+        return;
+    }
+    
+    bson bs;
+    bson_init(&bs);
+    bson_append_start_object(&bs, "peer");
+    bson_append_binary(&bs, "luid", (char*) peer->luid, WISH_ID_LEN);
+    bson_append_binary(&bs, "ruid", (char*) peer->ruid, WISH_ID_LEN);
+    bson_append_binary(&bs, "rhid", (char*) peer->rhid, WISH_WHID_LEN);
+    bson_append_binary(&bs, "rsid", (char*) peer->rsid, WISH_WSID_LEN);
+    bson_append_string(&bs, "protocol", peer->protocol);
+    bson_append_finish_object(&bs);
+    bson_finish(&bs);
+
+    string a = "online";
+    string b = "dummy";
+    
+    Message msg(a, b, (uint8_t*) bson_data(&bs), bson_size(&bs));
+    
+    static_cast<Mist*>(mist)->sendToNode(msg);
+}
+
+static void offline(app_t* app, wish_protocol_peer_t* peer) {
+    Mist* mist = NULL;
+    struct wish_app_core_opt* opts;
+    
+    DL_FOREACH(wish_app_core_opts, opts) {
+        if(opts->app == app) {
+            mist = opts->mist;
+            //printf("    found Mist* %p\n", mist);
+            break;
+        }
+    }
+    
+    if (mist == NULL) {
+        printf("Failed finding mist instance to call write... bailing out!\n");
+        return;
+    }
+    
+    bson bs;
+    bson_init(&bs);
+    bson_append_start_object(&bs, "peer");
+    bson_append_binary(&bs, "luid", (char*) peer->luid, WISH_ID_LEN);
+    bson_append_binary(&bs, "ruid", (char*) peer->ruid, WISH_ID_LEN);
+    bson_append_binary(&bs, "rhid", (char*) peer->rhid, WISH_WHID_LEN);
+    bson_append_binary(&bs, "rsid", (char*) peer->rsid, WISH_WSID_LEN);
+    bson_append_string(&bs, "protocol", peer->protocol);
+    bson_append_finish_object(&bs);
+    bson_finish(&bs);
+
+    string a = "offline";
+    string b = "dummy";
+    
+    Message msg(a, b, (uint8_t*) bson_data(&bs), bson_size(&bs));
+    
+    static_cast<Mist*>(mist)->sendToNode(msg);
+}
+
+static void frame(app_t* app, uint8_t* payload, size_t payload_len, wish_protocol_peer_t* peer) {
+    Mist* mist = NULL;
+    struct wish_app_core_opt* opts;
+    
+    DL_FOREACH(wish_app_core_opts, opts) {
+        if(opts->app == app) {
+            mist = opts->mist;
+            //printf("    found Mist* %p\n", mist);
+            break;
+        }
+    }
+    
+    if (mist == NULL) {
+        printf("Failed finding mist instance to call write... bailing out!\n");
+        return;
+    }
+    
+    bson bs;
+    bson_init(&bs);
+    bson_append_binary(&bs, "frame", (char*) payload, payload_len);
+    bson_append_start_object(&bs, "peer");
+    bson_append_binary(&bs, "luid", (char*) peer->luid, WISH_ID_LEN);
+    bson_append_binary(&bs, "ruid", (char*) peer->ruid, WISH_ID_LEN);
+    bson_append_binary(&bs, "rhid", (char*) peer->rhid, WISH_WHID_LEN);
+    bson_append_binary(&bs, "rsid", (char*) peer->rsid, WISH_WSID_LEN);
+    bson_append_string(&bs, "protocol", peer->protocol);
+    bson_append_finish_object(&bs);
+    bson_finish(&bs);
+
+    string a = "offline";
+    string b = "dummy";
+    
+    Message msg(a, b, (uint8_t*) bson_data(&bs), bson_size(&bs));
+    
+    static_cast<Mist*>(mist)->sendToNode(msg);
+}
+
 static void wish_periodic_cb_impl(void* ctx) {
     struct wish_app_core_opt* opts = (struct wish_app_core_opt*) ctx;
 
@@ -894,7 +1003,7 @@ static void* setupWishApi(void* ptr) {
 
     wish_app_t* wish_app = wish_app_create((char*)name);
     opts->wish_app = wish_app;
-
+    
     if (wish_app == NULL) {
         printf("Failed creating wish app\n");
         return NULL;
@@ -902,6 +1011,10 @@ static void* setupWishApi(void* ptr) {
 
     wish_app_add_protocol(wish_app, &app->protocol);
     app->app = wish_app;
+
+    app->online = online;
+    app->offline = offline;
+    app->frame = frame;
     
     wish_app->port = opts->port;
 
