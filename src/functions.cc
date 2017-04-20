@@ -335,7 +335,7 @@ static void frame(app_t* app, uint8_t* payload, size_t payload_len, wish_protoco
     bson_append_finish_object(&bs);
     bson_finish(&bs);
 
-    string a = "offline";
+    string a = "frame";
     string b = "dummy";
     
     Message msg(a, b, (uint8_t*) bson_data(&bs), bson_size(&bs));
@@ -357,6 +357,7 @@ static void wish_periodic_cb_impl(void* ctx) {
     
     if(node_api_plugin_kill) {
         printf("killing loop from within.\n");
+        wish_core_client_close(opts->wish_app);
         pthread_mutex_unlock(&mutex1);
         return;
     }
@@ -1022,6 +1023,8 @@ static void* setupWishApi(void* ptr) {
     wish_app->periodic_ctx = opts;
 
     wish_core_client_init(wish_app);
+    
+    printf("libuv loop closed and thread ended\n");
     
     return NULL;
 }

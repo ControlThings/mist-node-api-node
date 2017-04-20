@@ -63,13 +63,32 @@ function Mist(opts) {
             
             if (event === 'online') {
                 var msg = BSON.deserialize(data);
-                console.log('online:', msg);
+                
+                if (typeof self.onlineCb === 'function') {
+                    self.onlineCb(msg.peer);
+                }
+                
                 return;
             }
             
             if (event === 'offline') {
                 var msg = BSON.deserialize(data);
-                console.log('offline:', msg);
+                
+                if (typeof self.offlineCb === 'function') {
+                    self.offlineCb(msg.peer);
+                }
+                
+                return;
+            }
+            
+            if (event === 'frame') {
+                var msg = BSON.deserialize(data);
+                var payload = BSON.deserialize(msg.frame);
+                
+                if (typeof self.frameCb === 'function') {
+                    self.frameCb(msg.peer, payload);
+                }
+                
                 return;
             }
             
@@ -274,6 +293,19 @@ Sandboxed.prototype.requestCancel = function(id) {
     
     this.api.sendToAddon('sandboxed', 1, BSON.serialize(request));
 };
+
+console.log('mist is initialized.');
+
+process.on('SIGINT', function () {
+    console.log('Sending shutdown to plugin.');
+    themist.shutdown();
+    process.exit(0);
+});
+
+process.on('exit', function() {
+    console.log("process.on('exit'): Sending shutdown to plugin.");
+    themist.shutdown();
+});
 
 module.exports = {
     Mist: Mist,
