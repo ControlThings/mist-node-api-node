@@ -150,15 +150,7 @@ function Mist(opts) {
                 //console.log("the answer is:", inspect(msg, { colors: true, depth: 10 }));
                 
                 if(typeof self.requests[id] === 'function') {
-                    if (msg.err) {
-                        if(typeof msg.data === 'object') {
-                            self.requests[id](true, { code: msg.data.code, msg: msg.data.msg });
-                        } else {
-                            self.requests[id](true, { code: 100, msg: "Invalid error returned." });
-                        }
-                    } else {
-                        self.requests[id](null, msg.data);
-                    }
+                    self.requests[id](msg);
                     
                     if(!msg.sig) {
                         delete self.requests[id];
