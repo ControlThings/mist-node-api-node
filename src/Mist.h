@@ -12,11 +12,17 @@ public:
 
     ~Mist();
     
+    enum ApiType {
+        ApiTypeMist = 2,
+        ApiTypeMistNode = 3,
+        ApiTypeWish = 4
+    };
+    
     void sendToNode(Message& message);
 
     void Execute(const Nan::AsyncProgressWorker::ExecutionProgress& progress);
 
-    int apiType = 2;
+    int apiType = ApiType::ApiTypeMist;
     std::string name = "Node";
     std::string coreIp = "127.0.0.1";
     int corePort = 9094;

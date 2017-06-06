@@ -1050,17 +1050,17 @@ void mist_addon_start(Mist* mist) {
     pthread_t* thread = (pthread_t*) wish_platform_malloc(sizeof(pthread_t));
     memset(thread, 0, sizeof(pthread_t));
 
-    if ( mist->apiType == 2 ) {
+    if ( mist->apiType == Mist::ApiType::ApiTypeMist ) {
         //printf("mist_addon_start(setupMistApi, %s, core: %s:%d)\n", name, ip, port);
         opts->mist_app = start_mist_app();
         opts->app = NULL;
         iret = pthread_create(thread, NULL, setupMistApi, (void*) opts);
-    } else if ( mist->apiType == 3 ) {
+    } else if ( mist->apiType == Mist::ApiType::ApiTypeMistNode ) {
         //printf("mist_addon_start(setupMistNodeApi, %s, core: %s:%d)\n", name, ip, port);
         opts->mist_app = start_mist_app();
         opts->app = NULL;
         iret = pthread_create(thread, NULL, setupMistNodeApi, (void*) opts);
-    } else if ( mist->apiType == 4 ) {
+    } else if ( mist->apiType == Mist::ApiType::ApiTypeWish ) {
         //printf("mist_addon_start(setupMistNodeApi, %s, core: %s:%d)\n", name, ip, port);
         opts->mist_app = NULL;
         opts->app = app_init();
