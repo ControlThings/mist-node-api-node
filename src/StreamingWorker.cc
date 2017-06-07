@@ -47,7 +47,6 @@ StreamingWorker::drainQueue() {
     for (Message & msg : contents) {
         v8::Local<v8::Value> argv[] = {
             New<v8::String>(msg.name.c_str()).ToLocalChecked(),
-            New<v8::String>(msg.data.c_str()).ToLocalChecked(),
             Nan::NewBuffer((char*) msg.msg, (uint32_t) msg.msg_len).ToLocalChecked()
         };
         progress->Call(3, argv);

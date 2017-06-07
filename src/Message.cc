@@ -3,7 +3,7 @@
 
 using namespace std;
 
-Message::Message(string name, string data, uint8_t* m, int l) : name(name), data(data) {
+Message::Message(string name, uint8_t* m, int l) : name(name) {
     msg_len = l;
     msg = NULL;
     if (msg_len > 65535 || msg_len < 1) {

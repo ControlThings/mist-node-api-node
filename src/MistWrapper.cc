@@ -73,29 +73,27 @@ MistWrapper::New(const Nan::FunctionCallbackInfo<v8::Value>& info) {
 }
 
 void
-MistWrapper::sendToAddon(const Nan::FunctionCallbackInfo<v8::Value>& info) {
+MistWrapper::request(const Nan::FunctionCallbackInfo<v8::Value>& info) {
     
-    if (info.Length() != 3) {
-        printf("Number of args: %i\n", info.Length());
+    if (info.Length() != 2) {
         Nan::ThrowTypeError("Wrong number of arguments");
         return;
     }
 
-    if (!info[0]->IsString() || !info[1]->IsNumber()) {
+    if (!info[0]->IsString()) {
         Nan::ThrowTypeError("Wrong arguments");
         return;
     }
     
     v8::String::Utf8Value name(info[0]->ToString());
-    v8::String::Utf8Value data(info[1]->ToString());
     
-    uint8_t* buf = (uint8_t*) node::Buffer::Data(info[2]->ToObject());
-    int buf_len = node::Buffer::Length(info[2]->ToObject());
+    uint8_t* buf = (uint8_t*) node::Buffer::Data(info[1]->ToObject());
+    int buf_len = node::Buffer::Length(info[1]->ToObject());
     MistWrapper* obj = Nan::ObjectWrap::Unwrap<MistWrapper>(info.Holder());
     
-    //printf("sendToAddon Mist instance %p %p\n", obj->_mist, obj->_worker);
+    //printf("request Mist instance %p %p\n", obj->_mist, obj->_worker);
     
-    obj->_worker->fromNode.write(Message(*name, *data, buf, buf_len));
+    obj->_worker->fromNode.write(Message(*name, buf, buf_len));
 }
 
 void
@@ -104,7 +102,7 @@ MistWrapper::Init(v8::Local<v8::Object> exports) {
     tpl->SetClassName(Nan::New("MistApi").ToLocalChecked());
     tpl->InstanceTemplate()->SetInternalFieldCount(2);
 
-    SetPrototypeMethod(tpl, "sendToAddon", sendToAddon);
+    SetPrototypeMethod(tpl, "request", request);
 
     constructor.Reset(tpl->GetFunction());
     

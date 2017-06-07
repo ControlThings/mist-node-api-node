@@ -25,8 +25,6 @@ if (process.env.DEBUG) {
 
 var bson = require('bson-buffer');
 var BSON = new bson();
-var EventEmitter = require('events');
-var emitter = new EventEmitter();
 
 // request id shared by all
 var sharedId = 0;
@@ -53,7 +51,7 @@ function Mist(opts) {
     
     //console.log('Starting with opts:', opts);
 
-    this.api = new MistApi(function (event, value, data) {
+    this.api = new MistApi(function (event, data) {
         //console.log("Event from streaming worker", arguments);
         //console.log("Event from streaming worker", event, Buffer.isBuffer(data) ? BSON.deserialize(data) : 'Not Buffer');
 
@@ -97,7 +95,7 @@ function Mist(opts) {
 
         if (event === 'invoke') {
             if(typeof self.invokeCb[msg.epid] === 'function') {
-                self.invokeCb[msg.epid]( msg.args, (function (id) { return function(data) { var request = { invoke: id, data: data }; self.api.sendToAddon("mistnode", 1, BSON.serialize(request)); }; })(msg.id) );
+                self.invokeCb[msg.epid]( msg.args, (function (id) { return function(data) { var request = { invoke: id, data: data }; self.api.request("mistnode", BSON.serialize(request)); }; })(msg.id) );
             } else {
                 console.log("There is no invoke function registered for", msg.epid );
             }
@@ -128,28 +126,30 @@ function Mist(opts) {
             return;
         }
 
-        emitter.emit(event, value);
+        if (event === 'mist' || event === 'wish') {
 
-        //console.log("got something from Addon...", event, value);
+            var id = msg.ack || msg.sig || msg.end || msg.err;
 
-        var id = msg.ack || msg.sig || msg.end || msg.err;
+            //console.log("the answer is:", require('util').inspect(msg, { colors: true, depth: 10 }));
 
-        //console.log("the answer is:", require('util').inspect(msg, { colors: true, depth: 10 }));
+            if(typeof self.requests[id] === 'function') {
+                self.requests[id](msg);
 
-        if(typeof self.requests[id] === 'function') {
-            self.requests[id](msg);
-
-            if(!msg.sig) {
-                delete self.requests[id];
+                if(!msg.sig) {
+                    delete self.requests[id];
+                }
+            } else {
+                console.log('Request not found for response:', id, self, themist.requests);
             }
-        } else {
-            console.log('Request not found for response:', id, self, themist.requests);
+            return;
         }
+        
+        console.log('Received an event from native addon which was unhandled.', arguments);
     }, opts);
 }
 
 Mist.prototype.shutdown = function() {
-    this.api.sendToAddon("kill", 1, BSON.serialize({ kill: true }));
+    this.api.request("kill", BSON.serialize({ kill: true }));
 };
 
 Mist.prototype.create = function(model, cb) {
@@ -159,18 +159,18 @@ Mist.prototype.create = function(model, cb) {
     // store callback for response
     this.requests[id] = cb;
     
-    this.api.sendToAddon("mistnode", 1, BSON.serialize(request));
+    this.api.request("mistnode", BSON.serialize(request));
 };
 
 Mist.prototype.update = function(ep, value) {
     var request = { update: ep, value: value };
     
-    this.api.sendToAddon("mistnode", 1, BSON.serialize(request));
+    this.api.request("mistnode", BSON.serialize(request));
 };
 
 Mist.prototype.request = function(op, args, cb) {
     return this.requestBare(op, args, function(res) {
-        console.log('requestBare cb:', arguments);
+        //console.log('requestBare cb:', arguments);
         if(res.err) { return cb(true, res.data); }
         
         cb(null, res.data);
@@ -186,19 +186,19 @@ Mist.prototype.requestBare = function(op, args, cb) {
 
     //console.log("Making request", request, this);
     
-    this.api.sendToAddon("mist", 1, BSON.serialize(request));
+    this.api.request("mist", BSON.serialize(request));
     
     return id;
 };
 
 Mist.prototype.requestCancel = function(id) {
     var request = { cancel: id };
-    this.api.sendToAddon("mist", 1, BSON.serialize(request));
+    this.api.request("mist", BSON.serialize(request));
 };
 
 Mist.prototype.wish = function(op, args, cb) {
     return this.wishBare(op, args, function(res) {
-        console.log('requestBare cb:', arguments);
+        //console.log('requestBare cb:', arguments);
         if(res.err) { return cb(true, res.data); }
         
         cb(null, res.data);
@@ -212,14 +212,14 @@ Mist.prototype.wishBare = function(op, args, cb) {
     // store callback for response
     this.requests[id] = cb;
     
-    this.api.sendToAddon("wish", 1, BSON.serialize(request));
+    this.api.request("wish", BSON.serialize(request));
 
     return id;
 };
 
 Mist.prototype.wishCancel = function(id) {
     var request = { cancel: id };
-    this.api.sendToAddon("wish", 1, BSON.serialize(request));
+    this.api.request("wish", BSON.serialize(request));
 };
 
 Mist.prototype.core = Mist.prototype.wish;
@@ -273,7 +273,7 @@ Sandboxed.prototype.request = function(op, args, cb) {
     // store callback for response in the mist object
     this.mist.requests[id] = cb;
     
-    this.api.sendToAddon('sandboxed', 1, BSON.serialize(request));
+    this.api.request('sandboxed', BSON.serialize(request));
 
     return id;
 };
@@ -284,7 +284,7 @@ Sandboxed.prototype.requestCancel = function(id) {
     
     setTimeout(function() { if(self.mist.requests[id]) { delete self.mist.requests[id]; } }, 500);
     
-    this.api.sendToAddon('sandboxed', 1, BSON.serialize(request));
+    this.api.request('sandboxed', BSON.serialize(request));
 };
 
 console.log('mist is initialized.');

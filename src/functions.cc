@@ -106,10 +106,7 @@ static void mist_response_cb(struct wish_rpc_entry* req, void* ctx, uint8_t* dat
         ctx = ((rpc_server_req *)ctx)->context;
     }
     
-    std::string a = "even";
-    std::string b = "dummy";
-    
-    Message msg(a, b, (uint8_t*) data, data_len);
+    Message msg("mist", (uint8_t*) data, data_len);
     
     static_cast<Mist*>(ctx)->sendToNode(msg);
 }
@@ -125,10 +122,7 @@ static void wish_response_cb(struct wish_rpc_entry* req, void* ctx, uint8_t* dat
         }
     }
     
-    std::string a = "even";
-    std::string b = "dummy";
-    
-    Message msg(a, b, (uint8_t*) data, data_len);
+    Message msg("wish", (uint8_t*) data, data_len);
     
     static_cast<Mist*>(ctx)->sendToNode(msg);
 }
@@ -144,10 +138,7 @@ static void sandboxed_response_cb(struct wish_rpc_entry* req, void* ctx, uint8_t
         //printf("   mist is here %p", ctx);
     }
     
-    std::string a = "sandboxed";
-    std::string b = "dummy";
-    
-    Message msg(a, b, (uint8_t*) data, data_len);
+    Message msg("sandboxed", (uint8_t*) data, data_len);
     
     static_cast<Mist*>(ctx)->sendToNode(msg);
 }
@@ -215,10 +206,7 @@ static enum mist_error hw_write(mist_ep* ep, void* value) {
     
     bson_finish(&bs);
 
-    string a = "write";
-    string b = "dummy";
-    
-    Message msg(a, b, (uint8_t*) bson_data(&bs), bson_size(&bs));
+    Message msg("write", (uint8_t*) bson_data(&bs), bson_size(&bs));
     
     static_cast<Mist*>(mist)->sendToNode(msg);
     
@@ -247,10 +235,7 @@ static enum mist_error hw_invoke(mist_ep* ep, mist_buf args) {
     bson bs;
     bson_init_data(&bs, args.base);
     
-    string a = "invoke";
-    string b = "dummy";
-    
-    Message msg(a, b, (uint8_t*) bson_data(&bs), bson_size(&bs));
+    Message msg("invoke", (uint8_t*) bson_data(&bs), bson_size(&bs));
     
     static_cast<Mist*>(mist)->sendToNode(msg);
     
@@ -285,10 +270,7 @@ static void online(app_t* app, wish_protocol_peer_t* peer) {
     bson_append_finish_object(&bs);
     bson_finish(&bs);
 
-    string a = "online";
-    string b = "dummy";
-    
-    Message msg(a, b, (uint8_t*) bson_data(&bs), bson_size(&bs));
+    Message msg("online", (uint8_t*) bson_data(&bs), bson_size(&bs));
     
     static_cast<Mist*>(mist)->sendToNode(msg);
 }
@@ -321,10 +303,7 @@ static void offline(app_t* app, wish_protocol_peer_t* peer) {
     bson_append_finish_object(&bs);
     bson_finish(&bs);
 
-    string a = "offline";
-    string b = "dummy";
-    
-    Message msg(a, b, (uint8_t*) bson_data(&bs), bson_size(&bs));
+    Message msg("offline", (uint8_t*) bson_data(&bs), bson_size(&bs));
     
     static_cast<Mist*>(mist)->sendToNode(msg);
 }
@@ -358,10 +337,7 @@ static void frame(app_t* app, uint8_t* payload, size_t payload_len, wish_protoco
     bson_append_finish_object(&bs);
     bson_finish(&bs);
 
-    string a = "frame";
-    string b = "dummy";
-    
-    Message msg(a, b, (uint8_t*) bson_data(&bs), bson_size(&bs));
+    Message msg("frame", (uint8_t*) bson_data(&bs), bson_size(&bs));
     
     static_cast<Mist*>(mist)->sendToNode(msg);
 }
