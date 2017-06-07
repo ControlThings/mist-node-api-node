@@ -134,7 +134,7 @@ function Mist(opts) {
 
         var id = msg.ack || msg.sig || msg.end || msg.err;
 
-        console.log("the answer is:", require('util').inspect(msg, { colors: true, depth: 10 }));
+        //console.log("the answer is:", require('util').inspect(msg, { colors: true, depth: 10 }));
 
         if(typeof self.requests[id] === 'function') {
             self.requests[id](msg);

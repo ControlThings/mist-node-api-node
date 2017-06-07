@@ -91,7 +91,7 @@ bool injectMessage(Mist* mist, int type, uint8_t *msg, int len) {
     in->len = len;
     
     LL_APPEND(app->input_queue, in);
-    
+
     // release lock   
     pthread_mutex_unlock(&mutex1);
     return true;
@@ -369,8 +369,8 @@ static void frame(app_t* app, uint8_t* payload, size_t payload_len, wish_protoco
 static void wish_periodic_cb_impl(void* ctx) {
     struct wish_app_core_opt* opts = (struct wish_app_core_opt*) ctx;
 
-    if (opts->mist_api == NULL) {
-        WISHDEBUG(LOG_CRITICAL, "There is no MistApi here, is this a pure wish-app? %p", opts->app);
+    if (opts->app == NULL) {
+        WISHDEBUG(LOG_CRITICAL, "There is no WishApp in wish_periodic here! Broken? opts->app: %p", opts->app);
         return;
     }
     
@@ -389,7 +389,7 @@ static void wish_periodic_cb_impl(void* ctx) {
     
     // check if we can inject a new message, i.e input buffer is consumed by Mist
     while (msg != NULL) {
-        
+
         if(opts->mist != msg->mist) {
             printf("This message is NOT for this instance of Mist!! this: %p was for %p\n", opts->mist, msg->mist);
             pthread_mutex_unlock(&mutex1);
@@ -420,7 +420,7 @@ static void wish_periodic_cb_impl(void* ctx) {
                     wish_core_request_cancel(opts->wish_app, bson_iterator_int(&it));
                     goto consume_and_unlock;
                 }
-                
+
                 wish_core_request_context(opts->wish_app, &bs, wish_response_cb, opts->mist);
             }
         }
@@ -444,7 +444,7 @@ static void mist_api_periodic_cb_impl(void* ctx) {
     //printf("mist_api_periodic_cb_impl\n");
     
     if (opts->mist_api == NULL) {
-        WISHDEBUG(LOG_CRITICAL, "There is no MistApi here, is this a pure wish-app? %p", opts->app);
+        WISHDEBUG(LOG_CRITICAL, "There is no MistApi in mist_api_periodic_cb_impl, is this a pure wish-app? %p", opts->app);
         return;
     }
     
@@ -1075,17 +1075,17 @@ void mist_addon_start(Mist* mist) {
     memset(thread, 0, sizeof(pthread_t));
 
     if ( mist->apiType == Mist::ApiType::ApiTypeMist ) {
-        //printf("mist_addon_start(setupMistApi, %s, core: %s:%d)\n", name, ip, port);
+        //printf("mist_addon_start(setupMistApi, %s, core: %s:%d)\n", opts->name, opts->ip, opts->port);
         opts->mist_app = start_mist_app();
         opts->app = NULL;
         iret = pthread_create(thread, NULL, setupMistApi, (void*) opts);
     } else if ( mist->apiType == Mist::ApiType::ApiTypeMistNode ) {
-        //printf("mist_addon_start(setupMistNodeApi, %s, core: %s:%d)\n", name, ip, port);
+        //printf("mist_addon_start(setupMistNodeApi, %s, core: %s:%d)\n", opts->name, opts->ip, opts->port);
         opts->mist_app = start_mist_app();
         opts->app = NULL;
         iret = pthread_create(thread, NULL, setupMistNodeApi, (void*) opts);
     } else if ( mist->apiType == Mist::ApiType::ApiTypeWish ) {
-        //printf("mist_addon_start(setupMistNodeApi, %s, core: %s:%d)\n", name, ip, port);
+        //printf("mist_addon_start(setupWishApi, %s, core: %s:%d)\n", opts->name, opts->ip, opts->port);
         opts->mist_app = NULL;
         opts->app = app_init();
         iret = pthread_create(thread, NULL, setupWishApi, (void*) opts);
