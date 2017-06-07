@@ -6,7 +6,7 @@
 using namespace Nan;
 using namespace std;
 
-Mist::Mist(Callback *data, v8::Local<v8::Object> & options) 
+Mist::Mist(Callback *data) 
 : StreamingWorker(data) {
 }
 
@@ -53,7 +53,7 @@ Mist::Execute(const AsyncProgressWorker::ExecutionProgress& progress) {
                 //printf("Success injecting message\n");
                 break; 
             } else {
-                //printf("Injecting message waiting for my turn. Mist is busy.\n");
+                printf("Injecting message waiting for my turn. Mist is busy.\n");
                 this_thread::sleep_for(chrono::milliseconds(50));
                 //Message msg("fun", "sun", NULL, 0);
                 //writeToNode(progress, msg);

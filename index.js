@@ -3,17 +3,19 @@ if (!process.version.substr(0, 3) === 'v6.') {
     process.exit(1);
 }
 
+var MistApi = null;
+
 if (process.env.DEBUG) {
-    var MistApi = require('./build/Debug/MistApi.node');
+    MistApi = require('./build/Debug/MistApi.node').MistApi;
 } else {
     if(process.env.BUILD) {
-        var MistApi = require('./build/Release/MistApi.node');
+        MistApi = require('./build/Release/MistApi.node').MistApi;
     } else {
         var arch = process.arch;
         var platform = process.platform === 'darwin' ? 'osx' : process.platform;
         
         try {
-            var MistApi = require('./bin/MistApi-'+arch+'-'+platform+'.node');
+            MistApi = require('./bin/MistApi-'+arch+'-'+platform+'.node').MistApi;
         } catch (e) {
             console.log('MistApi is a native addon, which is not supported or currently not bundled for your arch/platform ('+arch+'/'+platform+').');
             process.exit(1);
@@ -51,118 +53,99 @@ function Mist(opts) {
     
     //console.log('Starting with opts:', opts);
 
-    this.api = new MistApi.StreamingWorker(
-        function (event, value, data) {
-            //console.log("Event from streaming worker", arguments);
-            //console.log("Event from streaming worker", event, Buffer.isBuffer(data) ? BSON.deserialize(data) : 'Not Buffer');
+    this.api = new MistApi(function (event, value, data) {
+        //console.log("Event from streaming worker", arguments);
+        //console.log("Event from streaming worker", event, Buffer.isBuffer(data) ? BSON.deserialize(data) : 'Not Buffer');
 
-            if (event === 'done') {
-                // Streaming worker is done and has shut down
-                return;
-            }
-            
-            if (event === 'online') {
-                var msg = BSON.deserialize(data);
-                
-                if (typeof self.onlineCb === 'function') {
-                    self.onlineCb(msg.peer);
-                }
-                
-                return;
-            }
-            
-            if (event === 'offline') {
-                var msg = BSON.deserialize(data);
-                
-                if (typeof self.offlineCb === 'function') {
-                    self.offlineCb(msg.peer);
-                }
-                
-                return;
-            }
-            
-            if (event === 'frame') {
-                var msg = BSON.deserialize(data);
-                var payload = BSON.deserialize(msg.frame);
-                
-                if (typeof self.frameCb === 'function') {
-                    self.frameCb(msg.peer, payload);
-                }
-                
-                return;
-            }
-            
-            if (event === 'write' && typeof self.writeCb === 'function') {
-                var msg = BSON.deserialize(data);
-                self.writeCb(msg.epid, msg.data);
-                return;
-            }
-            
-            if (event === 'invoke') {
-                var msg = BSON.deserialize(data);
-                
-                if(typeof self.invokeCb[msg.epid] === 'function') {
-                    self.invokeCb[msg.epid]( msg.args, (function (id) { return function(data) { var request = { invoke: id, data: data }; self.api.sendToAddon("mistnode", 1, BSON.serialize(request)); }; })(msg.id) );
-                } else {
-                    console.log("There is no invoke function registered for", msg.epid );
-                }
-                
-                return;
-            }
-            
-            if (event === 'sandboxed') {
-                if( Buffer.isBuffer(data) && data.length >= 5 ) {
-                    
-                    var msg = BSON.deserialize(data);
+        if (event === 'done') {
+            // Streaming worker is done and has shut down
+            return;
+        }
 
-                    var id = msg.ack || msg.sig || msg.end || msg.err;
+        var msg = null;
 
-                    //console.log("the answer is:", require('util').inspect(msg, { colors: true, depth: 10 }));
+        if( Buffer.isBuffer(data) && data.length >= 5 ) {
+            msg = BSON.deserialize(data);
+        }
 
-                    if(typeof self.requests[id] === 'function') {
-                        if (msg.err) {
-                            if(typeof msg.data === 'object') {
-                                self.requests[id](true, { code: msg.data.code, msg: msg.data.msg });
-                            } else {
-                                self.requests[id](true, { code: 100, msg: "Invalid error returned." });
-                            }
-                        } else {
-                            self.requests[id](null, msg.data);
-                        }
+        if (!msg) { return console.log('Warning! Non BSON message from plugin.', event, value, data); }
 
-                        if(!msg.sig) {
-                            delete self.requests[id];
-                        }
-                    }
-                }
-                return;
+        if (event === 'online') {
+            if (typeof self.onlineCb === 'function') { self.onlineCb(msg.peer); }
+
+            return;
+        }
+
+        if (event === 'offline') {
+            if (typeof self.offlineCb === 'function') { self.offlineCb(msg.peer); }
+
+            return;
+        }
+
+        if (event === 'frame') {
+            var payload = BSON.deserialize(msg.frame);
+
+            if (typeof self.frameCb === 'function') { self.frameCb(msg.peer, payload); }
+
+            return;
+        }
+
+        if (event === 'write' && typeof self.writeCb === 'function') {
+            self.writeCb(msg.epid, msg.data);
+            return;
+        }
+
+        if (event === 'invoke') {
+            if(typeof self.invokeCb[msg.epid] === 'function') {
+                self.invokeCb[msg.epid]( msg.args, (function (id) { return function(data) { var request = { invoke: id, data: data }; self.api.sendToAddon("mistnode", 1, BSON.serialize(request)); }; })(msg.id) );
+            } else {
+                console.log("There is no invoke function registered for", msg.epid );
             }
-            
-            emitter.emit(event, value);
-            
-            //console.log("got something from Addon...", event, value);
 
-            if( Buffer.isBuffer(data) && data.length >= 5 ) {
-                var msg = BSON.deserialize(data);
-                
-                var id = msg.ack || msg.sig || msg.end || msg.err;
-                
-                //console.log("the answer is:", inspect(msg, { colors: true, depth: 10 }));
-                
-                if(typeof self.requests[id] === 'function') {
-                    self.requests[id](msg);
-                    
-                    if(!msg.sig) {
-                        delete self.requests[id];
+            return;
+        }
+
+        if (event === 'sandboxed') {
+            var id = msg.ack || msg.sig || msg.end || msg.err;
+
+            //console.log("the answer is:", require('util').inspect(msg, { colors: true, depth: 10 }));
+
+            if(typeof self.requests[id] === 'function') {
+                if (msg.err) {
+                    if(typeof msg.data === 'object') {
+                        self.requests[id](true, { code: msg.data.code, msg: msg.data.msg });
+                    } else {
+                        self.requests[id](true, { code: 100, msg: "Invalid error returned." });
                     }
                 } else {
-                    console.log('Request not found for response:', id, self, themist.requests);
+                    self.requests[id](null, msg.data);
+                }
+
+                if(!msg.sig) {
+                    delete self.requests[id];
                 }
             }
-        },
-        opts);
+            return;
+        }
 
-    //emitter.on('done', function() { console.log("MistApi: C99 plugin has shut down gracefully."); });
+        emitter.emit(event, value);
+
+        //console.log("got something from Addon...", event, value);
+
+        var id = msg.ack || msg.sig || msg.end || msg.err;
+
+        console.log("the answer is:", require('util').inspect(msg, { colors: true, depth: 10 }));
+
+        if(typeof self.requests[id] === 'function') {
+            self.requests[id](msg);
+
+            if(!msg.sig) {
+                delete self.requests[id];
+            }
+        } else {
+            console.log('Request not found for response:', id, self, themist.requests);
+        }
+    }, opts);
 }
 
 Mist.prototype.shutdown = function() {
@@ -186,6 +169,15 @@ Mist.prototype.update = function(ep, value) {
 };
 
 Mist.prototype.request = function(op, args, cb) {
+    return this.requestBare(op, args, function(res) {
+        console.log('requestBare cb:', arguments);
+        if(res.err) { return cb(true, res.data); }
+        
+        cb(null, res.data);
+    });
+};
+
+Mist.prototype.requestBare = function(op, args, cb) {
     var id = ++sharedId;
     var request = { op: op, args: args, id: id };
     
@@ -205,6 +197,15 @@ Mist.prototype.requestCancel = function(id) {
 };
 
 Mist.prototype.wish = function(op, args, cb) {
+    return this.wishBare(op, args, function(res) {
+        console.log('requestBare cb:', arguments);
+        if(res.err) { return cb(true, res.data); }
+        
+        cb(null, res.data);
+    });
+};
+
+Mist.prototype.wishBare = function(op, args, cb) {
     var id = ++sharedId;
     var request = { op: op, args: typeof args === 'undefined' ? [] : args, id: id };
     

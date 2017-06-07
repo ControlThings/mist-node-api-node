@@ -5,7 +5,7 @@ const child = require('child_process');
 
 var testStartTime = Date.now();
 
-var wishBinaryUrl = 'https://mist.controlthings.fi/dist/wish-core-v0.6.7-linux-x64';
+var wishBinaryUrl = 'https://mist.controlthings.fi/dist/wish-core-v0.8.0-alpha-x64-linux';
 
 function done() {
 

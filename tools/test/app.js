@@ -10,19 +10,23 @@ describe('MistApi Friends', function () {
     it('should start alice', function(done) {
         mist = new Mist({ name: 'FriendManager', coreIp: '127.0.0.1', corePort: 9094 });
 
-        mist.request('signals', [], function(err, data) {
-            console.log("in ready cb", err, data);
-            if(data === 'ready') { done(); }; // else { done(new Error('App not ready, bailing.')); }
-        });
+        setTimeout(function() {
+            mist.request('signals', [], function(err, data) {
+                console.log("in ready cb", err, data);
+                if(data === 'ready') { done(); }; // else { done(new Error('App not ready, bailing.')); }
+            });
+        }, 200);
     });
 
     it('should start bob', function(done) {
         bob = new Mist({ name: 'BobsFriendManager', coreIp: '127.0.0.1', corePort: 9096 });
 
-        bob.request('signals', [], function(err, data) {
-            console.log("bob ready cb", err, data);
-            if(data === 'ready') { done(); }; // else { done(new Error('App not ready, bailing.')); }
-        });
+        setTimeout(function() {
+            bob.request('signals', [], function(err, data) {
+                console.log("bob ready cb", err, data);
+                if(data === 'ready') { done(); }; // else { done(new Error('App not ready, bailing.')); }
+            });
+        }, 200);
     });
 
     it('should start bob', function(done) {

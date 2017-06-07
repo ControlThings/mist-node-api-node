@@ -1,4 +1,5 @@
 #pragma once
+
 #include "nan.h"
 #include "StreamingWorker.h"
 #include "Mist.h"
@@ -18,10 +19,6 @@ private:
     
     static void sendToAddon(const Nan::FunctionCallbackInfo<v8::Value>& info);
     
-    static void printWrapped(const Nan::FunctionCallbackInfo<v8::Value>& info);
-
-    static void closeInput(const Nan::FunctionCallbackInfo<v8::Value>& info);
-
     static Nan::Persistent<v8::Function> constructor;
 
     StreamingWorker * _worker;

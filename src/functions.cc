@@ -43,35 +43,44 @@ pthread_mutex_t mutex1 = PTHREAD_MUTEX_INITIALIZER;
 
 #define SANDBOX_RPC_MSG_LEN_MAX     (16*1024)
 
-static int input_buffer_len = 0;
-static char input_buffer[2048];
-static int input_type = 0;
+//static int input_buffer_len = 0;
+//static char input_buffer[16*1024];
+//static int input_type = 0;
 static bool node_api_plugin_kill = false;
-static Mist* mistInst;
+//static Mist* mistInst;
+
+struct input_buffer_s {
+    int len;
+    int type;
+    Mist* mist;
+    char* data;
+    struct input_buffer_s* next;
+};
+
+struct input_buffer_s* input_queue;
 
 bool injectMessage(Mist* mist, int type, uint8_t *msg, int len) {
     if (pthread_mutex_trylock(&mutex1)) {
         //printf("Unsuccessful injection lock.\n");
-        return NULL;
+        return false;
     }
-
-    bool success = false;
     
-    // check if we can inject a new message, i.e input buffer is consumed by Mist
-    if (input_buffer_len == 0) {
-        // last message was consumed, injecting new message
-        input_type = type;
-        memcpy(input_buffer, msg, len);
-        input_buffer_len = len;
-        mistInst = mist;
-        success = true;
-    } else {
-        // last message has not been consumed
-    }
+    struct input_buffer_s* in = (struct input_buffer_s*) calloc(1, sizeof(struct input_buffer_s));
+    
+    char* data = (char*) malloc(len);
+
+    memcpy(data, msg, len);
+    
+    in->data = data;
+    in->type = type;
+    in->mist = mist;
+    in->len = len;
+    
+    LL_APPEND(input_queue, in);
     
     // release lock   
     pthread_mutex_unlock(&mutex1);
-    return success;
+    return true;
 }
 
 static void mist_response_cb(struct wish_rpc_entry* req, void* ctx, uint8_t* data, size_t data_len) {
@@ -362,12 +371,13 @@ static void wish_periodic_cb_impl(void* ctx) {
         return;
     }
     
+    struct input_buffer_s* elt = input_queue;
+    
     // check if we can inject a new message, i.e input buffer is consumed by Mist
-
-    if (input_buffer_len > 0) {
+    if (elt != NULL) {
         
-        if(opts->mist != mistInst) {
-            printf("This message is NOT for this instance of Mist!! this: %p was for %p\n", opts->mist, mistInst);
+        if(opts->mist != elt->mist) {
+            printf("This message is NOT for this instance of Mist!! this: %p was for %p\n", opts->mist, elt->mist);
             pthread_mutex_unlock(&mutex1);
             return;
         } else {
@@ -375,7 +385,7 @@ static void wish_periodic_cb_impl(void* ctx) {
         }
 
         bson_iterator it;
-        bson_find_from_buffer(&it, input_buffer, "kill");
+        bson_find_from_buffer(&it, elt->data, "kill");
         
         if (bson_iterator_type(&it) == BSON_BOOL) {
             //printf("kill is bool\n");
@@ -385,9 +395,9 @@ static void wish_periodic_cb_impl(void* ctx) {
             }
         } else {
             bson bs;
-            bson_init_with_data(&bs, input_buffer);
+            bson_init_with_data(&bs, elt->data);
 
-            if(input_type == 1) { // WISH
+            if(elt->type == 1) { // WISH
                 bson_iterator it;
                 bson_find(&it, &bs, "cancel");
 
@@ -403,7 +413,9 @@ static void wish_periodic_cb_impl(void* ctx) {
         
 consume_and_unlock:
         
-        input_buffer_len = 0;
+        LL_DELETE(input_queue, elt);
+        free(elt);
+        
     } else {
         // last message has not been consumed
         //printf("Lock acquired, but no data.\n");
@@ -417,7 +429,7 @@ consume_and_unlock:
 static void mist_api_periodic_cb_impl(void* ctx) {
     struct wish_app_core_opt* opts = (struct wish_app_core_opt*) ctx;
 
-    printf("mist_api_periodic_cb_impl\n");
+    //printf("mist_api_periodic_cb_impl\n");
     
     if (opts->mist_api == NULL) {
         WISHDEBUG(LOG_CRITICAL, "There is no MistApi here, is this a pure wish-app? %p", opts->app);
@@ -441,11 +453,12 @@ static void mist_api_periodic_cb_impl(void* ctx) {
     }
     
 
+    struct input_buffer_s* elt = input_queue;
+    
     // check if we can inject a new message, i.e input buffer is consumed by Mist
-
-    if (input_buffer_len > 0) {
+    if (elt != NULL) {
         
-        if(opts->mist != mistInst) {
+        if(opts->mist != elt->mist) {
             //printf("This message is NOT for this instance of Mist!! this: %p was for %p\n", opts->mist, mistInst);
             pthread_mutex_unlock(&mutex1);
             return;
@@ -460,7 +473,7 @@ static void mist_api_periodic_cb_impl(void* ctx) {
         //bson_visit( (uint8_t*) input_buffer, elem_visitor);
 
         bson_iterator it;
-        bson_find_from_buffer(&it, input_buffer, "kill");
+        bson_find_from_buffer(&it, elt->data, "kill");
         
         if (bson_iterator_type(&it) == BSON_BOOL) {
             //printf("kill is bool\n");
@@ -470,9 +483,9 @@ static void mist_api_periodic_cb_impl(void* ctx) {
             }
         } else {
             bson bs;
-            bson_init_with_data(&bs, input_buffer);
+            bson_init_with_data(&bs, elt->data);
 
-            if(input_type == 1) { // WISH
+            if(elt->type == 1) { // WISH
                 printf("Making wish_api_request\n");
                 //bson_visit("Making wish_api_request bson data:", (uint8_t*)bson_data(&bs));
                 
@@ -486,11 +499,11 @@ static void mist_api_periodic_cb_impl(void* ctx) {
                 }
                 
                 wish_api_request_context(mist_api, &bs, wish_response_cb, opts->mist);
-            } else if (input_type == 2) { // MIST
+            } else if (elt->type == 2) { // MIST
                 //printf("### Mist\n");
                 
                 bson_iterator it;
-                bson_find_from_buffer(&it, input_buffer, "cancel");
+                bson_find_from_buffer(&it, elt->data, "cancel");
 
                 if (bson_iterator_type(&it) == BSON_INT) {
                     printf("mist_cancel %i\n", bson_iterator_int(&it));
@@ -500,10 +513,10 @@ static void mist_api_periodic_cb_impl(void* ctx) {
                 
                 //printf("Mist going into request context: %p cb %p\n", opts->mist, mist_response_cb);
                 mist_api_request_context(mist_api, &bs, mist_response_cb, opts->mist);
-            } else if (input_type == 3) { // MIST NODE API
+            } else if (elt->type == 3) { // MIST NODE API
                 printf("MistApi got message MistNodeApi command from node.js, not good!\n");
                 //bson_visit("MistApi got message MistNodeApi command from node.js, not good!", (uint8_t*)bson_data(&bs));
-            } else if (input_type == 4) { // MIST SANDBOXED API
+            } else if (elt->type == 4) { // MIST SANDBOXED API
                 //printf("### Sandboxed Api\n");
                 //WISHDEBUG(LOG_CRITICAL, "sandbox_api-request:");
                 //bson_visit((uint8_t*)bson_data(&bs), elem_visitor);
@@ -512,14 +525,14 @@ static void mist_api_periodic_cb_impl(void* ctx) {
                 
                 bson_iterator it;
 
-                bson_find_from_buffer(&it, input_buffer, "cancel");
+                bson_find_from_buffer(&it, elt->data, "cancel");
 
                 if (bson_iterator_type(&it) == BSON_INT) {
                     int id = bson_iterator_int(&it);
                     
                     //printf("Node/C99: sandboxed_cancel %i\n", id);                    
                     
-                    bson_find_from_buffer(&it, input_buffer, "sandbox");
+                    bson_find_from_buffer(&it, elt->data, "sandbox");
                     
                     if ( bson_iterator_type(&it) == BSON_BINDATA && bson_iterator_bin_len(&it) == 32 ) {
                         // found the sandbox_id
@@ -635,8 +648,8 @@ static void mist_api_periodic_cb_impl(void* ctx) {
         }
         
 consume_and_unlock:
-        
-        input_buffer_len = 0;
+        LL_DELETE(input_queue, elt);
+        free(elt);        
     } else {
         // last message has not been consumed
         //printf("Lock acquired, but no data.\n");
@@ -664,16 +677,18 @@ static void mist_app_periodic_cb_impl(void* ctx) {
         return;
     }
 
+    struct input_buffer_s* elt = input_queue;
+    
     // check if we can inject a new message, i.e input buffer is consumed by Mist
-
-    if (input_buffer_len > 0) {
+    if (elt != NULL) {
+        
         // last message was consumed, injecting new message
         // by writing new message to input buffer
         //printf("Lock acquired, consuming\n");
         //bson_visit( (uint8_t*) input_buffer, elem_visitor);
 
         bson_iterator it;
-        bson_find_from_buffer(&it, input_buffer, "kill");
+        bson_find_from_buffer(&it, elt->data, "kill");
         
         if (bson_iterator_type(&it) == BSON_BOOL) {
             //printf("kill is bool\n");
@@ -685,18 +700,18 @@ static void mist_app_periodic_cb_impl(void* ctx) {
             //printf("Making mist_api_request\n");
             
             bson bs;
-            bson_init_buffer(&bs, input_buffer, input_buffer_len);
+            bson_init_buffer(&bs, elt->data, elt->len);
             
-            if(input_type == 1) { // WISH
+            if(elt->type == 1) { // WISH
                 printf("### Wish Api requests are disabled in MistNodeApi\n");
                 //wish_api_request(mist_app->app, &bs, mist_response_cb);
-            } else if (input_type == 2) { // MIST
+            } else if (elt->type == 2) { // MIST
                 printf("### MistApi call from a Node instance, this is not good!\n");
-            } else if (input_type == 3) { // MIST NODE API
+            } else if (elt->type == 3) { // MIST NODE API
                 //printf("MistNodeApi got message from node.js:\n");
                 //bson_visit((uint8_t*)bson_data(&bs), elem_visitor);
                     
-                bson_find_from_buffer(&it, input_buffer, "model");
+                bson_find_from_buffer(&it, elt->data, "model");
                 
                 if(bson_iterator_type(&it) != BSON_EOO) {
                     //printf("model:\n");
@@ -847,7 +862,7 @@ static void mist_app_periodic_cb_impl(void* ctx) {
                     //mist_set_name(mist_app, name);
                 } else {
 
-                    bson_find_from_buffer(&it, input_buffer, "invoke");
+                    bson_find_from_buffer(&it, elt->data, "invoke");
                     
                     if (bson_iterator_type(&it) == BSON_INT) {
                         // this is a response to an invoke request
@@ -859,12 +874,12 @@ static void mist_app_periodic_cb_impl(void* ctx) {
                         
                         int id = bson_iterator_int(&it);
 
-                        mist_invoke_response(&mist_app->device_rpc_server, id, (uint8_t*) input_buffer);
+                        mist_invoke_response(&mist_app->device_rpc_server, id, (uint8_t*) elt->data);
                         goto consume_and_unlock;
                     }
                     
                     
-                    bson_find_from_buffer(&it, input_buffer, "update");
+                    bson_find_from_buffer(&it, elt->data, "update");
                     mist_ep* ep = NULL;
                     char* ep_name = (char*) "";
 
@@ -879,7 +894,7 @@ static void mist_app_periodic_cb_impl(void* ctx) {
                         goto consume_and_unlock;
                     }
 
-                    bson_find_from_buffer(&it, input_buffer, "value");
+                    bson_find_from_buffer(&it, elt->data, "value");
                     
                     if (ep->type == MIST_TYPE_BOOL) {
                         if ( bson_iterator_type(&it) == BSON_BOOL ) {
@@ -908,13 +923,13 @@ static void mist_app_periodic_cb_impl(void* ctx) {
                         }
                     }
                 }
-            } else if (input_type == 4) { // MIST SANDBOXED API
+            } else if (elt->type == 4) { // MIST SANDBOXED API
             }
         }
         
 consume_and_unlock:
-        
-        input_buffer_len = 0;
+        LL_DELETE(input_queue, elt);
+        free(elt);
     } else {
         // last message has not been consumed
         //printf("Lock acquired, but no data.\n");

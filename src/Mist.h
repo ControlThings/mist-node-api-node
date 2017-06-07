@@ -8,7 +8,7 @@
 class Mist : public StreamingWorker {
 public:
 
-    Mist(Nan::Callback *data, v8::Local<v8::Object> & options);
+    Mist(Nan::Callback *data);
 
     ~Mist();
     
