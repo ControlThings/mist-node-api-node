@@ -64,7 +64,7 @@ describe('Wish RPC', function () {
     });
     
     it('should get error on full rpc using signals', function(done) {
-        this.timeout(25000);
+        //this.timeout(25000);
         
         var signals = [];
         

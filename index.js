@@ -66,7 +66,7 @@ function Mist(opts) {
             msg = BSON.deserialize(data);
         }
 
-        if (!msg) { return console.log('Warning! Non BSON message from plugin.', event, value, data); }
+        if (!msg) { return console.log('Warning! Non BSON message from plugin.', arguments); }
 
         if (event === 'online') {
             if (typeof self.onlineCb === 'function') { self.onlineCb(msg.peer); }
