@@ -19,7 +19,7 @@
                 "mist-c99/deps/cbson/src"
             ],
             "libraries": [
-              "-lmist", "-L/home/akaustel/work/mist/mist-c99"
+              "-lmist", "-L../mist-c99"
             ],
             "conditions": [
                 [ 'OS!="win"', {
