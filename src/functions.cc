@@ -474,7 +474,7 @@ static void mist_api_periodic_cb_impl(void* ctx) {
             bson_init_with_data(&bs, msg->data);
 
             if(msg->type == 1) { // WISH
-                printf("Making wish_api_request\n");
+                //printf("Making wish_api_request\n");
                 //bson_visit("Making wish_api_request bson data:", (uint8_t*)bson_data(&bs));
                 
                 bson_iterator it;
