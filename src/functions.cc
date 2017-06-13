@@ -28,6 +28,7 @@ struct input_buffer_s {
 
 struct wish_app_core_opt {
     Mist* mist;
+    bool node_api_plugin_kill;
     mist_api_t* mist_api;
     mist_app_t* mist_app;
     app_t* app;
@@ -42,27 +43,41 @@ struct wish_app_core_opt {
 
 struct wish_app_core_opt* wish_app_core_opts;
 
-/*
-static void init(wish_app_t* app) {
-    //WISHDEBUG(LOG_CRITICAL, "API ready!");
-}
-*/
-
 pthread_mutex_t mutex1 = PTHREAD_MUTEX_INITIALIZER;
 
 #define SANDBOX_RPC_MSG_LEN_MAX     (16*1024)
 
-//static int input_buffer_len = 0;
-//static char input_buffer[16*1024];
-//static int input_type = 0;
-static bool node_api_plugin_kill = false;
-//static Mist* mistInst;
-
 bool injectMessage(Mist* mist, int type, uint8_t *msg, int len) {
+    
+    if (pthread_mutex_trylock(&mutex1)) {
+        //printf("Unsuccessful injection lock.\n");
+        return false;
+    }
 
     struct wish_app_core_opt* app;
+    struct wish_app_core_opt* safe;
     
-    LL_FOREACH(wish_app_core_opts, app) {
+    WISHDEBUG(LOG_CRITICAL, "wish_app_core_opts: %p", wish_app_core_opts);
+    WISHDEBUG(LOG_CRITICAL, "wish_app_core_opts: %p (next: %p, prev: %p)", wish_app_core_opts, wish_app_core_opts->next, wish_app_core_opts->prev);
+
+    DL_FOREACH_SAFE(wish_app_core_opts, app, safe) {
+        WISHDEBUG(LOG_CRITICAL, "  item: %p (next: %p, prev: %p, mist: %p, mist_app: %p, app: %p)", app, app->next, app->prev, app->mist, app->mist_app, app->app);
+        if (app->mist == NULL && app->mist_app == NULL && app->app == NULL) {
+            WISHDEBUG(LOG_CRITICAL, "  deleted this one!!");
+            DL_DELETE(wish_app_core_opts, app);
+        }
+    }
+    
+    if (wish_app_core_opts == NULL) {
+        pthread_mutex_unlock(&mutex1);
+        return true;
+    }
+    
+    DL_FOREACH(wish_app_core_opts, app) {
+        if (app == NULL) {
+            WISHDEBUG(LOG_CRITICAL, "  for crying out loud, what have you done?: %p (core opts: %p)", app, wish_app_core_opts);
+            break;
+        }
         if (app->mist == mist) {
             // got it!
             break;
@@ -70,14 +85,9 @@ bool injectMessage(Mist* mist, int type, uint8_t *msg, int len) {
         app = NULL;
     }
     
-    if (app == NULL) { printf("injectMessage: App not found! Bailing!\n"); return false; }
-    
-    if (pthread_mutex_trylock(&mutex1)) {
-        //printf("Unsuccessful injection lock.\n");
-        return false;
-    }
-    
-    
+    if (app == NULL) { printf("injectMessage: App not found! Bailing!\n"); pthread_mutex_unlock(&mutex1); return false; }
+
+
     
     struct input_buffer_s* in = (struct input_buffer_s*) calloc(1, sizeof(struct input_buffer_s));
     
@@ -354,7 +364,7 @@ static void wish_periodic_cb_impl(void* ctx) {
         return;
     }
     
-    if(node_api_plugin_kill) {
+    if(opts->node_api_plugin_kill) {
         printf("killing loop from within.\n");
         wish_core_client_close(opts->wish_app);
         pthread_mutex_unlock(&mutex1);
@@ -381,7 +391,7 @@ static void wish_periodic_cb_impl(void* ctx) {
             //printf("kill is bool\n");
             if (bson_iterator_bool(&it)) {
                 //printf("kill is true\n");
-                node_api_plugin_kill = true;
+                opts->node_api_plugin_kill = true;
             }
         } else {
             bson bs;
@@ -433,7 +443,7 @@ static void mist_api_periodic_cb_impl(void* ctx) {
         return;
     }
     
-    if(node_api_plugin_kill) {
+    if(opts->node_api_plugin_kill) {
         //printf("killing loop from within.\n");
         //wish_core_client_close(mist_api->wish_app);
         pthread_mutex_unlock(&mutex1);
@@ -467,7 +477,7 @@ static void mist_api_periodic_cb_impl(void* ctx) {
             //printf("kill is bool\n");
             if (bson_iterator_bool(&it)) {
                 //printf("kill is true\n");
-                node_api_plugin_kill = true;
+                opts->node_api_plugin_kill = true;
             }
         } else {
             bson bs;
@@ -656,7 +666,7 @@ static void mist_app_periodic_cb_impl(void* ctx) {
         return;
     }
     
-    if(node_api_plugin_kill) {
+    if(opts->node_api_plugin_kill) {
         //printf("killing loop from within.\n");
         //wish_core_client_close(mist_app->app);
         pthread_mutex_unlock(&mutex1);
@@ -680,7 +690,7 @@ static void mist_app_periodic_cb_impl(void* ctx) {
             //printf("kill is bool\n");
             if (bson_iterator_bool(&it)) {
                 //printf("kill is true\n");
-                node_api_plugin_kill = true;
+                opts->node_api_plugin_kill = true;
             }
         } else {
             //printf("Making mist_api_request\n");
@@ -952,6 +962,14 @@ static void* setupMistNodeApi(void* ptr) {
     app->port = opts->port;
     
     wish_core_client_init(app);
+
+    printf("libuv loop closed and thread ended (setupMistNodeApi)\n");
+
+    // when core_client returns clean up 
+    opts->mist = NULL;
+    opts->app = NULL;
+    opts->mist_app = NULL;
+    opts->mist_api = NULL;
     
     return NULL;
 }
@@ -987,6 +1005,14 @@ static void* setupMistApi(void* ptr) {
     api->periodic_ctx = opts;
 
     wish_core_client_init(app);
+
+    printf("libuv loop closed and thread ended (setupMistApi)\n");
+
+    // when core_client returns clean up 
+    opts->mist = NULL;
+    opts->app = NULL;
+    opts->mist_app = NULL;
+    opts->mist_api = NULL;
     
     return NULL;
 }
@@ -1023,7 +1049,13 @@ static void* setupWishApi(void* ptr) {
 
     wish_core_client_init(wish_app);
     
-    printf("libuv loop closed and thread ended\n");
+    printf("libuv loop closed and thread ended (setupWishApi)\n");
+
+    // when core_client returns clean up 
+    opts->mist = NULL;
+    opts->app = NULL;
+    opts->mist_app = NULL;
+    opts->mist_api = NULL;
     
     return NULL;
 }
@@ -1036,7 +1068,7 @@ void mist_addon_start(Mist* mist) {
     struct wish_app_core_opt* opts = (struct wish_app_core_opt*) wish_platform_malloc(sizeof(struct wish_app_core_opt));
     memset(opts, 0, sizeof(struct wish_app_core_opt));
     
-    DL_APPEND(wish_app_core_opts, opts);
+    DL_PREPEND(wish_app_core_opts, opts);
     
     opts->mist = mist;
     

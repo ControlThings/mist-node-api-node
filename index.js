@@ -6,12 +6,8 @@ var BSON = new bson();
 // request id shared by all
 var sharedId = 0;
 
-var themist;
-
 function Mist(opts) {
-    
-    //console.log("Nodejs new Mist()");
-    themist = this;
+    console.log("Nodejs new Mist()");
     
     var self = this;
     this.requests = {};
@@ -171,6 +167,7 @@ Mist.prototype.requestCancel = function(id) {
 };
 
 Mist.prototype.wish = function(op, args, cb) {
+    console.log('nodejs: Mist.wish', arguments);
     return this.wishBare(op, args, function(res) {
         //console.log('requestBare cb:', arguments);
         if(res.err) { return cb(true, res.data); }
@@ -264,14 +261,12 @@ Sandboxed.prototype.requestCancel = function(id) {
 console.log('mist is initialized.');
 
 process.on('SIGINT', function () {
-    console.log('Sending shutdown to plugin.');
-    themist.shutdown();
+    console.log('Sending shutdown to plugin. (Actually not)');
     process.exit(0);
 });
 
 process.on('exit', function() {
-    console.log("process.on('exit'): Sending shutdown to plugin.");
-    themist.shutdown();
+    console.log("process.on('exit'): Sending shutdown to plugin. (Actually not)");
 });
 
 module.exports = {

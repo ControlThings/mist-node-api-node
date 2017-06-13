@@ -5,7 +5,7 @@ var util = require("util");
 
 console.log('GPS running');
 
-var mist = new Mist({ name: model.device, corePort: 9094 });
+var mist = new Mist({ name: model.device, type: 3, corePort: 9094 });
 
 // callback 
 mist.write(function(epid, data) {

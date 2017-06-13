@@ -15,6 +15,7 @@ function done() {
 
     function running() {
         console.log('Starting node.');
+        /*
         var node = child.spawn('node', ['./run.js']);
         //var node = child.spawn('gdb', ['-batch', '-ex', 'set follow-fork-mode child', '-ex', 'run ./run.js', '-ex', 'bt', 'node']);
 
@@ -29,6 +30,7 @@ function done() {
         node.on('exit', (code, signal) => {
             console.log('\x1b[36mnode> Exited with code:', signal ? signal : code,'\x1b[39m');
         });
+        */
 
         var results = [];
 
@@ -76,7 +78,7 @@ function done() {
                 console.log('\x1b[39m');
 
                 //fs.writeFileSync('./results.json', JSON.stringify(results, null, 2));
-                node.kill();
+                //node.kill();
                 core.kill();
                 coreBob.kill();
                 return;
@@ -84,8 +86,8 @@ function done() {
 
             var testFile = file;
             console.log('\x1b[34mStarting test:', testFile);
-            var test = child.spawn('../../node_modules/mocha/bin/mocha', ['--reporter', 'json', '-c', '../'+testFile], { cwd: './env' });
-            //var test = child.spawn('gdb', ['-batch', '-ex', 'set follow-fork-mode child', '-ex', 'run ../node_modules/mocha/bin/mocha --reporter json -c '+testFile, '-ex', 'bt', 'node']);
+            //var test = child.spawn('../../node_modules/mocha/bin/mocha', ['--reporter', 'json', '-c', '../'+testFile], { cwd: './env' });
+            var test = child.spawn('gdb', ['-batch', '-ex', 'set follow-fork-mode child', '-ex', 'run ../node_modules/mocha/bin/mocha --reporter json -c '+testFile, '-ex', 'bt', 'node']);
 
             test.on('error', (err) => {
                 console.log('\x1b[36mtest> Failed to start test process.');
