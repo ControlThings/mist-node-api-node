@@ -6,6 +6,7 @@ using namespace Nan;
 
 StreamingWorker::StreamingWorker(Callback *progress)
 : AsyncProgressWorker(progress), progress(progress) {
+    std::cout << "Streaming worker\n" << this;
     input_closed = false;
 }
 

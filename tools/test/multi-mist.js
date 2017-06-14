@@ -43,9 +43,9 @@ describe('MistApi Friends', function () {
             }
         });
     });
-/*
+
     it('should get bob', function(done) {
-        bob = new Mist({ name: 'BobsFriendManager', type: 2, coreIp: '127.0.0.1', corePort: 9096 });
+        bob = new Mist({ name: 'BobsFriendManager', type: 4, coreIp: '127.0.0.1', corePort: 9096 });
 
         setTimeout(function() {
             var expired = false;
@@ -56,7 +56,7 @@ describe('MistApi Friends', function () {
             });
         }, 200);
     });
-*/
+
     it('should list services', function(done) {
         mist.wish('services.list', [], function(err, data) {
             console.log("bob's services", err, data);

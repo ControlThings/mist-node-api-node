@@ -1,6 +1,7 @@
 #include "Mist.h"
 #include <thread>
 #include <chrono>
+#include <iostream>
 #include "functions.h"
 
 using namespace Nan;
@@ -8,6 +9,7 @@ using namespace std;
 
 Mist::Mist(Callback *data) 
 : StreamingWorker(data) {
+    std::cout << "Mist::Mist " << this << "\n";
 }
 
 Mist::~Mist() {
@@ -25,6 +27,8 @@ Mist::Execute(const AsyncProgressWorker::ExecutionProgress& progress) {
     this->_progress = &progress;
     run = true;
 
+    std::cout << "Mist::Execute " << this << "\n";
+    
     while ( run ) {
         Message m = fromNode.read();
 
