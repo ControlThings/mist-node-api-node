@@ -516,7 +516,7 @@ static void mist_api_periodic_cb_impl(void* ctx) {
                 mist_api_request_context(mist_api, &bs, mist_response_cb, opts->mist);
             } else if (msg->type == 3) { // MIST NODE API
                 //printf("MistApi got message MistNodeApi command from node.js, not good!\n");
-                bson_visit("MistApi got message MistNodeApi command from node.js, not good!", (uint8_t*)bson_data(&bs));
+                //bson_visit("MistApi got message MistNodeApi command from node.js, not good!", (uint8_t*)bson_data(&bs));
                 
                 
                 
@@ -524,7 +524,7 @@ static void mist_api_periodic_cb_impl(void* ctx) {
                 
                 if(bson_iterator_type(&it) != BSON_EOO) {
                     //printf("model:\n");
-                    bson_visit("model:", (uint8_t*)input_buffer);
+                    //bson_visit("model:", (uint8_t*)input_buffer);
                     
                     bson_iterator_init(&it, &bs);
                     bson_find_fieldpath_value("model.device", &it);
