@@ -435,6 +435,9 @@ static void mist_api_periodic_cb_impl(void* ctx) {
     }
     
     mist_api_t* mist_api = opts->mist_api;
+    mist_app_t* mist_app = opts->mist_app;
+
+    mist_model_t* model = (mist_model_t*) &mist_app->model;
 
     //printf("mist_api_periodic_cb_impl Mist instance: %p\n", opts->mist);
     
@@ -512,8 +515,206 @@ static void mist_api_periodic_cb_impl(void* ctx) {
                 //printf("Mist going into request context: %p cb %p\n", opts->mist, mist_response_cb);
                 mist_api_request_context(mist_api, &bs, mist_response_cb, opts->mist);
             } else if (msg->type == 3) { // MIST NODE API
-                printf("MistApi got message MistNodeApi command from node.js, not good!\n");
-                //bson_visit("MistApi got message MistNodeApi command from node.js, not good!", (uint8_t*)bson_data(&bs));
+                //printf("MistApi got message MistNodeApi command from node.js, not good!\n");
+                bson_visit("MistApi got message MistNodeApi command from node.js, not good!", (uint8_t*)bson_data(&bs));
+                
+                
+                
+                bson_find_from_buffer(&it, msg->data, "model");
+                
+                if(bson_iterator_type(&it) != BSON_EOO) {
+                    //printf("model:\n");
+                    bson_visit("model:", (uint8_t*)input_buffer);
+                    
+                    bson_iterator_init(&it, &bs);
+                    bson_find_fieldpath_value("model.device", &it);
+                    if(bson_iterator_type(&it) != BSON_STRING) {
+                        goto consume_and_unlock;
+                    }
+                    
+                    //char* name = strdup(bson_iterator_string(&it));
+                    //printf("Name in model: %s\n", name);
+                    
+                    //mist_set_name(mist_app, name);
+                    
+                    bson_iterator_init(&it, &bs);
+                    bson_find_fieldpath_value("model.model", &it);
+                    if(bson_iterator_type(&it) != BSON_OBJECT) {
+                        printf("model.model not object, type is %i\n", bson_iterator_type(&it));
+                        goto consume_and_unlock;
+                    }
+                    
+                    bson_iterator modelit;
+                    bson_iterator_subiterator(&it, &modelit);
+
+                    //printf("creating subiterator for model.model\n");
+                    
+                    int c = 0;
+                    
+                    while ( bson_iterator_next(&modelit) == BSON_OBJECT ) {
+                        
+                        char* ep_id = strdup( (char*) bson_iterator_key(&modelit) );
+                        
+                        bson_iterator epit;
+                        
+                        bson_iterator_subiterator(&modelit, &epit);
+                        bson_find_fieldpath_value("label", &epit);
+                        if( bson_iterator_type(&epit) != BSON_STRING) {
+                            continue;
+                        }
+                        char* ep_label = strdup(bson_iterator_string(&epit));
+                        
+                        bson_iterator_subiterator(&modelit, &epit);
+                        bson_find_fieldpath_value("type", &epit);
+                        
+                        char* ep_type;
+                        
+                        if( bson_iterator_type(&epit) != BSON_STRING) {
+                            ep_type = (char*) "";
+                        } else {
+                            ep_type = (char*) bson_iterator_string(&epit);
+                        }
+                        
+                        char* ep_scale = NULL;
+                        bson_iterator_subiterator(&modelit, &epit);
+                        bson_find_fieldpath_value("scale", &epit);
+                        if( bson_iterator_type(&epit) == BSON_STRING) {
+                            ep_scale = (char*) bson_iterator_string(&epit);
+                        }
+                        
+                        bool readable = false;
+                        
+                        // data: _anything_
+                        bson_iterator_subiterator(&modelit, &epit);
+                        bson_find_fieldpath_value("data", &epit);
+                        if( bson_iterator_type(&epit) != BSON_EOO) {
+                            readable = true;
+                        }
+                        
+                        // read: true
+                        bson_iterator_subiterator(&modelit, &epit);
+                        bson_find_fieldpath_value("read", &epit);
+                        if( bson_iterator_type(&epit) == BSON_BOOL) {
+                            if ( bson_iterator_bool(&it) ) {
+                                readable = true;
+                            }
+                        }
+                        
+                        bool writable = false;
+                        
+                        bson_iterator_subiterator(&modelit, &epit);
+                        bson_find_fieldpath_value("write", &epit);
+                        if( bson_iterator_type(&epit) == BSON_BOOL) {
+                            writable = bson_iterator_bool(&it);
+                        }
+                        
+                        bool invokable = false;
+                        
+                        bson_iterator_subiterator(&modelit, &epit);
+                        bson_find_fieldpath_value("invoke", &epit);
+                        if( bson_iterator_type(&epit) != BSON_EOO) {
+                            invokable = true;
+                        }
+                        
+                        //printf("ep_id: %s\n", ep_id);
+                        //printf("ep_label: %s\n", ep_label);
+                        //printf("ep_type: %s\n", ep_type);
+                        
+                        // allocate a new endpoint and space for data
+                        mist_ep* ep = (mist_ep*) malloc(sizeof(mist_ep));
+                        if (ep == NULL) { break; }
+                        memset(ep, 0, sizeof(mist_ep));
+                        ep->data = (char*) malloc(32);
+                        if (ep->data == NULL) { free(ep); break; }
+                        memset(ep->data, 0, 32);
+                        
+                        ep->id = ep_id;
+                        ep->label = ep_label;
+                        if ( strncmp(ep_type, "float", 16) == 0 ) {
+                            //printf("A float.\n");
+                            ep->type = MIST_TYPE_FLOAT;
+                            *((double*) ep->data) = 0.0;
+                        } else if ( strncmp(ep_type, "int", 16) == 0 ) {
+                            //printf("An int.\n");
+                            ep->type = MIST_TYPE_INT;
+                            *((int*) ep->data) = 0;
+                        } else if ( strncmp(ep_type, "bool", 16) == 0 ) {
+                            //printf("A bool.\n");
+                            ep->type = MIST_TYPE_BOOL;
+                            *((bool*) ep->data) = false;
+                        } else if (invokable) {
+                            ep->type = MIST_TYPE_INVOKE;                            
+                        } else {
+                            continue;
+                        }
+                        
+                        if (readable) { ep->read = hw_read; }
+                        if (writable) { ep->write = hw_write; }
+                        if (invokable) { ep->invoke = hw_invoke; } //hw_invoke_function;
+                        ep->unit = NULL;
+                        ep->next = NULL;
+                        ep->prev = NULL;
+                        ep->dirty = false;
+                        ep->scaling = ep_scale;
+
+                        
+                        mist_add_ep(model, ep);
+                        
+                        //printf("ep_read %p %d\n", ep->read, ep->readable);
+                        //printf("ep_write %p %d\n", ep->write, ep->writable);
+                        //printf("ep_invoke %p %d\n", ep->invoke, ep->invokable);
+                        //printf("ep_next %p\n", ep->next);
+                        
+                        c++;
+                    }
+
+                } else {
+
+                    bson_find_from_buffer(&it, msg->data, "update");
+                    mist_ep* ep = NULL;
+                    char* ep_name = (char*) "";
+
+                    if ( bson_iterator_type(&it) != BSON_STRING ) {
+                        goto consume_and_unlock;
+                    }
+
+                    ep_name = (char*) bson_iterator_string(&it);
+                    mist_find_endpoint_by_name(model, ep_name, &ep);
+                    if (ep == NULL) {
+                        WISHDEBUG(LOG_CRITICAL, "update could not find endpoint %s", ep_name);
+                        goto consume_and_unlock;
+                    }
+
+                    bson_find_from_buffer(&it, msg->data, "value");
+
+                    if (ep->type == MIST_TYPE_BOOL) {
+                        if ( bson_iterator_type(&it) == BSON_BOOL ) {
+                            *((bool*)ep->data) = bson_iterator_bool(&it);
+                            mist_value_changed(model, ep_name);
+                        }
+                    } else if (ep->type == MIST_TYPE_INT) {
+                        if (ep->data == NULL) { goto consume_and_unlock; }
+
+                        if ( bson_iterator_type(&it) == BSON_DOUBLE ) {
+                            *((int*)ep->data) = (int) bson_iterator_double(&it);
+                            mist_value_changed(model, ep_name);
+                        } else if ( bson_iterator_type(&it) == BSON_INT ) {
+                            *((int*)ep->data) = bson_iterator_int(&it);
+                            mist_value_changed(model, ep_name);
+                        }
+                    } else if (ep->type == MIST_TYPE_FLOAT) {
+                        if (ep->data == NULL) { goto consume_and_unlock; }
+
+                        if ( bson_iterator_type(&it) == BSON_DOUBLE ) {
+                            *((double*)ep->data) = bson_iterator_double(&it);
+                            mist_value_changed(model, ep_name);
+                        } else if ( bson_iterator_type(&it) == BSON_INT ) {
+                            *((double*)ep->data) = (double) bson_iterator_int(&it);
+                            mist_value_changed(model, ep_name);
+                        }
+                    }
+                }
+                
             } else if (msg->type == 4) { // MIST SANDBOXED API
                 //printf("### Sandboxed Api\n");
                 //WISHDEBUG(LOG_CRITICAL, "sandbox_api-request:");
