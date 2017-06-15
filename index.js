@@ -6,6 +6,8 @@ var BSON = new bson();
 // request id shared by all
 var sharedId = 0;
 
+var instances = [];
+
 function Mist(opts) {
     console.log("Nodejs new Mist()");
     
@@ -116,6 +118,9 @@ function Mist(opts) {
         
         console.log('Received an event from native addon which was unhandled.', arguments);
     }, opts);
+    
+    // keep track of instances to shut them down on exit.
+    instances.push(this.api);
 }
 
 Mist.prototype.shutdown = function() {
@@ -261,12 +266,15 @@ Sandboxed.prototype.requestCancel = function(id) {
 console.log('mist is initialized.');
 
 process.on('SIGINT', function () {
-    console.log('Sending shutdown to plugin. (Actually not)');
+    console.log('Sending shutdown to plugin.');
     process.exit(0);
 });
 
 process.on('exit', function() {
-    console.log("process.on('exit'): Sending shutdown to plugin. (Actually not)");
+    for(var i in instances) {
+        try { instances[i].shutdown(); } catch(e) { console.log('MistApi instance '+i+' shutdown() command failed.', e); }
+    }
+    console.log("process.on('exit'): Sending shutdown to plugin.");
 });
 
 module.exports = {
