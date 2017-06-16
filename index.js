@@ -120,7 +120,7 @@ function Mist(opts) {
     }, opts);
     
     // keep track of instances to shut them down on exit.
-    instances.push(this.api);
+    instances.push(this);
 }
 
 Mist.prototype.shutdown = function() {
