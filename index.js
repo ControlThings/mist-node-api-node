@@ -9,7 +9,7 @@ var sharedId = 0;
 var instances = [];
 
 function Mist(opts) {
-    console.log("Nodejs new Mist()");
+    //console.log("Nodejs new Mist()");
     
     var self = this;
     this.requests = {};
@@ -262,8 +262,6 @@ Sandboxed.prototype.requestCancel = function(id) {
     
     this.api.request('sandboxed', BSON.serialize(request));
 };
-
-console.log('mist is initialized.');
 
 process.on('SIGINT', function () {
     console.log('Sending shutdown to plugin.');
