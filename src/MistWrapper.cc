@@ -9,7 +9,6 @@ Nan::Persistent<v8::Function> MistWrapper::constructor;
 
 MistWrapper::MistWrapper(Mist* mist) {
     _mist = mist;
-    _worker = mist;
     //cout << "Streaming worker constructor " << (void*)_mist << " w: " << (void*)_worker << "\n";
 }
 
@@ -50,25 +49,18 @@ MistWrapper::New(const Nan::FunctionCallbackInfo<v8::Value>& info) {
             if (_apiType->IsNumber()) {
                 mist->apiType = (int) _apiType->NumberValue();
             }
-        }        
-
-        if (mist->apiType == 2) {
-            // This is a Node Api
-            mist_addon_start(mist);
-        } else {
-            // This is a Mist Api
-            mist_addon_start(mist);
         }
 
+        // Start the C library
+        mist_addon_start(mist);
 
-
-        MistWrapper *obj = new MistWrapper(mist);
+        MistWrapper *mistWrapper = new MistWrapper(mist);
         
-        obj->Wrap(info.This());
+        mistWrapper->Wrap(info.This());
         info.GetReturnValue().Set(info.This());
 
         // start the worker
-        AsyncQueueWorker(obj->_worker);
+        AsyncQueueWorker(mistWrapper->_mist);
     }
 }
 
@@ -93,7 +85,7 @@ MistWrapper::request(const Nan::FunctionCallbackInfo<v8::Value>& info) {
     
     //printf("request Mist instance %p %p\n", obj->_mist, obj->_worker);
     
-    obj->_worker->fromNode.write(Message(*name, buf, buf_len));
+    obj->_mist->fromNode.write(Message(*name, buf, buf_len));
 }
 
 void
@@ -108,3 +100,5 @@ MistWrapper::Init(v8::Local<v8::Object> exports) {
     
     exports->Set(Nan::New("MistApi").ToLocalChecked(), tpl->GetFunction());
 }
+
+NODE_MODULE(MistApi, MistWrapper::Init)

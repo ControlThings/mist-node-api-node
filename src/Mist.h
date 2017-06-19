@@ -1,11 +1,11 @@
 #pragma once
 
 #include "nan.h"
-#include "StreamingWorker.h"
 #include "Message.h"
+#include "PCQueue.h"
 #include <string>
 
-class Mist : public StreamingWorker {
+class Mist : public Nan::AsyncProgressWorker {
 public:
 
     Mist(Nan::Callback *data);
@@ -22,12 +22,18 @@ public:
 
     void Execute(const Nan::AsyncProgressWorker::ExecutionProgress& progress);
 
+    void HandleProgressCallback(const char *data, size_t size);
+
+    PCQueue<Message> fromNode;
+
     int apiType = ApiType::ApiTypeMist;
     std::string name = "Node";
     std::string coreIp = "127.0.0.1";
     int corePort = 9094;
-    
+
 private:
     bool run;
     const Nan::AsyncProgressWorker::ExecutionProgress* _progress;
+    Nan::Callback *progress;
+    PCQueue<Message> toNode;
 };

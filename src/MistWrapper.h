@@ -1,7 +1,6 @@
 #pragma once
 
 #include "nan.h"
-#include "StreamingWorker.h"
 #include "Mist.h"
 
 class MistWrapper : public Nan::ObjectWrap {
@@ -21,8 +20,6 @@ private:
     
     static Nan::Persistent<v8::Function> constructor;
 
-    StreamingWorker * _worker;
-    
     Mist* _mist;
 };
 

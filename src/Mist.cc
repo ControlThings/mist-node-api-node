@@ -7,8 +7,8 @@
 using namespace Nan;
 using namespace std;
 
-Mist::Mist(Callback *data) 
-: StreamingWorker(data) {
+Mist::Mist(Callback *progress) 
+: AsyncProgressWorker(progress), progress(progress) {
     std::cout << "Mist::Mist " << this << "\n";
 }
 
@@ -18,8 +18,10 @@ Mist::~Mist() {
 
 void
 Mist::sendToNode(Message& message) {
-    //printf("Mist::sendToNode()\n");
-    writeToNode(*_progress, message);
+    printf("Mist::sendToNode() %p\n", &toNode);
+    //writeToNode(*_progress, message);
+    toNode.write(message);
+    _progress->Send(reinterpret_cast<const char*> (&toNode), sizeof (toNode));
 }
 
 void
@@ -27,7 +29,7 @@ Mist::Execute(const AsyncProgressWorker::ExecutionProgress& progress) {
     this->_progress = &progress;
     run = true;
 
-    std::cout << "Mist::Execute " << this << "\n";
+    std::cout << "Mist::Execute " << this << ", ProgressWorker: " << this->_progress << "\n";
     
     while ( run ) {
         Message m = fromNode.read();
@@ -66,4 +68,23 @@ Mist::Execute(const AsyncProgressWorker::ExecutionProgress& progress) {
     };
 
     //printf("Plugin Execute is returning\n");
+}
+
+void
+Mist::HandleProgressCallback(const char *data, size_t size) {
+    HandleScope scope;
+
+    printf("Mist::HandleProgressCallback: drain queue...\n");
+
+    // drain the queue - since we might only get called once for many writes
+    std::deque<Message> contents;
+    toNode.readAll(contents);
+
+    for (Message & msg : contents) {
+        v8::Local<v8::Value> argv[] = {
+            New<v8::String>(msg.name.c_str()).ToLocalChecked(),
+            Nan::NewBuffer((char*) msg.msg, (uint32_t) msg.msg_len).ToLocalChecked()
+        };
+        progress->Call(3, argv);
+    }
 }

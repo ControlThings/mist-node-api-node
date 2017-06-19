@@ -1229,6 +1229,12 @@ static void* setupWishApi(void* ptr) {
     //mist_set_name(mist_app, name);
 
     wish_app_t* wish_app = wish_app_create((char*)name);
+    
+    if (wish_app == NULL) {
+        
+        return NULL;
+    }
+    
     opts->wish_app = wish_app;
     
     if (wish_app == NULL) {
@@ -1297,6 +1303,13 @@ void mist_addon_start(Mist* mist) {
         //printf("mist_addon_start(setupWishApi, %s, core: %s:%d)\n", opts->name, opts->ip, opts->port);
         opts->mist_app = NULL;
         opts->app = app_init();
+        
+        if(opts->app == NULL) {
+            printf("Failed app_init in mist_addon_start.\n");
+            exit(EXIT_FAILURE);
+            return;
+        }
+        
         iret = pthread_create(thread, NULL, setupWishApi, (void*) opts);
     } else {
         printf("mist_addon_start received unrecognized type %i, (expecting 2, 3 or 4)\n", mist->apiType);

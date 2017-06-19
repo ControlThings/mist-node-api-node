@@ -1,7 +1,6 @@
 #pragma once
 
 #include <nan.h>
-#include "NativeExtension.h"
 #include "Mist.h"
 
 extern "C" {
