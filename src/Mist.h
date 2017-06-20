@@ -5,6 +5,8 @@
 #include "PCQueue.h"
 #include <string>
 
+class MistWrapper;
+
 class Mist : public Nan::AsyncProgressWorker {
 public:
 
@@ -19,10 +21,12 @@ public:
     };
     
     void sendToNode(Message& message);
-
+    
     void Execute(const Nan::AsyncProgressWorker::ExecutionProgress& progress);
 
     void HandleProgressCallback(const char *data, size_t size);
+    
+    void setWrapper(MistWrapper*);
 
     PCQueue<Message> fromNode;
 
@@ -36,4 +40,5 @@ private:
     const Nan::AsyncProgressWorker::ExecutionProgress* _progress;
     Nan::Callback *progress;
     PCQueue<Message> toNode;
+    MistWrapper* mistWrapper;
 };

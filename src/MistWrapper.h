@@ -7,6 +7,8 @@ class MistWrapper : public Nan::ObjectWrap {
 public:
 
     static void Init(v8::Local<v8::Object> exports);
+    
+    void mistDeleted();
 
 private:
 

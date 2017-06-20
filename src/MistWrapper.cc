@@ -9,10 +9,20 @@ Nan::Persistent<v8::Function> MistWrapper::constructor;
 
 MistWrapper::MistWrapper(Mist* mist) {
     _mist = mist;
+    mist->setWrapper(this);
+    
     //cout << "Streaming worker constructor " << (void*)_mist << " w: " << (void*)_worker << "\n";
 }
 
-MistWrapper::~MistWrapper() {}
+MistWrapper::~MistWrapper() {
+    cout << "Destroying MistWrapper" << "\n";
+}
+
+void
+MistWrapper::mistDeleted() {
+    cout << "MistWrapper lost the actual Mist instance (Deleted by Nan).\n";
+    _mist = NULL;
+}
 
 void
 MistWrapper::New(const Nan::FunctionCallbackInfo<v8::Value>& info) {
@@ -84,6 +94,11 @@ MistWrapper::request(const Nan::FunctionCallbackInfo<v8::Value>& info) {
     MistWrapper* obj = Nan::ObjectWrap::Unwrap<MistWrapper>(info.Holder());
     
     //printf("request Mist instance %p %p\n", obj->_mist, obj->_worker);
+    
+    if ( obj->_mist == NULL ) {
+        printf("Someone is trying to make requests while the whole thing is already shut down. Ditched. MistWrapper %p\n", obj);
+        return;
+    }
     
     obj->_mist->fromNode.write(Message(*name, buf, buf_len));
 }

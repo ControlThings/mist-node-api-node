@@ -124,6 +124,7 @@ function Mist(opts) {
 }
 
 Mist.prototype.shutdown = function() {
+    console.log('nodejs: sending: kill: true');
     this.api.request("kill", BSON.serialize({ kill: true }));
 };
 

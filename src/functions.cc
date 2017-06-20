@@ -38,7 +38,6 @@ struct wish_app_core_opt {
     int port;
     struct input_buffer_s* input_queue;
     struct wish_app_core_opt* next;
-    struct wish_app_core_opt* prev;
 };
 
 struct wish_app_core_opt* wish_app_core_opts;
@@ -55,40 +54,19 @@ bool injectMessage(Mist* mist, int type, uint8_t *msg, int len) {
     }
 
     struct wish_app_core_opt* app;
-    struct wish_app_core_opt* safe;
-    
-    WISHDEBUG(LOG_CRITICAL, "wish_app_core_opts: %p", wish_app_core_opts);
-    WISHDEBUG(LOG_CRITICAL, "wish_app_core_opts: %p (next: %p, prev: %p)", wish_app_core_opts, wish_app_core_opts->next, wish_app_core_opts->prev);
 
-    DL_FOREACH_SAFE(wish_app_core_opts, app, safe) {
-        WISHDEBUG(LOG_CRITICAL, "  item: %p (next: %p, prev: %p, mist: %p, mist_app: %p, app: %p)", app, app->next, app->prev, app->mist, app->mist_app, app->app);
-        if (app->mist == NULL && app->mist_app == NULL && app->app == NULL) {
-            WISHDEBUG(LOG_CRITICAL, "  deleted this one!!");
-            DL_DELETE(wish_app_core_opts, app);
-        }
-    }
+    bool found = false;
     
-    if (wish_app_core_opts == NULL) {
-        pthread_mutex_unlock(&mutex1);
-        return true;
-    }
-    
-    DL_FOREACH(wish_app_core_opts, app) {
-        if (app == NULL) {
-            WISHDEBUG(LOG_CRITICAL, "  for crying out loud, what have you done?: %p (core opts: %p)", app, wish_app_core_opts);
-            break;
-        }
+    LL_FOREACH(wish_app_core_opts, app) {
         if (app->mist == mist) {
             // got it!
+            found = true;
             break;
         }
-        app = NULL;
     }
     
-    if (app == NULL) { printf("injectMessage: App not found! Bailing!\n"); pthread_mutex_unlock(&mutex1); return false; }
+    if (!found) { printf("injectMessage: App not found! Bailing!\n"); pthread_mutex_unlock(&mutex1); return false; }
 
-
-    
     struct input_buffer_s* in = (struct input_buffer_s*) calloc(1, sizeof(struct input_buffer_s));
     
     char* data = (char*) malloc(len);
@@ -178,7 +156,7 @@ static enum mist_error hw_write(mist_ep* ep, void* value) {
     Mist* mist = NULL;
     struct wish_app_core_opt* opts;
     
-    DL_FOREACH(wish_app_core_opts, opts) {
+    LL_FOREACH(wish_app_core_opts, opts) {
         if(opts->mist_app == ep->model->mist_app) {
             mist = opts->mist;
             //printf("    found Mist* %p\n", mist);
@@ -229,7 +207,7 @@ static enum mist_error hw_invoke(mist_ep* ep, mist_buf args) {
     struct wish_app_core_opt* opts;
     Mist* mist = NULL;
     
-    DL_FOREACH(wish_app_core_opts, opts) {
+    LL_FOREACH(wish_app_core_opts, opts) {
         if(opts->mist_app == ep->model->mist_app) {
             mist = opts->mist;
             //printf("    found Mist* %p\n", mist);
@@ -256,7 +234,7 @@ static void online(app_t* app, wish_protocol_peer_t* peer) {
     Mist* mist = NULL;
     struct wish_app_core_opt* opts;
     
-    DL_FOREACH(wish_app_core_opts, opts) {
+    LL_FOREACH(wish_app_core_opts, opts) {
         if(opts->app == app) {
             mist = opts->mist;
             //printf("    found Mist* %p\n", mist);
@@ -279,6 +257,8 @@ static void online(app_t* app, wish_protocol_peer_t* peer) {
     bson_append_string(&bs, "protocol", peer->protocol);
     bson_append_finish_object(&bs);
     bson_finish(&bs);
+    
+    if (bs.err) { printf("Error producing bson!! %d\n", bs.err); }
 
     Message msg("online", (uint8_t*) bson_data(&bs), bson_size(&bs));
     
@@ -289,7 +269,7 @@ static void offline(app_t* app, wish_protocol_peer_t* peer) {
     Mist* mist = NULL;
     struct wish_app_core_opt* opts;
     
-    DL_FOREACH(wish_app_core_opts, opts) {
+    LL_FOREACH(wish_app_core_opts, opts) {
         if(opts->app == app) {
             mist = opts->mist;
             //printf("    found Mist* %p\n", mist);
@@ -322,7 +302,7 @@ static void frame(app_t* app, uint8_t* payload, size_t payload_len, wish_protoco
     Mist* mist = NULL;
     struct wish_app_core_opt* opts;
     
-    DL_FOREACH(wish_app_core_opts, opts) {
+    LL_FOREACH(wish_app_core_opts, opts) {
         if(opts->app == app) {
             mist = opts->mist;
             //printf("    found Mist* %p\n", mist);
@@ -347,6 +327,8 @@ static void frame(app_t* app, uint8_t* payload, size_t payload_len, wish_protoco
     bson_append_finish_object(&bs);
     bson_finish(&bs);
 
+    if (bs.err) { printf("Error producing bson!! %d\n", bs.err); }
+    
     Message msg("frame", (uint8_t*) bson_data(&bs), bson_size(&bs));
     
     static_cast<Mist*>(mist)->sendToNode(msg);
@@ -388,9 +370,9 @@ static void wish_periodic_cb_impl(void* ctx) {
         bson_find_from_buffer(&it, msg->data, "kill");
         
         if (bson_iterator_type(&it) == BSON_BOOL) {
-            //printf("kill is bool\n");
+            printf("kill is bool\n");
             if (bson_iterator_bool(&it)) {
-                //printf("kill is true\n");
+                printf("kill is true\n");
                 opts->node_api_plugin_kill = true;
             }
         } else {
@@ -1268,6 +1250,9 @@ static void* setupWishApi(void* ptr) {
 }
 
 void mist_addon_start(Mist* mist) {
+    
+    printf("mist_addon_start(Mist* %p)\n", mist);
+    
     wish_platform_set_malloc(malloc);
     
     int iret;
@@ -1275,7 +1260,7 @@ void mist_addon_start(Mist* mist) {
     struct wish_app_core_opt* opts = (struct wish_app_core_opt*) wish_platform_malloc(sizeof(struct wish_app_core_opt));
     memset(opts, 0, sizeof(struct wish_app_core_opt));
     
-    DL_PREPEND(wish_app_core_opts, opts);
+    LL_PREPEND(wish_app_core_opts, opts);
     
     opts->mist = mist;
     

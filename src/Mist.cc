@@ -3,6 +3,8 @@
 #include <chrono>
 #include <iostream>
 #include "functions.h"
+#include "bson_visitor.h"
+#include "MistWrapper.h"
 
 using namespace Nan;
 using namespace std;
@@ -10,16 +12,33 @@ using namespace std;
 Mist::Mist(Callback *progress) 
 : AsyncProgressWorker(progress), progress(progress) {
     std::cout << "Mist::Mist " << this << "\n";
+    _progress = NULL;
+    mistWrapper = NULL;
 }
 
 Mist::~Mist() {
-    printf("Destroying Mist instance.");
+    printf("Destroying Mist instance. Signaling to MistWrapper %p\n", mistWrapper);
+    if (mistWrapper != NULL) {
+        mistWrapper->mistDeleted();
+    }
+}
+
+void
+Mist::setWrapper(MistWrapper* wrapper) {
+    mistWrapper = wrapper;
 }
 
 void
 Mist::sendToNode(Message& message) {
-    printf("Mist::sendToNode() %p\n", &toNode);
+    printf("Mist::sendToNode() %p _progress: %p\n", &toNode, _progress);
     //writeToNode(*_progress, message);
+    
+    if (_progress == NULL) {
+        printf("Mist::sendToNode before or after addon Mist::Execute has been run!!?!\n");
+        bson_visit("pre- or postmature  sendToNode", message.msg);
+        return;
+    }
+    
     toNode.write(message);
     _progress->Send(reinterpret_cast<const char*> (&toNode), sizeof (toNode));
 }
@@ -35,10 +54,9 @@ Mist::Execute(const AsyncProgressWorker::ExecutionProgress& progress) {
         Message m = fromNode.read();
 
         if(m.name == "kill") {
-            // Execute got kill command
             run = false;
-            //Message msg("done", "", NULL, 0);
-            //writeToNode(progress, msg);            
+            _progress = NULL;
+            printf("AsyncProgressWorker got the kill signal, waiting for the last injection to be successful.\n");
         }
 
         while (true) {
@@ -56,18 +74,16 @@ Mist::Execute(const AsyncProgressWorker::ExecutionProgress& progress) {
             bool success = injectMessage(this, type, m.msg, m.msg_len);
 
             if(success) { 
-                //printf("Success injecting message\n");
+                printf("Success injecting message\n");
                 break; 
             } else {
                 printf("Injecting message waiting for my turn. Mist is busy.\n");
                 this_thread::sleep_for(chrono::milliseconds(50));
-                //Message msg("fun", "sun", NULL, 0);
-                //writeToNode(progress, msg);
             }
         }
     };
 
-    //printf("Plugin Execute is returning\n");
+    printf("Plugin Execute is returning (AsyncProgressWorker going out of scope?)\n");
 }
 
 void

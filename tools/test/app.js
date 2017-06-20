@@ -1,5 +1,5 @@
 var Mist = require('../../index.js').Mist;
-var Sandboxed = require('../../index.js').Sandboxed;
+//var Sandboxed = require('../../index.js').Sandboxed;
 
 // run ../node_modules/mocha/bin/mocha test/wish-friends.js
 
