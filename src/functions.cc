@@ -117,13 +117,13 @@ static void wish_response_cb(struct wish_rpc_entry* req, void* ctx, uint8_t* dat
 
 static void sandboxed_response_cb(struct wish_rpc_entry* req, void* ctx, uint8_t* data, size_t data_len) {
     //printf("sandboxed response going towards node.js. ctx %p req %p\n", ctx, req);
+    //bson_visit("sandboxed response going towards node.js.", data);
     
     if (req == NULL) {
         // regular request
     } else {
         // request came from passthrough
         ctx = ((rpc_server_req *)ctx)->context;
-        //printf("   mist is here %p", ctx);
     }
     
     Message msg("sandboxed", (uint8_t*) data, data_len);
@@ -715,8 +715,7 @@ static void mist_api_periodic_cb_impl(void* ctx) {
                 
             } else if (msg->type == 4) { // MIST SANDBOXED API
                 //printf("### Sandboxed Api\n");
-                //WISHDEBUG(LOG_CRITICAL, "sandbox_api-request:");
-                //bson_visit((uint8_t*)bson_data(&bs), elem_visitor);
+                //bson_visit("sandbox_api-request:", (uint8_t*)bson_data(&bs));
                 
                 const char* sandbox_id = "";
                 
@@ -1118,6 +1117,7 @@ static void mist_app_periodic_cb_impl(void* ctx) {
                     }
                 }
             } else if (msg->type == 4) { // MIST SANDBOXED API
+                printf("Sandbox commands not handeled in MistNodeApi.");
             }
         }
         

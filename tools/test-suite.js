@@ -15,8 +15,11 @@ function done() {
 
     function running() {
         console.log('Starting node.');
+        
+        var node;
+        
         /*
-        var node = child.spawn('node', ['./run.js']);
+        node = child.spawn('node', ['./run.js']);
         //var node = child.spawn('gdb', ['-batch', '-ex', 'set follow-fork-mode child', '-ex', 'run ./run.js', '-ex', 'bt', 'node']);
 
         node.on('error', (err) => {
@@ -31,6 +34,7 @@ function done() {
             console.log('\x1b[36mnode> Exited with code:', signal ? signal : code,'\x1b[39m');
         });
         */
+        
 
         var results = [];
 
@@ -78,7 +82,7 @@ function done() {
                 console.log('\x1b[39m');
 
                 //fs.writeFileSync('./results.json', JSON.stringify(results, null, 2));
-                //node.kill();
+                if (node) { node.kill(); }
                 core.kill();
                 coreBob.kill();
                 return;

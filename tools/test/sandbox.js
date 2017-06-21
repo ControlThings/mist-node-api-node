@@ -206,8 +206,12 @@ describe('MistApi Sandbox', function () {
                 console.log("Peer was removed?: ", err, data);
 
                 sandboxedGps.request('mist.control.model', [peer], function(err, data) {
+                    if (err && data.code === 55) {
+                        return done();
+                    }
+                    
                     console.log("model", err, data);
-                    done();
+                    done(new Error('Got model while expecting "Peer not found"!'));
                 });
             });
         });
