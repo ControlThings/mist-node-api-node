@@ -16,26 +16,6 @@ function done() {
     function running() {
         console.log('Starting node.');
         
-        var node;
-        
-        /*
-        node = child.spawn('node', ['./run.js']);
-        //var node = child.spawn('gdb', ['-batch', '-ex', 'set follow-fork-mode child', '-ex', 'run ./run.js', '-ex', 'bt', 'node']);
-
-        node.on('error', (err) => {
-            process('Failed to start node process.');
-        });
-
-        node.stdout.on('data', (data) => {
-            console.log('\x1b[37mnode>', data.toString().trim(),'\x1b[39m');
-        });
-
-        node.on('exit', (code, signal) => {
-            console.log('\x1b[36mnode> Exited with code:', signal ? signal : code,'\x1b[39m');
-        });
-        */
-        
-
         var results = [];
 
         function run(list) {
@@ -82,7 +62,6 @@ function done() {
                 console.log('\x1b[39m');
 
                 //fs.writeFileSync('./results.json', JSON.stringify(results, null, 2));
-                if (node) { node.kill(); }
                 core.kill();
                 coreBob.kill();
                 return;
