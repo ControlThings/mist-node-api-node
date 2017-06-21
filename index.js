@@ -9,7 +9,7 @@ var sharedId = 0;
 var instances = [];
 
 function Mist(opts) {
-    //console.log("Nodejs new Mist()");
+    //console.log("Nodejs new Mist()", opts);
     
     var self = this;
     this.requests = {};
@@ -27,6 +27,12 @@ function Mist(opts) {
     //console.log('Starting with opts:', opts);
 
     this.api = new MistApi(function (event, data) {
+        if (!event && !data) {
+            // seems to be HandleOKCallback from nan
+            // nan.h: AsyncWorker::WorkComplete(): callback->Call(0, NULL);
+            return;
+        }
+        
         if (event === 'done') {
             // Streaming worker is done and has shut down
             return;
@@ -38,7 +44,7 @@ function Mist(opts) {
             msg = BSON.deserialize(data);
         }
 
-        if (!msg) { return console.log('Warning! Non BSON message from plugin.', arguments); }
+        if (!msg) { return console.log('Warning! Non BSON message from plugin.', arguments, event, data); }
 
         if (event === 'online') {
             if (typeof self.onlineCb === 'function') { self.onlineCb(msg.peer); }
@@ -67,7 +73,12 @@ function Mist(opts) {
 
         if (event === 'invoke') {
             if(typeof self.invokeCb[msg.epid] === 'function') {
-                self.invokeCb[msg.epid]( msg.args, (function (id) { return function(data) { var request = { invoke: id, data: data }; self.api.request("mistnode", BSON.serialize(request)); }; })(msg.id) );
+                self.invokeCb[msg.epid](msg.args, (function (id) {
+                    return function(data) {
+                        var request = { invoke: id, data: data };
+                        self.api.request("mistnode", BSON.serialize(request));
+                    }; 
+                })(msg.id));
             } else {
                 console.log("There is no invoke function registered for", msg.epid );
             }
@@ -124,7 +135,6 @@ function Mist(opts) {
 }
 
 Mist.prototype.shutdown = function() {
-    console.log('nodejs: sending: kill: true');
     this.api.request("kill", BSON.serialize({ kill: true }));
 };
 
@@ -173,9 +183,7 @@ Mist.prototype.requestCancel = function(id) {
 };
 
 Mist.prototype.wish = function(op, args, cb) {
-    console.log('nodejs: Mist.wish', arguments);
     return this.wishBare(op, args, function(res) {
-        //console.log('requestBare cb:', arguments);
         if(res.err) { return cb(true, res.data); }
         
         cb(null, res.data);
@@ -273,7 +281,7 @@ process.on('exit', function() {
     for(var i in instances) {
         try { instances[i].shutdown(); } catch(e) { console.log('MistApi instance '+i+' shutdown() command failed.', e); }
     }
-    console.log("process.on('exit'): Sending shutdown to plugin.");
+    //console.log("process.on('exit'): Sending shutdown to plugin.");
 });
 
 module.exports = {

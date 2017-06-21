@@ -1,4 +1,5 @@
 var Mist = require('../../index.js').Mist;
+var MistNode = require('../../index.js').MistNode;
 var Sandboxed = require('../../index.js').Sandboxed;
 
 var inspect = require('util').inspect;
@@ -62,7 +63,31 @@ describe('MistApi Control', function () {
         });
     });
 
-    it('should wait', function(done) { setTimeout(done, 250); });
+    var node;
+
+    it('should start a mist node', function(done) {
+        node = new MistNode({ name: 'ControlThings' }); // , coreIp: '127.0.0.1', corePort: 9094
+        
+        node.create({
+            device: 'ControlThings',
+            model: { 
+                enabled: { label: 'Enabled', type: 'bool', read: true, write: true },
+                lon: { label: 'Longitude', type: 'float', read: true },
+                counter: { label: 'Counter', type: 'int', read: true, write: true },
+                config: { label: 'Config', invoke: true }
+            } 
+        });
+        
+        node.invoke('config', function(args, cb) {
+            cb({ cool: ['a', 7, true], echo: args });
+        });
+        
+        node.write(function(epid, data) {
+            console.log('Node write:', epid, data);
+        });
+        
+        setTimeout(done, 200);
+    });  
 
     it('should find the peer', function(done) {
         function peers(err, data) {
@@ -83,6 +108,8 @@ describe('MistApi Control', function () {
         }
         
         mist.request('signals', [], function(err, signal) { 
+            console.log('signal:', err, signal);
+            
             if( Array.isArray(signal) ) { signal = signal[0]; } 
             
             if (signal === 'peers') {
@@ -226,7 +253,7 @@ describe('MistApi Control', function () {
                 return done(new Error(inspect(data)));
             }
             
-            console.log("mist.control.write:", err, data);
+            //console.log("mist.control.write:", err, data);
             done();
         });
     });

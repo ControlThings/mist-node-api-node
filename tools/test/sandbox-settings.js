@@ -7,13 +7,16 @@ describe('MistApi Sandbox', function () {
     before(function (done) {
         mist = new Mist({ name: 'Generic UI', coreIp: '127.0.0.1', corePort: 9094 });
 
-        mist.request('ready', [], function(err, ready) {
-            if (ready) {
-                done();
-            } else {
-                done(new Error('MistApi not ready, bailing.'));
-            }
-        });
+        setTimeout(function() {
+            mist.request('ready', [], function(err, ready) {
+                if (ready) {
+                    done();
+                } else {
+                    console.log('ready', arguments);
+                    done(new Error('MistApi not ready, bailing.'));
+                }
+            });
+        }, 200);
     });
 
     

@@ -347,7 +347,7 @@ static void wish_periodic_cb_impl(void* ctx) {
     }
     
     if(opts->node_api_plugin_kill) {
-        printf("killing loop from within.\n");
+        //printf("killing loop from within.\n");
         wish_core_client_close(opts->wish_app);
         pthread_mutex_unlock(&mutex1);
         return;
@@ -370,9 +370,9 @@ static void wish_periodic_cb_impl(void* ctx) {
         bson_find_from_buffer(&it, msg->data, "kill");
         
         if (bson_iterator_type(&it) == BSON_BOOL) {
-            printf("kill is bool\n");
+            //printf("kill is bool\n");
             if (bson_iterator_bool(&it)) {
-                printf("kill is true\n");
+                //printf("kill is true\n");
                 opts->node_api_plugin_kill = true;
             }
         } else {
@@ -652,6 +652,22 @@ static void mist_api_periodic_cb_impl(void* ctx) {
 
                 } else {
 
+                    bson_find_from_buffer(&it, msg->data, "invoke");
+                    
+                    if (bson_iterator_type(&it) == BSON_INT) {
+                        // this is a response to an invoke request
+                        
+                        /*
+                         { invoke: request_id,
+                           data: response_data } 
+                        */
+                        
+                        int id = bson_iterator_int(&it);
+                        
+                        mist_invoke_response(&mist_app->device_rpc_server, id, (uint8_t*) msg->data);
+                        goto consume_and_unlock;
+                    }
+                    
                     bson_find_from_buffer(&it, msg->data, "update");
                     mist_ep* ep = NULL;
                     char* ep_name = (char*) "";
@@ -887,8 +903,7 @@ static void mist_app_periodic_cb_impl(void* ctx) {
             } else if (msg->type == 2) { // MIST
                 printf("### MistApi call from a Node instance, this is not good!\n");
             } else if (msg->type == 3) { // MIST NODE API
-                //printf("MistNodeApi got message from node.js:\n");
-                //bson_visit((uint8_t*)bson_data(&bs), elem_visitor);
+                //bson_visit("MistNodeApi got message from node.js:", (uint8_t*)bson_data(&bs));
                     
                 bson_find_from_buffer(&it, msg->data, "model");
                 
@@ -1052,7 +1067,7 @@ static void mist_app_periodic_cb_impl(void* ctx) {
                         */
                         
                         int id = bson_iterator_int(&it);
-
+                        
                         mist_invoke_response(&mist_app->device_rpc_server, id, (uint8_t*) msg->data);
                         goto consume_and_unlock;
                     }
@@ -1146,7 +1161,7 @@ static void* setupMistNodeApi(void* ptr) {
     
     wish_core_client_init(app);
 
-    printf("libuv loop closed and thread ended (setupMistNodeApi)\n");
+    //printf("libuv loop closed and thread ended (setupMistNodeApi)\n");
 
     // when core_client returns clean up 
     opts->mist = NULL;
@@ -1189,7 +1204,7 @@ static void* setupMistApi(void* ptr) {
 
     wish_core_client_init(app);
 
-    printf("libuv loop closed and thread ended (setupMistApi)\n");
+    //printf("libuv loop closed and thread ended (setupMistApi)\n");
 
     // when core_client returns clean up 
     opts->mist = NULL;
@@ -1238,7 +1253,7 @@ static void* setupWishApi(void* ptr) {
 
     wish_core_client_init(wish_app);
     
-    printf("libuv loop closed and thread ended (setupWishApi)\n");
+    //printf("libuv loop closed and thread ended (setupWishApi)\n");
 
     // when core_client returns clean up 
     opts->mist = NULL;
@@ -1250,8 +1265,7 @@ static void* setupWishApi(void* ptr) {
 }
 
 void mist_addon_start(Mist* mist) {
-    
-    printf("mist_addon_start(Mist* %p)\n", mist);
+    //printf("mist_addon_start(Mist* %p)\n", mist);
     
     wish_platform_set_malloc(malloc);
     

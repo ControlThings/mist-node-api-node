@@ -11,13 +11,13 @@ using namespace std;
 
 Mist::Mist(Callback *progress) 
 : AsyncProgressWorker(progress), progress(progress) {
-    std::cout << "Mist::Mist " << this << "\n";
+    //std::cout << "Mist::Mist " << this << "\n";
     _progress = NULL;
     mistWrapper = NULL;
 }
 
 Mist::~Mist() {
-    printf("Destroying Mist instance. Signaling to MistWrapper %p\n", mistWrapper);
+    //printf("Destroying Mist instance. Signaling to MistWrapper %p\n", mistWrapper);
     if (mistWrapper != NULL) {
         mistWrapper->mistDeleted();
     }
@@ -30,12 +30,11 @@ Mist::setWrapper(MistWrapper* wrapper) {
 
 void
 Mist::sendToNode(Message& message) {
-    printf("Mist::sendToNode() %p _progress: %p\n", &toNode, _progress);
-    //writeToNode(*_progress, message);
+    //printf("Mist::sendToNode() %p _progress: %p\n", &toNode, _progress);
     
     if (_progress == NULL) {
         printf("Mist::sendToNode before or after addon Mist::Execute has been run!!?!\n");
-        bson_visit("pre- or postmature  sendToNode", message.msg);
+        //bson_visit("pre- or postmature  sendToNode", message.msg);
         return;
     }
     
@@ -45,23 +44,22 @@ Mist::sendToNode(Message& message) {
 
 void
 Mist::Execute(const AsyncProgressWorker::ExecutionProgress& progress) {
-    this->_progress = &progress;
+    _progress = &progress;
     run = true;
 
-    std::cout << "Mist::Execute " << this << ", ProgressWorker: " << this->_progress << "\n";
+    //std::cout << "Mist::Execute " << this << ", ProgressWorker: " << this->_progress << "\n";
     
     while ( run ) {
         Message m = fromNode.read();
 
-        if(m.name == "kill") {
-            run = false;
-            _progress = NULL;
-            printf("AsyncProgressWorker got the kill signal, waiting for the last injection to be successful.\n");
-        }
-
         while (true) {
             int type = 0;
-            if (m.name == "wish") {
+            if (m.name == "kill") {
+                //printf("AsyncProgressWorker got the kill signal, waiting for the last injection to be successful.\n");
+                run = false;
+                _progress = NULL;
+                type = 0;
+            } else if ( m.name == "wish") {
                 type = 1;
             } else if ( m.name == "mist") {
                 type = 2;
@@ -74,23 +72,23 @@ Mist::Execute(const AsyncProgressWorker::ExecutionProgress& progress) {
             bool success = injectMessage(this, type, m.msg, m.msg_len);
 
             if(success) { 
-                printf("Success injecting message\n");
+                //printf("Success injecting message\n");
                 break; 
             } else {
-                printf("Injecting message waiting for my turn. Mist is busy.\n");
+                //printf("Injecting message waiting for my turn. Mist is busy.\n");
                 this_thread::sleep_for(chrono::milliseconds(50));
             }
         }
     };
 
-    printf("Plugin Execute is returning (AsyncProgressWorker going out of scope?)\n");
+    //printf("Plugin Execute is returning.\n");
 }
 
 void
 Mist::HandleProgressCallback(const char *data, size_t size) {
     HandleScope scope;
 
-    printf("Mist::HandleProgressCallback: drain queue...\n");
+    //printf("Mist::HandleProgressCallback: drain queue...\n");
 
     // drain the queue - since we might only get called once for many writes
     std::deque<Message> contents;
@@ -101,6 +99,8 @@ Mist::HandleProgressCallback(const char *data, size_t size) {
             New<v8::String>(msg.name.c_str()).ToLocalChecked(),
             Nan::NewBuffer((char*) msg.msg, (uint32_t) msg.msg_len).ToLocalChecked()
         };
+        
+        // TODO: Should catch exception from javascript?
         progress->Call(3, argv);
     }
 }

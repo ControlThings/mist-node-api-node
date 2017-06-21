@@ -38,7 +38,7 @@ function done() {
             if (list.length > 0) {
                 var file = list.pop();
             } else {
-                console.log("We're all done.", list);
+                console.log("test-suite.js: We're all done.", list);
 
                 console.log('\n\x1b[34m\x1b[1mSuccesses\x1b[22m');
 
