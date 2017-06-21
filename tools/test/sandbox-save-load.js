@@ -1,5 +1,6 @@
 var Mist = require('../../index.js').Mist;
 var Sandboxed = require('../../index.js').Sandboxed;
+var MistNode = require('../../index.js').MistNode;
 
 describe('MistApi Sandbox', function () {
     var mist;
@@ -78,6 +79,32 @@ describe('MistApi Sandbox', function () {
     
     var gpsSandboxId = new Buffer('dead00ababababababababababababababababababababababababababababab', 'hex');
     var controlThingsSandboxId = new Buffer('beef00ababababababababababababababababababababababababababababab', 'hex');
+
+    var node;
+
+    it('should start a mist node', function(done) {
+        node = new MistNode({ name: 'ControlThings' }); // , coreIp: '127.0.0.1', corePort: 9094
+        
+        node.create({
+            device: 'ControlThings',
+            model: { 
+                enabled: { label: 'Enabled', type: 'bool', read: true, write: true },
+                lon: { label: 'Longitude', type: 'float', read: true },
+                counter: { label: 'Counter', type: 'int', read: true, write: true },
+                config: { label: 'Config', invoke: true }
+            } 
+        });
+        
+        node.invoke('config', function(args, cb) {
+            cb({ cool: ['a', 7, true], echo: args });
+        });
+        
+        node.write(function(epid, data) {
+            console.log('Node write:', epid, data);
+        });
+        
+        setTimeout(done, 200);
+    });      
     
     var peer;
 
