@@ -19,18 +19,26 @@ describe('MistApi Identity', function () {
         }, 200);
     });
 
-    
-    after(function(done) {
-        mist.shutdown();
-        //setTimeout(function() { process.exit(0); }, 150);
-        done();
-    });    
-
     it('should get error on identity not found', function(done) {
         mist.wish('identity.get', [new Buffer('deadbeefabababababababababababababababababababababababababababab', 'hex')], function (err, data) {
             if(err) { if (data.code === 997) { return done(); } }
             
             done(new Error('Not the expected error. '+inspect(data)));
+        });
+    });
+
+    it('should get identity data', function(done) {
+        mist.wish('identity.create', ['Leif Eriksson'], function(err, data) {
+            var uid = data.uid;
+            mist.wish('identity.get', [uid], function (err, data) {
+                if(err) { if (data.code === 997) { return done(); } }
+
+                mist.wish('identity.remove', [data.uid], function (err, data) {
+                    if(err) { if (data.code === 997) { return done(); } }
+
+                    done();
+                });
+            });
         });
     });
 });

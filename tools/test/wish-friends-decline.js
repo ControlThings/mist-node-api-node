@@ -20,17 +20,12 @@ describe('MistApi Friends', function () {
     before(function (done) {
         mist = new Mist({ name: 'FriendManager', coreIp: '127.0.0.1', corePort: 9094 });
 
-        mist.request('ready', [], function(err, data) {
-            console.log("in ready cb", err, data);
-            if(data) { done(); } else { done(new Error('App not ready, bailing.')); }
-        });
-    });
-    
-    after(function(done) {
-        console.log("Calling mist.shutdown();");
-        bob.shutdown();
-        mist.shutdown();
-        done();
+        setTimeout(function() {
+            mist.request('ready', [], function(err, data) {
+                console.log("in ready cb", err, data);
+                if(data) { done(); } else { done(new Error('App not ready, bailing.')); }
+            });
+        }, 200);
     });
 
     it('should get bob', function(done) {

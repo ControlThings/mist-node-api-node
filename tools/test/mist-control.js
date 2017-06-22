@@ -34,20 +34,24 @@ describe('MistApi Control', function () {
             
             console.log("removeIdentity has data", data);
             
+            var c = data.length;
+            
             for(var i in data) {
-                if (data[i].alias === alias) {
+                //if (data[i].alias === alias) {
                     mist.wish('identity.remove', [data[i].uid], function(err, data) {
                         if (err) { return done(new Error(inspect(data))); }
 
-                        console.log("Deleted.", err, data);
-                        done();
+                        console.log("Deleted.", err, data, c);
+                        if (--c === 0) {
+                            done();
+                        }
                     });
-                    return;
-                }
+                    //return;
+                //}
             }
             
-            console.log("Identity does not exist.");
-            done();
+            //console.log("Identity does not exist.");
+            //done();
         });
     }
     
@@ -91,6 +95,7 @@ describe('MistApi Control', function () {
 
     it('should find the peer', function(done) {
         function peers(err, data) {
+            console.log('==========================', data, mistIdentity);
             for(var i in data) {
                 if ( Buffer.compare(data[i].luid, mistIdentity.uid) === 0 
                         && Buffer.compare(data[i].ruid, mistIdentity.uid) === 0 ) 

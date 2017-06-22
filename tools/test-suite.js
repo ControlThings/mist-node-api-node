@@ -69,11 +69,11 @@ function done() {
 
             var testFile = file;
             console.log('\x1b[34mStarting test:', testFile);
-            //var test = child.spawn('../../node_modules/mocha/bin/mocha', ['--reporter', 'json', '-c', '../'+testFile], { cwd: './env' });
-            var test = child.spawn('gdb', ['-batch', '-ex', 'set follow-fork-mode child', '-ex', 'run ../node_modules/mocha/bin/mocha --reporter json -c '+testFile, '-ex', 'bt', 'node']);
+            var test = child.spawn('../../node_modules/mocha/bin/mocha', ['--reporter', 'json', '-c', '../'+testFile], { cwd: './env' });
+            //var test = child.spawn('gdb', ['-batch', '-ex', 'set follow-fork-mode child', '-ex', 'run ../node_modules/mocha/bin/mocha --reporter json -c '+testFile, '-ex', 'bt', 'node']);
 
             test.on('error', (err) => {
-                console.log('\x1b[36mtest> Failed to start test process.');
+                console.log('\x1b[36m'+testFile+'> Failed to start test process.');
             });
 
             test.stdout.on('data', (data) => {
@@ -81,16 +81,16 @@ function done() {
                     results.push(JSON.parse(data));
                     //console.log("======="+data);
                 } catch(e) {
-                    console.log('\x1b[36mtest>', data.toString().trim(),'\x1b[39m');
+                    console.log('\x1b[36m'+testFile+'>', data.toString().trim(),'\x1b[39m');
                 }                
             });
 
             test.stderr.on('data', (data) => {
-                console.log('\x1b[36mtest>', data.toString().trim(),'\x1b[39m');
+                console.log('\x1b[36m'+testFile+'>', data.toString().trim(),'\x1b[39m');
             });
 
             test.on('exit', (code, signal) => {
-                console.log('\x1b[36mtest> Exited with code:', code, signal,'\x1b[39m');
+                console.log('\x1b[36m'+testFile+'> Exited with code:', code, signal,'\x1b[39m');
                 if( code === 0 ) {
                     console.log('\x1b[35mTest run completed successfully in '+(Date.now()-testStartTime)+'ms','\x1b[39m');
                 }
