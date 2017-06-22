@@ -1,7 +1,6 @@
 /nbproject
 /node_modules
-/mist-c99
-/build
+build
 /npm-debug.log
 /*.tgz
 /tools/env
