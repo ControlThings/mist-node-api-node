@@ -10,6 +10,9 @@ var wishBinaryUrl = 'https://mist.controlthings.fi/dist/wish-core-v0.8.0-alpha-x
 function done() {
 
     console.log('Starting Wish Core.');
+    
+    // To debug errors in Alice core C/C++ code enable the below core = child.spawn('gdb', ...
+    
     //var core = child.spawn('./wish-core', [], { cwd: './env', stdio: 'inherit' });
     var core = child.spawn('gdb', ['-batch', '-ex', 'run', '-ex', 'bt', './wish-core'], { cwd: './env', stdio: 'inherit' });
 
@@ -69,6 +72,10 @@ function done() {
 
             var testFile = file;
             console.log('\x1b[34mStarting test:', testFile);
+            
+
+            // To debug errors in test C/C++ code enable the below bobCore = child.spawn('gdb', ...
+            
             var test = child.spawn('../../node_modules/mocha/bin/mocha', ['--reporter', 'json', '-c', '../'+testFile], { cwd: './env' });
             //var test = child.spawn('gdb', ['-batch', '-ex', 'set follow-fork-mode child', '-ex', 'run ../node_modules/mocha/bin/mocha --reporter json -c '+testFile, '-ex', 'bt', 'node']);
 
@@ -145,6 +152,10 @@ function done() {
     }
     
     console.log('Starting Wish Core for Bob.');
+    
+    
+    // To debug errors in Bob's core enable the below bobCore = child.spawn('gdb', ...
+    
     var coreBob = child.spawn('../wish-core', ['-p 38002', '-a 9096', '-b', '-l', '-r', '-s'], { cwd: './env/bob', stdio: 'inherit' });
     //var coreBob = child.spawn('gdb', ['-batch', '-ex', 'run -p 38002 -a 9096 -b -l -r -s', '-ex', 'bt', '../wish-core'], { cwd: './env/bob', stdio: 'inherit' });
     
