@@ -33,6 +33,7 @@ struct wish_app_core_opt {
     mist_app_t* mist_app;
     app_t* app;
     wish_app_t* wish_app;
+    char* protocol;
     char* name;
     char* ip;
     int port;
@@ -430,7 +431,7 @@ static void mist_api_periodic_cb_impl(void* ctx) {
     
     if(opts->node_api_plugin_kill) {
         //printf("killing loop from within.\n");
-        //wish_core_client_close(mist_api->wish_app);
+        wish_core_client_close(mist_api->wish_app);
         pthread_mutex_unlock(&mutex1);
         return;
     }
@@ -476,7 +477,7 @@ static void mist_api_periodic_cb_impl(void* ctx) {
                 bson_find(&it, &bs, "cancel");
 
                 if (bson_iterator_type(&it) == BSON_INT) {
-                    printf("wish_cancel %i\n", bson_iterator_int(&it));
+                    //printf("wish_cancel %i\n", bson_iterator_int(&it));
                     wish_api_request_cancel(mist_api, bson_iterator_int(&it));
                     goto consume_and_unlock;
                 }
@@ -489,7 +490,7 @@ static void mist_api_periodic_cb_impl(void* ctx) {
                 bson_find_from_buffer(&it, msg->data, "cancel");
 
                 if (bson_iterator_type(&it) == BSON_INT) {
-                    printf("mist_cancel %i\n", bson_iterator_int(&it));
+                    //printf("mist_cancel %i\n", bson_iterator_int(&it));
                     mist_api_request_cancel(mist_api, bson_iterator_int(&it));
                     goto consume_and_unlock;
                 }
@@ -866,7 +867,7 @@ static void mist_app_periodic_cb_impl(void* ctx) {
     
     if(opts->node_api_plugin_kill) {
         //printf("killing loop from within.\n");
-        //wish_core_client_close(mist_app->app);
+        wish_core_client_close(mist_app->app);
         pthread_mutex_unlock(&mutex1);
         return;
     }
@@ -1161,7 +1162,7 @@ static void* setupMistNodeApi(void* ptr) {
     
     wish_core_client_init(app);
 
-    //printf("libuv loop closed and thread ended (setupMistNodeApi)\n");
+    printf("libuv loop closed and thread ended (setupMistNodeApi)\n");
 
     // when core_client returns clean up 
     opts->mist = NULL;
@@ -1204,7 +1205,7 @@ static void* setupMistApi(void* ptr) {
 
     wish_core_client_init(app);
 
-    //printf("libuv loop closed and thread ended (setupMistApi)\n");
+    printf("libuv loop closed and thread ended (setupMistApi)\n");
 
     // when core_client returns clean up 
     opts->mist = NULL;
@@ -1222,7 +1223,7 @@ static void* setupWishApi(void* ptr) {
     char* name = (char*) (opts->name != NULL ? opts->name : "WishApi");
     
     app_t* app = opts->app;
-    
+
     //mist_set_name(mist_app, name);
 
     wish_app_t* wish_app = wish_app_create((char*)name);
@@ -1239,7 +1240,11 @@ static void* setupWishApi(void* ptr) {
         return NULL;
     }
 
-    wish_app_add_protocol(wish_app, &app->protocol);
+    if (opts->protocol) {
+        memcpy(app->protocol.protocol_name, opts->protocol, WISH_PROTOCOL_NAME_MAX_LEN);
+        wish_app_add_protocol(wish_app, &app->protocol);
+    }
+    
     app->app = wish_app;
 
     app->online = online;
@@ -1253,7 +1258,7 @@ static void* setupWishApi(void* ptr) {
 
     wish_core_client_init(wish_app);
     
-    //printf("libuv loop closed and thread ended (setupWishApi)\n");
+    printf("libuv loop closed and thread ended (setupWishApi)\n");
 
     // when core_client returns clean up 
     opts->mist = NULL;
@@ -1277,6 +1282,8 @@ void mist_addon_start(Mist* mist) {
     LL_PREPEND(wish_app_core_opts, opts);
     
     opts->mist = mist;
+    
+    opts->protocol = strdup(mist->protocol.c_str());
     
     opts->name = strdup(mist->name.c_str());
     opts->ip = strdup(mist->coreIp.c_str());

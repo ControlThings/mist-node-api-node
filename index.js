@@ -1,5 +1,8 @@
 var MistApi = require('./addon.js');
 
+var EventEmitter = require("events").EventEmitter;
+var inherits = require('util').inherits;
+
 var bson = require('bson-buffer');
 var BSON = new bson();
 
@@ -122,7 +125,7 @@ function Mist(opts) {
                     delete self.requests[id];
                 }
             } else {
-                console.log('Request not found for response:', id, self, themist.requests);
+                console.log('Request not found for response:', id, self, self.requests);
             }
             return;
         }
@@ -272,21 +275,137 @@ Sandboxed.prototype.requestCancel = function(id) {
     this.api.request('sandboxed', BSON.serialize(request));
 };
 
-process.on('SIGINT', function () {
-    console.log('Sending shutdown to plugin.');
-    process.exit(0);
-});
+function WishApp(opts) {
+    if (!opts) { opts = {}; }
+    
+    // force type to WishApp
+    opts.type = 4;
+
+    var self = this;
+    this.requests = {};
+    this.invokeCb = {};
+
+    this.opts = opts;
+    
+    if ( Array.isArray(opts.protocols) ) {
+        if (opts.protocols.length === 1) {
+            opts.protocols =  opts.protocols[0];
+        } else if (opts.protocols.length === 0) {
+            delete opts.protocols;
+        } else {
+            throw new Error('WishApp requires 0 or one protocols (multiple not yet supported)');
+        }
+    } else if (!opts.protocols) {
+        // fine
+    } else {
+        throw new Error('WishApp protocols must be array or non-existing.');
+    }
+    
+    setTimeout(function() { self.emit('ready'); }, 200);
+    
+    this.api = new MistApi(function (event, data) {
+        if (!event && !data) { return; }
+        if (event === 'done') { return; }
+
+        var msg = null;
+
+        if( Buffer.isBuffer(data) && data.length >= 5 ) {
+            msg = BSON.deserialize(data);
+        }
+
+        if (!msg) { return console.log('Warning! Non BSON message from plugin.', arguments, event, data); }
+
+        if (event === 'online') {
+            if (typeof self.onlineCb === 'function') { self.onlineCb(msg.peer); }
+
+            return;
+        }
+
+        if (event === 'offline') {
+            if (typeof self.offlineCb === 'function') { self.offlineCb(msg.peer); }
+
+            return;
+        }
+
+        if (event === 'frame') {
+            var payload = BSON.deserialize(msg.frame);
+
+            if (typeof self.frameCb === 'function') { self.frameCb(msg.peer, payload); }
+
+            return;
+        }
+
+        if (event === 'wish') {
+
+            var id = msg.ack || msg.sig || msg.end || msg.err;
+
+            //console.log("the answer is:", require('util').inspect(msg, { colors: true, depth: 10 }));
+
+            if(typeof self.requests[id] === 'function') {
+                self.requests[id](msg);
+
+                if(!msg.sig) {
+                    delete self.requests[id];
+                }
+            } else {
+                console.log('Request not found for response:', id, self, self.requests);
+            }
+            return;
+        }
+        
+        console.log('Received an event from native addon which was unhandled.', arguments);
+    }, opts);
+    
+    // keep track of instances to shut them down on exit.
+    instances.push(this);
+    
+}
+
+inherits(WishApp, EventEmitter);
+
+WishApp.prototype.request = function(op, args, cb) {
+    return this.requestBare(op, args, function(res) {
+        if(res.err) { return cb(true, res.data); }
+        
+        cb(null, res.data);
+    });
+};
+
+WishApp.prototype.requestBare = function(op, args, cb) {
+    var id = ++sharedId;
+    var request = { op: op, args: typeof args === 'undefined' ? [] : args, id: id };
+    
+    // store callback for response
+    this.requests[id] = cb;
+    
+    this.api.request("wish", BSON.serialize(request));
+
+    return id;
+};
+
+WishApp.prototype.cancel = function(id) {
+    var request = { cancel: id };
+    this.api.request("wish", BSON.serialize(request));
+};
+
+WishApp.prototype.disconnect = function() {
+    this.api.request("kill", BSON.serialize({ kill: true }));
+};
+
+WishApp.prototype.shutdown = function() {
+    this.api.request("kill", BSON.serialize({ kill: true }));
+};
 
 process.on('exit', function() {
     for(var i in instances) {
         try { instances[i].shutdown(); } catch(e) { console.log('MistApi instance '+i+' shutdown() command failed.', e); }
     }
-    //console.log("process.on('exit'): Sending shutdown to plugin.");
 });
 
 module.exports = {
     Mist: Mist,
     MistNode: MistNode,
-    Sandboxed: Sandboxed };
+    Sandboxed: Sandboxed,
+    WishApp: WishApp };
 
 

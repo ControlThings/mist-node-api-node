@@ -95,7 +95,7 @@ describe('MistApi Control', function () {
 
     it('should find the peer', function(done) {
         function peers(err, data) {
-            console.log('==========================', data, mistIdentity);
+            //console.log('==========================', data, mistIdentity);
             for(var i in data) {
                 if ( Buffer.compare(data[i].luid, mistIdentity.uid) === 0 
                         && Buffer.compare(data[i].ruid, mistIdentity.uid) === 0 ) 
@@ -113,7 +113,7 @@ describe('MistApi Control', function () {
         }
         
         mist.request('signals', [], function(err, signal) { 
-            console.log('signal:', err, signal);
+            //console.log('signal:', err, signal);
             
             if( Array.isArray(signal) ) { signal = signal[0]; } 
             
