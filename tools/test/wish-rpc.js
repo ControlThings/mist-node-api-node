@@ -70,7 +70,7 @@ describe('Wish RPC', function () {
         
         for(var i=0; i<60; i++) {
             signals.push(mist.wish('signals', [], function(err, data) { 
-                if (err) { console.log("What do we have here?", inspect(data)); return done(); }
+                if (err) { console.log("What do we have here?", inspect(data)); done(); return done = function() {}; }
 
                 console.log("wish-core signals:", err, data);
                 //mist.wishCancel(signalsId);
