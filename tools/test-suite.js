@@ -25,10 +25,14 @@ function done() {
                 console.log("test-suite.js: We're all done.", list);
 
                 console.log('\n\x1b[34m\x1b[1mSuccesses\x1b[22m');
+                
+                var successCount = 0;
+                var failCount = 0;
 
                 for(var i in results) {
                     for(var j in results[i].passes) {
                         var it = results[i].passes[j];
+                        successCount++;
                         console.log('  \x1b[34m✓ \x1b[37m', it.fullTitle, '\x1b[32m('+it.duration+'ms)','\x1b[39m');
                     }
                     console.log();
@@ -49,6 +53,8 @@ function done() {
                     for(var i in results) {
                         for(var j in results[i].failures) {
                             var it = results[i].failures[j];
+                            failCount++;
+                            
                             console.log('  \x1b[31m✗ \x1b[38m', it.fullTitle, '\x1b[32m('+it.duration+'ms)');
 
                             console.log();
@@ -59,6 +65,7 @@ function done() {
                     }
                 }
 
+                console.log('Success / Fail / Total:', successCount, '/', failCount, '/', successCount + failCount);
                 console.log('\x1b[39m');
 
                 //fs.writeFileSync('./results.json', JSON.stringify(results, null, 2));

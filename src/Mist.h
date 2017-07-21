@@ -31,6 +31,7 @@ public:
     PCQueue<Message> fromNode;
 
     int apiType = ApiType::ApiTypeMist;
+    std::string protocol = "";
     std::string name = "Node";
     std::string coreIp = "127.0.0.1";
     int corePort = 9094;

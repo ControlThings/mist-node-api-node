@@ -1,20 +1,25 @@
 var Mist = require('../../index.js').Mist;
 var Sandboxed = require('../../index.js').Sandboxed;
+var util = require('./deps/util.js');
 var inspect = require('util').inspect;
 
 describe('Wish Local Discovery', function () {
     var mist;
+    var name = 'Alice';
+    var mistIdentity;
     
     before(function (done) {
         mist = new Mist({ name: 'Generic UI', coreIp: '127.0.0.1', corePort: 9094 });
 
         setTimeout(function() {
-            mist.request('ready', [], function(err, ready) {
-                if (ready) {
-                    done();
-                } else {
-                    done(new Error('MistApi not ready, bailing.'));
-                }
+            mist.request('signals', [], function(err, data) {
+                if(data === 'ready') {
+                    util.ensureIdentity(mist, name, function(err, identity) {
+                        if (err) { done(new Error('util.js: Could not ensure identity.')); }
+                        mistIdentity = identity;
+                        done(); 
+                    });
+                }; // else { done(new Error('App not ready, bailing.')); }
             });
         }, 200);
     });
