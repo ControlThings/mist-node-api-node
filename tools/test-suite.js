@@ -9,15 +9,14 @@ var wishBinaryUrl = 'https://mist.controlthings.fi/dist/wish-core-v0.8.0-alpha-x
 
 function done() {
 
-    console.log('Starting Wish Core.');
+    //console.log('Starting Wish Core.');
     
     // To debug errors in Alice core C/C++ code enable the below core = child.spawn('gdb', ...
-    
-    //var core = child.spawn('./wish-core', [], { cwd: './env', stdio: 'inherit' });
-    var core = child.spawn('gdb', ['-batch', '-ex', 'run', '-ex', 'bt', './wish-core'], { cwd: './env', stdio: 'inherit' });
+    var core = child.spawn('./wish-core', [], { cwd: './env', stdio: 'inherit' });
+    //var core = child.spawn('gdb', ['-batch', '-ex', 'run', '-ex', 'bt', './wish-core'], { cwd: './env', stdio: 'inherit' });
 
     function running() {
-        console.log('Starting node.');
+        //console.log('Starting node.');
         
         var results = [];
 
@@ -25,7 +24,7 @@ function done() {
             if (list.length > 0) {
                 var file = list.pop();
             } else {
-                console.log("test-suite.js: We're all done.", list);
+                //console.log("test-suite.js: We're all done.", list);
 
                 console.log('\n\x1b[34m\x1b[1mSuccesses\x1b[22m');
                 
@@ -104,9 +103,10 @@ function done() {
             });
 
             test.on('exit', (code, signal) => {
-                console.log('\x1b[36m'+testFile+'> Exited with code:', code, signal,'\x1b[39m');
                 if( code === 0 ) {
                     console.log('\x1b[35mTest run completed successfully in '+(Date.now()-testStartTime)+'ms','\x1b[39m');
+                } else {
+                    console.log('\x1b[36m'+testFile+'> Exited with error code:', code, signal,'\x1b[39m');
                 }
                 
                 process.nextTick(function() { run(list); });
@@ -114,7 +114,7 @@ function done() {
         }
 
         if (process.argv[2]) {
-            console.log("testing:", process.argv[2]);
+            //console.log("testing:", process.argv[2]);
             run([process.argv[2]]);
         } else {
             var list = [];
@@ -150,7 +150,7 @@ function done() {
     */
     
     core.on('exit', (code) => {
-        console.log("wish exited with code:", code);
+        if (code !== 0) { console.log("wish exited with code:", code); }
         clearTimeout(coreTimeout);
     });
     
@@ -158,13 +158,13 @@ function done() {
 
     }
     
-    console.log('Starting Wish Core for Bob.');
+    //console.log('Starting Wish Core for Bob.');
     
     
     // To debug errors in Bob's core enable the below bobCore = child.spawn('gdb', ...
     
-    var coreBob = child.spawn('../wish-core', ['-p 38002', '-a 9096', '-b', '-l', '-r', '-s'], { cwd: './env/bob', stdio: 'inherit' });
-    //var coreBob = child.spawn('gdb', ['-batch', '-ex', 'run -p 38002 -a 9096 -b -l -r -s', '-ex', 'bt', '../wish-core'], { cwd: './env/bob', stdio: 'inherit' });
+    //var coreBob = child.spawn('../wish-core', ['-p 38002', '-a 9096', '-b', '-l', '-r', '-s'], { cwd: './env/bob', stdio: 'inherit' });
+    var coreBob = child.spawn('gdb', ['-batch', '-ex', 'run -p 38002 -a 9096 -b -l -r -s', '-ex', 'bt', '../wish-core'], { cwd: './env/bob', stdio: 'inherit' });
     
     var coreBobTimeout = setTimeout(() => { runningBob(); }, 200);
     
@@ -189,7 +189,8 @@ function done() {
     */
     
     coreBob.on('exit', (code) => {
-        console.log("wish exited with code:", code);
+        //if ( code !== null ) { console.log("wish (bob) exited with code:", code); }
+        console.log("wish (bob) exited with code:", code);
         clearTimeout(coreBobTimeout);
     });
 }

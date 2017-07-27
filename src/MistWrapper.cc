@@ -48,7 +48,7 @@ MistWrapper::New(const Nan::FunctionCallbackInfo<v8::Value>& info) {
 
             if (_protocol->IsString()) {
                 mist->protocol = string(*v8::String::Utf8Value(_protocol->ToString()));
-                cout << "MistWrapper: protocol: " << mist->protocol;
+                //cout << "MistWrapper: protocol: " << mist->protocol;
             }
 
             if (_coreIp->IsString()) {

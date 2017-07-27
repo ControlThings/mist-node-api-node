@@ -275,8 +275,17 @@ Sandboxed.prototype.requestCancel = function(id) {
     this.api.request('sandboxed', BSON.serialize(request));
 };
 
+function copy(that) {
+    var copy = {};
+    
+    for(var i in that) { copy[i] = that[i]; }
+    
+    return copy;
+}
+
 function WishApp(opts) {
     if (!opts) { opts = {}; }
+    opts = copy(opts);    
     
     // force type to WishApp
     opts.type = 4;

@@ -1,5 +1,4 @@
-var Mist = require('../../index.js').Mist;
-var Sandboxed = require('../../index.js').Sandboxed;
+var WishApp = require('../../index.js').WishApp;
 
 var BsonParser = require('bson-buffer');
 var BSON = new BsonParser();
@@ -8,9 +7,9 @@ var inspect = require('util').inspect;
 
 // run ../node_modules/mocha/bin/mocha test/wish-friends.js
 
-describe('MistApi Friends', function () {
-    var mist;
-    var bob;
+describe('Wish Friends', function () {
+    var app1;
+    var app2;
     var aliceIdentity;
     var aliceAlias = 'Mr. Andersson';
     var bobAlias = 'I am Bob';
@@ -18,40 +17,29 @@ describe('MistApi Friends', function () {
     var bobWldEntry;
     
     before(function (done) {
-        mist = new Mist({ name: 'AliceFriendManager', coreIp: '127.0.0.1', corePort: 9094 });
+        app1 = new WishApp({ name: 'AliceFriendManager' });
 
-        setTimeout(function() {
-            mist.request('ready', [], function(err, data) {
-                console.log("in ready cb", err, data);
-                if(data) { done(); } else { done(new Error('App not ready, bailing.')); }
-            });
-        }, 200);
-    });
-    
-    after(function(done) {
-        console.log("Calling mist.shutdown();");
-        bob.shutdown();
-        mist.shutdown();
-        done();
+        app1.on('ready', () => {
+            done();
+        });
     });
 
-    it('should get bob', function(done) {
-        bob = new Mist({ name: 'BobsFriendManager', coreIp: '127.0.0.1', corePort: 9096 });
+    before('should get bob', function(done) {
+        app2 = new WishApp({ name: 'BobsFriendManager', corePort: 9096 });
 
-        bob.request('ready', [], function(err, data) {
+        app2.on('ready', () => {
             done();
         });
         
-        
         // subscribe to signals from core and automatically accept friend request from Alice
-        bob.wish('signals', [], function(err, data) {
+        app2.request('signals', [], function(err, data) {
             if (data[0] && data[0] === 'friendRequest') {
-                bob.wish('identity.friendRequestList', [], function(err, data) {
+                app2.request('identity.friendRequestList', [], function(err, data) {
                     for (var i in data) {
                         if( Buffer.compare(data[i].luid, bobIdentity.uid) === 0 
                                 && Buffer.compare(data[i].ruid, aliceIdentity.uid) === 0 ) 
                         {
-                            bob.wish('identity.friendRequestAccept', [data[i].luid, data[i].ruid], function(err, data) {
+                            app2.request('identity.friendRequestAccept', [data[i].luid, data[i].ruid], function(err, data) {
                                 console.log("Accepted friend request from Alice:", err, data);
                             });
                             break;
@@ -62,9 +50,9 @@ describe('MistApi Friends', function () {
         });
     });
 
-    it('should ensure identity', function(done) {
+    before('should ensure identity', function(done) {
         function createIdentity(alias) {
-            bob.wish('identity.create', [alias], function(err, data) {
+            app2.request('identity.create', [alias], function(err, data) {
                 if (err) { return done(new Error(inspect(data))); }
                 //console.log("Setting Bobs identity to:", data);
                 bobIdentity = data;
@@ -72,7 +60,7 @@ describe('MistApi Friends', function () {
             });
         }
         
-        bob.wish('identity.list', [], function(err, data) {
+        app2.request('identity.list', [], function(err, data) {
             if (err) { return done(new Error(inspect(data))); }
             
             //console.log("Ensuring identity of Bob.", data);
@@ -83,7 +71,7 @@ describe('MistApi Friends', function () {
             for(var i in data) {
                 c++;
                 t++;
-                bob.wish('identity.remove', [data[i].uid], function(err, data) {
+                app2.request('identity.remove', [data[i].uid], function(err, data) {
                     if (err) { return done(new Error(inspect(data))); }
 
                     c--;
@@ -101,9 +89,9 @@ describe('MistApi Friends', function () {
         });
     });
 
-    it('should ensure identity for Mr. Andersson', function(done) {
+    before('should ensure identity for Mr. Andersson', function(done) {
         function createIdentity(alias) {
-            mist.wish('identity.create', [alias], function(err, data) {
+            app1.request('identity.create', [alias], function(err, data) {
                 if (err) { return done(new Error(inspect(data))); }
                 //console.log("Setting Alice identity to:", err, data);
                 aliceIdentity = data;
@@ -111,7 +99,7 @@ describe('MistApi Friends', function () {
             });
         }
         
-        mist.wish('identity.list', [], function(err, data) {
+        app1.request('identity.list', [], function(err, data) {
             if (err) { return done(new Error(inspect(data))); }
             
             //console.log("Ensuring identity of Alice.", data);
@@ -122,7 +110,7 @@ describe('MistApi Friends', function () {
             for(var i in data) {
                 c++;
                 t++;
-                mist.wish('identity.remove', [data[i].uid], function(err, data) {
+                app1.request('identity.remove', [data[i].uid], function(err, data) {
                     if (err) { return done(new Error(inspect(data))); }
 
                     c--;
@@ -140,11 +128,11 @@ describe('MistApi Friends', function () {
         });
     });
     
-    it('should find alice in wld', function(done) {
+    it('should find Alice in wld', function(done) {
         this.timeout(35000);
         
         function poll() {
-            mist.wish('wld.list', [], function(err, data) {
+            app1.request('wld.list', [], function(err, data) {
                 if (err) { return done(new Error(inspect(data))); }
 
                 //console.log("Bobs wld", err, data);
@@ -174,13 +162,13 @@ describe('MistApi Friends', function () {
         });
         */        
         
-        mist.wish('wld.friendRequest', [aliceIdentity.uid, bobWldEntry.ruid, bobWldEntry.rhid], function(err, data) {
+        app1.request('wld.friendRequest', [aliceIdentity.uid, bobWldEntry.ruid, bobWldEntry.rhid], function(err, data) {
             if (err) { return done(new Error(inspect(data))); }
             
             //console.log("Bobs cert", err, data);
             
             setTimeout(function() {
-                mist.wish('identity.list', [], function(err, data) {
+                app1.request('identity.list', [], function(err, data) {
                     if (err) { return done(new Error(inspect(data))); }
 
                     //console.log("Alice's identity.list", err,data);
@@ -191,7 +179,7 @@ describe('MistApi Friends', function () {
     });
 
     it('should get bobs identity list', function(done) {
-        bob.wish('identity.list', [], function(err, data) {
+        app2.request('identity.list', [], function(err, data) {
             if (err) { return done(new Error(inspect(data))); }
             //console.log("Bobs identity.list:", inspect(data, {colors:true}));
             done();
@@ -199,7 +187,7 @@ describe('MistApi Friends', function () {
     });
 
     it('should get Alices identity list', function(done) {
-        mist.wish('identity.list', [], function(err, data) {
+        app1.request('identity.list', [], function(err, data) {
             if (err) { return done(new Error(inspect(data))); }
             //console.log("Alices identity.list:", inspect(data, {colors:true}));
             done();
@@ -210,7 +198,7 @@ describe('MistApi Friends', function () {
         this.timeout(7000);
         
         function poll() {
-            mist.wish('connections.list', [], function(err, data) {
+            app1.request('connections.list', [], function(err, data) {
                 if (err) { return done(new Error(inspect(data))); }
 
                 console.log("Alice connections", err, data);

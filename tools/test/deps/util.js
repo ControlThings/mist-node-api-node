@@ -1,6 +1,8 @@
 
 function ensureIdentity(mist, alias, cb) {
-    
+    if (typeof mist.wish !== 'function') {
+        mist = { wish: mist.request.bind(mist) };
+    }
 
     function removeIdentity(alias, cb) {
         mist.wish('identity.list', [], function(err, data) {
