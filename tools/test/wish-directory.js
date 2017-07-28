@@ -16,12 +16,12 @@ describe('Wish Directory', function () {
         this.timeout(5000);
         
         var count = 0;
-        app.request('directory.find', ['Bob', 20000], function(err, data) {
+        app.request('directory.find', ['Bob', 2000], function(err, data) {
             //if (err) { return done(new Error(inspect(data))); }
             
             count++;
             
-            if (count === 20000) {
+            if (count === 2000) {
                 console.log("All done:", err, data);
                 done();
             }

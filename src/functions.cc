@@ -8,7 +8,7 @@
 #include "mist_follow.h"
 #include "wish_core_client.h"
 #include "wish_platform.h"
-#include "bson_visitor.h"
+#include "bson_visit.h"
 #include "bson.h"
 #include "utlist.h"
 
@@ -86,7 +86,7 @@ bool injectMessage(Mist* mist, int type, uint8_t *msg, int len) {
     return true;
 }
 
-static void mist_response_cb(struct wish_rpc_entry* req, void* ctx, uint8_t* data, size_t data_len) {
+static void mist_response_cb(struct wish_rpc_entry* req, void* ctx, const uint8_t* data, size_t data_len) {
     
     if (req == NULL) {
         // regular request
@@ -100,7 +100,7 @@ static void mist_response_cb(struct wish_rpc_entry* req, void* ctx, uint8_t* dat
     static_cast<Mist*>(ctx)->sendToNode(msg);
 }
 
-static void wish_response_cb(struct wish_rpc_entry* req, void* ctx, uint8_t* data, size_t data_len) {
+static void wish_response_cb(struct wish_rpc_entry* req, void* ctx, const uint8_t* data, size_t data_len) {
     if(ctx == NULL) {
         if (req->passthru_ctx2 != NULL) {
             ctx = req->passthru_ctx2;
@@ -116,7 +116,7 @@ static void wish_response_cb(struct wish_rpc_entry* req, void* ctx, uint8_t* dat
     static_cast<Mist*>(ctx)->sendToNode(msg);
 }
 
-static void sandboxed_response_cb(struct wish_rpc_entry* req, void* ctx, uint8_t* data, size_t data_len) {
+static void sandboxed_response_cb(struct wish_rpc_entry* req, void* ctx, const uint8_t* data, size_t data_len) {
     //printf("sandboxed response going towards node.js. ctx %p req %p\n", ctx, req);
     //bson_visit("sandboxed response going towards node.js.", data);
     
@@ -299,7 +299,7 @@ static void offline(app_t* app, wish_protocol_peer_t* peer) {
     static_cast<Mist*>(mist)->sendToNode(msg);
 }
 
-static void frame(app_t* app, uint8_t* payload, size_t payload_len, wish_protocol_peer_t* peer) {
+static void frame(app_t* app, const uint8_t* payload, size_t payload_len, wish_protocol_peer_t* peer) {
     Mist* mist = NULL;
     struct wish_app_core_opt* opts;
     
@@ -665,7 +665,7 @@ static void mist_api_periodic_cb_impl(void* ctx) {
                         
                         int id = bson_iterator_int(&it);
                         
-                        mist_invoke_response(&mist_app->device_rpc_server, id, (uint8_t*) msg->data);
+                        mist_invoke_response(mist_app->device_rpc_server, id, (uint8_t*) msg->data);
                         goto consume_and_unlock;
                     }
                     
@@ -1068,7 +1068,7 @@ static void mist_app_periodic_cb_impl(void* ctx) {
                         
                         int id = bson_iterator_int(&it);
                         
-                        mist_invoke_response(&mist_app->device_rpc_server, id, (uint8_t*) msg->data);
+                        mist_invoke_response(mist_app->device_rpc_server, id, (uint8_t*) msg->data);
                         goto consume_and_unlock;
                     }
                     

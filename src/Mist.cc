@@ -3,7 +3,7 @@
 #include <chrono>
 #include <iostream>
 #include "functions.h"
-#include "bson_visitor.h"
+#include "bson_visit.h"
 #include "MistWrapper.h"
 
 using namespace Nan;

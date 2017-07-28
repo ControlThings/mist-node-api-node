@@ -18,12 +18,6 @@ describe('MistApi Control', function () {
         }, 200);
     });
     
-    after(function(done) {
-        process.nextTick(function() { mist.shutdown(); });
-        //mist.shutdown();
-        done();
-    });
-
     var peer;
     var end = false;
 
@@ -55,7 +49,7 @@ describe('MistApi Control', function () {
         });
     }
     
-    it('should ensure identity', function(done) {
+    before('should ensure identity', function(done) {
         var name = 'Mr. Andersson';
         removeIdentity(name, function() {
             console.log("should create identity: getting identity list");
@@ -69,7 +63,7 @@ describe('MistApi Control', function () {
 
     var node;
 
-    it('should start a mist node', function(done) {
+    before('should start a mist node', function(done) {
         node = new MistNode({ name: 'ControlThings' }); // , coreIp: '127.0.0.1', corePort: 9094
         
         node.create({
@@ -93,7 +87,7 @@ describe('MistApi Control', function () {
         setTimeout(done, 200);
     });  
 
-    it('should find the peer', function(done) {
+    before('should find the peer', function(done) {
         function peers(err, data) {
             //console.log('==========================', data, mistIdentity);
             for(var i in data) {
