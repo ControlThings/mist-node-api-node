@@ -1,6 +1,7 @@
 var Mist = require('../../index.js').Mist;
 var Sandboxed = require('../../index.js').Sandboxed;
 var MistNode = require('../../index.js').MistNode;
+var util = require('./deps/util.js');
 
 describe('MistApi Sandbox', function () {
     var mist;
@@ -28,52 +29,33 @@ describe('MistApi Sandbox', function () {
         done();
     });    
 
-    var aliceAlias = 'Alice';
-    var aliceIdentity;
-    var unimportantIdentity;
-
-    it('should ensure identity for Alice', function(done) {
-        mist.wish('identity.list', [], function(err, data) {
-            if (err) { return done(new Error(inspect(data))); }
-            
-            //console.log("Ensuring identity of Alice.", data);
-
-            var c = 0;
-            var t = 0;
-            
-            for(var i in data) {
-                c++;
-                t++;
-                mist.wish('identity.remove', [data[i].uid], function(err, data) {
-                    if (err) { return done(new Error(inspect(data))); }
-
-                    c--;
-                    
-                    if ( c===0 ) {
-                        console.log("Deleted ", t, 'identities.');
-                        done();
-                    }
-                });
-            }
-            
-            if(t===0) { done(); }
+    var mistIdentity1;
+    var mistIdentity2;
+    
+    var name1 = 'Alice';
+    
+    before(function(done) {
+        util.clear(mist, function(err) {
+            if (err) { done(new Error('util.js: Could not clear core.')); }
+            done(); 
         });
     });
-
-    it('should ensure identity for Alice', function(done) {
-        mist.wish('identity.create', [aliceAlias], function(err, data) {
-            if (err) { return done(new Error(inspect(data))); }
-            //console.log("Setting Alice identity to:", err, data);
-            aliceIdentity = data;
-            done();
+    
+    before(function(done) {
+        util.ensureIdentity(mist, name1, function(err, identity) {
+            if (err) { done(new Error('util.js: Could not ensure identity.')); }
+            mistIdentity1 = identity;
+            done(); 
         });
     });
-
-    it('should ensure identity for Mr. Unimportant', function(done) {
-        mist.wish('identity.create', ['Mr. Unimportant'], function(err, data) {
-            if (err) { return done(new Error(inspect(data))); }
-            unimportantIdentity = data;
-            done();
+    
+    var name2 = 'Bob';
+    
+    before(function(done) {
+        util.ensureIdentity(mist, name2, function(err, identity) {
+            if (err) { done(new Error('util.js: Could not ensure identity.')); }
+            mistIdentity2 = identity;
+            done(); 
         });
     });
     
@@ -82,7 +64,7 @@ describe('MistApi Sandbox', function () {
 
     var node;
 
-    it('should start a mist node', function(done) {
+    before('should start a mist node', function(done) {
         node = new MistNode({ name: 'ControlThings' }); // , coreIp: '127.0.0.1', corePort: 9094
         
         node.create({
@@ -108,24 +90,24 @@ describe('MistApi Sandbox', function () {
     
     var peer;
 
-    it('should find a peer', function(done) {
-        mist.request('listPeers', [], function(err,data) {
+    before('should find a peer', function(done) {
+        mist.request('listPeers', [], function(err, data) {
             console.log("mist.listPeers", err, data);
             
             var list = [];
             
             for (var i in data) {
-                if( Buffer.compare(data[i].luid, aliceIdentity.uid) === 0 ) {
+                if( Buffer.compare(data[i].luid, mistIdentity1.uid) === 0 ) {
                     list.push(data[i]);
                 }
             }
             
-            
             if(list.length>0) {
                 peer = list[0];
-                console.log("Here is alice and the peer we added:", aliceIdentity, peer);
+                console.log("Here is alice and the peer we added:", mistIdentity1, peer);
                 done();
             } else {
+                console.log('mistIdentity1 & 2', mistIdentity1, mistIdentity2);
                 done(new Error('No peer found!'));
             }
         });
@@ -158,7 +140,7 @@ describe('MistApi Sandbox', function () {
             mist.request('sandbox.addPeer', [gpsSandboxId, peer], function(err, data) {
                 console.log("addPeer response for gpsSandbox", err, data);
 
-                var bogusPeer = { luid: peer.luid, ruid: unimportantIdentity.uid, rhid: peer.rhid, rsid: peer.rsid, protocol: peer.protocol, online: false };
+                var bogusPeer = { luid: peer.luid, ruid: mistIdentity2.uid, rhid: peer.rhid, rsid: peer.rsid, protocol: peer.protocol, online: false };
 
                 mist.request('sandbox.addPeer', [gpsSandboxId, bogusPeer], function(err, data) {
                     console.log("addPeer response for gpsSandbox", err, data);

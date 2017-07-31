@@ -60,6 +60,13 @@ describe('WishApp Peers', function () {
     });
     
     before(function(done) {
+        app1.request('identity.list', [], function(err, data) {
+            console.log('identity.list:', err, data);
+            done();
+        });
+    });
+    
+    before(function(done) {
         app2.request('identity.import', [BSON.serialize(mistIdentity1)], function(err, data) {
             done();
         });

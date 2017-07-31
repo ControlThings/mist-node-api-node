@@ -32,7 +32,7 @@ describe('MistApi Sandbox', function () {
     var aliceIdentity;
     var unimportantIdentity;
 
-    it('should ensure identity for Alice', function(done) {
+    before('should ensure identity for Alice', function(done) {
         mist.wish('identity.list', [], function(err, data) {
             if (err) { return done(new Error(inspect(data))); }
             
@@ -60,7 +60,7 @@ describe('MistApi Sandbox', function () {
         });
     });
 
-    it('should ensure identity for Alice', function(done) {
+    before('should ensure identity for Alice', function(done) {
         mist.wish('identity.create', [aliceAlias], function(err, data) {
             if (err) { return done(new Error(inspect(data))); }
             //console.log("Setting Alice identity to:", err, data);
@@ -69,7 +69,7 @@ describe('MistApi Sandbox', function () {
         });
     });
 
-    it('should ensure identity for Mr. Unimportant', function(done) {
+    before('should ensure identity for Mr. Unimportant', function(done) {
         mist.wish('identity.create', ['Mr. Unimportant'], function(err, data) {
             if (err) { return done(new Error(inspect(data))); }
             unimportantIdentity = data;
@@ -82,7 +82,7 @@ describe('MistApi Sandbox', function () {
 
     var node;
 
-    it('should start a mist node', function(done) {
+    before('should start a mist node', function(done) {
         node = new MistNode({ name: 'ControlThings' }); // , coreIp: '127.0.0.1', corePort: 9094
         
         node.create({
