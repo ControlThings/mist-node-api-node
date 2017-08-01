@@ -222,7 +222,7 @@ static enum mist_error hw_invoke(mist_ep* ep, mist_buf args) {
     }
     
     bson bs;
-    bson_init_data(&bs, args.base);
+    bson_init_with_data(&bs, args.base);
     
     Message msg("invoke", (uint8_t*) bson_data(&bs), bson_size(&bs));
     
