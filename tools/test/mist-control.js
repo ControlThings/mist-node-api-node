@@ -1,66 +1,40 @@
 var Mist = require('../../index.js').Mist;
 var MistNode = require('../../index.js').MistNode;
-var Sandboxed = require('../../index.js').Sandboxed;
+var util = require('./deps/util.js');
 
 var inspect = require('util').inspect;
 
 describe('MistApi Control', function () {
     var mist;
     var mistIdentity;
+    var name = 'Mr. Andersson';
     
     before(function (done) {
+        // TODO fix this workaround which stops done being called several times ocationally...
+        var done2 = function() { console.log('donedone', arguments); done(); done = function() {}; };
+        
         mist = new Mist({ name: 'Generic UI', coreIp: '127.0.0.1', corePort: 9094 });
 
         setTimeout(function() {
             mist.request('signals', [], function(err, data) {
-                if(data === 'ready') { done(); }; // else { done(new Error('App not ready, bailing.')); }
+                if(data === 'ready') {
+                    util.clear(mist, function(err) {
+                        if (err) { done2(new Error('util.js: Could not clear core.')); }
+                        
+                        util.ensureIdentity(mist, name, function(err, identity) {
+                            if (err) { done2(new Error('util.js: Could not ensure identity.')); }
+                            
+                            mistIdentity = identity;
+                            done2(); 
+                        });
+                    });
+                }; // else { done(new Error('App not ready, bailing.')); }
             });
         }, 200);
     });
     
     var peer;
     var end = false;
-
-
-    function removeIdentity(alias, done) {
-        mist.wish('identity.list', [], function(err, data) {
-            if (err) { return done(new Error(inspect(data))); }
-            
-            console.log("removeIdentity has data", data);
-            
-            var c = data.length;
-            
-            for(var i in data) {
-                //if (data[i].alias === alias) {
-                    mist.wish('identity.remove', [data[i].uid], function(err, data) {
-                        if (err) { return done(new Error(inspect(data))); }
-
-                        console.log("Deleted.", err, data, c);
-                        if (--c === 0) {
-                            done();
-                        }
-                    });
-                    //return;
-                //}
-            }
-            
-            //console.log("Identity does not exist.");
-            //done();
-        });
-    }
-    
-    before('should ensure identity', function(done) {
-        var name = 'Mr. Andersson';
-        removeIdentity(name, function() {
-            console.log("should create identity: getting identity list");
-            mist.wish('identity.create', [name], function(err, data) {
-                console.log("identity.create('"+name+"'): cb", err, data);
-                mistIdentity = data;
-                done();
-            });
-        });
-    });
-
     var node;
 
     before('should start a mist node', function(done) {

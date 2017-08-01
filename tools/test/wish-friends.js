@@ -216,6 +216,4 @@ describe('Wish Friends', function () {
         
         setTimeout(poll, 1000);        
     });
-    
-    it('should wait for things to settle', function(done) { setTimeout(done,1500); });
 });

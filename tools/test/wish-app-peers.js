@@ -32,7 +32,15 @@ describe('WishApp Peers', function () {
             done();
         });
     });
-    
+
+    before(function(done) {
+        util.clear(app1, done);
+    });
+
+    before(function(done) {
+        util.clear(app2, done);
+    });
+
     var name1 = 'Alice';
     
     before(function(done) {

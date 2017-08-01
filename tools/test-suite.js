@@ -12,8 +12,8 @@ function done() {
     //console.log('Starting Wish Core.');
     
     // To debug errors in Alice core C/C++ code enable the below core = child.spawn('gdb', ...
-    var core = child.spawn('./wish-core', [], { cwd: './env', stdio: 'inherit' });
-    //var core = child.spawn('gdb', ['-batch', '-ex', 'run', '-ex', 'bt', './wish-core'], { cwd: './env', stdio: 'inherit' });
+    //var core = child.spawn('./wish-core', [], { cwd: './env', stdio: 'inherit' });
+    var core = child.spawn('gdb', ['-batch', '-ex', 'run', '-ex', 'bt', './wish-core'], { cwd: './env', stdio: 'inherit' });
 
     function running() {
         //console.log('Starting node.');
@@ -67,8 +67,10 @@ function done() {
                     }
                 }
 
-                console.log('Success / Fail / Total:', successCount, '/', failCount, '/', successCount + failCount);
-                console.log('\x1b[39m');
+                console.log('\x1b[34m\x1b[1mSuccess: ', successCount, '\x1b[39m');
+                console.log('\x1b[31mFail:    ', failCount, '\x1b[39m');
+                console.log('Total:   ', successCount + failCount);
+                console.log('\x1b[22m\x1b[39m');
 
                 //fs.writeFileSync('./results.json', JSON.stringify(results, null, 2));
                 core.kill();
@@ -163,8 +165,8 @@ function done() {
     
     // To debug errors in Bob's core enable the below bobCore = child.spawn('gdb', ...
     
-    //var coreBob = child.spawn('../wish-core', ['-p 38002', '-a 9096', '-b', '-l', '-r', '-s'], { cwd: './env/bob', stdio: 'inherit' });
-    var coreBob = child.spawn('gdb', ['-batch', '-ex', 'run -p 38002 -a 9096 -b -l -r -s', '-ex', 'bt', '../wish-core'], { cwd: './env/bob', stdio: 'inherit' });
+    var coreBob = child.spawn('../wish-core', ['-p 38002', '-a 9096', '-b', '-l', '-r', '-s'], { cwd: './env/bob', stdio: 'inherit' });
+    //var coreBob = child.spawn('gdb', ['-batch', '-ex', 'run -p 38002 -a 9096 -b -l -r -s', '-ex', 'bt', '../wish-core'], { cwd: './env/bob', stdio: 'inherit' });
     
     var coreBobTimeout = setTimeout(() => { runningBob(); }, 200);
     

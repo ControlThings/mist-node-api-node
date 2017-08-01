@@ -1,5 +1,5 @@
 
-function clear(mist, cb) {
+function clear(mist, done) {
     var isMistApi = true;
         
     if (typeof mist.wish !== 'function') {
@@ -7,7 +7,7 @@ function clear(mist, cb) {
         isMistApi = false;
     }
 
-    function removeIdentity(cb) {
+    function removeIdentity(done) {
         mist.wish('identity.list', [], function(err, data) {
             if (err) { return done(new Error(inspect(data))); }
             
@@ -21,26 +21,26 @@ function clear(mist, cb) {
             for(var i in data) {
                 (function (uid) {
                     mist.wish('identity.remove', [uid], function(err, data) {
-                        if (err) { return cb(new Error(inspect(data))); }
+                        if (err) { return done(new Error(inspect(data))); }
 
                         //console.log("Deleted.", err, data);
 
                         c--;
 
-                        if(c===0) { cb(); }
+                        if(c===0) { done(); }
                     });
                 })(data[i].uid);
             }
             
             if (t===0) {
                 console.log("Identity does not exist.");
-                cb();
+                done();
             }
         });
     }
     
     removeIdentity(function(err) {
-        if (err) { return cb(err); }
+        if (err) { return done(err); }
         
         var c = 0;
         var t = 0;
@@ -65,15 +65,17 @@ function clear(mist, cb) {
                                 mist.request('sandbox.removePeer', [sandboxId, peer], function(err, data) {
                                     c--;
                                     console.log('One down,', c, '('+t+')', err, data);
-                                    if (c === 0) { cb(null); }
+                                    if (c === 0) { done(); }
                                 });
                             }
                         });
                     })(sandboxId);
                 }
+                
+                if (t === 0) { done(); }
             });
         } else {
-            cb(null);
+            done();
         }
     });
 }

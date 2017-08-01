@@ -16,27 +16,25 @@ describe('MistApi Control', function () {
         setTimeout(function() {
             mist.request('signals', [], function(err, data) {
                 if(data === 'ready') {
-                    util.ensureIdentity(mist, name, function(err, identity) {
-                        if (err) { done(new Error('util.js: Could not ensure identity.')); }
-                        mistIdentity = identity;
-                        done(); 
+                    util.clear(mist, function(err) {
+                        if (err) { done(new Error('util.js: Could not clear core.')); }
+                        
+                        util.ensureIdentity(mist, name, function(err, identity) {
+                            if (err) { done(new Error('util.js: Could not ensure identity.')); }
+                            
+                            mistIdentity = identity;
+                            done(); 
+                        });
                     });
                 }; // else { done(new Error('App not ready, bailing.')); }
             });
         }, 200);
     });
-    
-    after(function(done) {
-        //process.nextTick(function() { mist.shutdown(); });
-        //mist.shutdown();
-        done();
-    });
 
     var peer;
-
     var node;
 
-    it('should start a mist node', function(done) {
+    before('should start a mist node', function(done) {
         node = new MistNode({ name: 'ControlThings' }); //, coreIp: '127.0.0.1', corePort: 9094
         node.create({
             device: 'ControlThings',
@@ -52,7 +50,7 @@ describe('MistApi Control', function () {
         setTimeout(done, 1000);
     });
 
-    it('should find the peer', function(done) {
+    before('should find the peer', function(done) {
         function peers(err, data) {
             for(var i in data) {
                 if ( Buffer.compare(data[i].luid, mistIdentity.uid) === 0 
