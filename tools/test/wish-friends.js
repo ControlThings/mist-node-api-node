@@ -4,16 +4,17 @@ var BsonParser = require('bson-buffer');
 var BSON = new BsonParser();
 
 var inspect = require('util').inspect;
+var util = require('./deps/util.js');
 
 // run ../node_modules/mocha/bin/mocha test/wish-friends.js
 
 describe('Wish Friends', function () {
     var app1;
     var app2;
-    var aliceIdentity;
-    var aliceAlias = 'Mr. Andersson';
-    var bobAlias = 'I am Bob';
-    var bobIdentity;
+    var identity1;
+    var alias1 = 'Alice';
+    var alias2 = 'Bob';
+    var identity2;
     var bobWldEntry;
     
     before(function (done) {
@@ -36,8 +37,8 @@ describe('Wish Friends', function () {
             if (data[0] && data[0] === 'friendRequest') {
                 app2.request('identity.friendRequestList', [], function(err, data) {
                     for (var i in data) {
-                        if( Buffer.compare(data[i].luid, bobIdentity.uid) === 0 
-                                && Buffer.compare(data[i].ruid, aliceIdentity.uid) === 0 ) 
+                        if( Buffer.compare(data[i].luid, identity2.uid) === 0 
+                                && Buffer.compare(data[i].ruid, identity1.uid) === 0 ) 
                         {
                             app2.request('identity.friendRequestAccept', [data[i].luid, data[i].ruid], function(err, data) {
                                 console.log("Accepted friend request from Alice:", err, data);
@@ -50,82 +51,32 @@ describe('Wish Friends', function () {
         });
     });
 
-    before('should ensure identity', function(done) {
-        function createIdentity(alias) {
-            app2.request('identity.create', [alias], function(err, data) {
-                if (err) { return done(new Error(inspect(data))); }
-                //console.log("Setting Bobs identity to:", data);
-                bobIdentity = data;
-                done();
-            });
-        }
+    before('should ensure identity1 app1', function(done) {
         
-        app2.request('identity.list', [], function(err, data) {
-            if (err) { return done(new Error(inspect(data))); }
-            
-            //console.log("Ensuring identity of Bob.", data);
+        util.clear(app1, function(err) {
+            if (err) { done(new Error('util.js: Could not clear core.')); }
 
-            var c = 0;
-            var t = 0;
-            
-            for(var i in data) {
-                c++;
-                t++;
-                app2.request('identity.remove', [data[i].uid], function(err, data) {
-                    if (err) { return done(new Error(inspect(data))); }
+            util.ensureIdentity(app1, alias1, function(err, identity) {
+                if (err) { done(new Error('util.js: Could not ensure identity.')); }
 
-                    c--;
-                    
-                    if ( c===0 ) {
-                        console.log("Deleted ", t, 'identities. Now creating Bob');
-                        createIdentity(bobAlias, done);
-                    }
-                });
-            }
-            
-            if(t===0) {
-                createIdentity(bobAlias, done);
-            }
+                identity1 = identity;
+                done(); 
+            });
         });
     });
+    
+    before('should ensure identity2 app2', function(done) {
+        util.clear(app2, function(err) {
+            if (err) { done(new Error('util.js: Could not clear core.')); }
 
-    before('should ensure identity for Mr. Andersson', function(done) {
-        function createIdentity(alias) {
-            app1.request('identity.create', [alias], function(err, data) {
-                if (err) { return done(new Error(inspect(data))); }
-                //console.log("Setting Alice identity to:", err, data);
-                aliceIdentity = data;
-                done();
+            util.ensureIdentity(app2, alias2, function(err, identity) {
+                if (err) { done(new Error('util.js: Could not ensure identity.')); }
+
+                identity2 = identity;
+                done(); 
             });
-        }
-        
-        app1.request('identity.list', [], function(err, data) {
-            if (err) { return done(new Error(inspect(data))); }
-            
-            //console.log("Ensuring identity of Alice.", data);
-
-            var c = 0;
-            var t = 0;
-            
-            for(var i in data) {
-                c++;
-                t++;
-                app1.request('identity.remove', [data[i].uid], function(err, data) {
-                    if (err) { return done(new Error(inspect(data))); }
-
-                    c--;
-                    
-                    if ( c===0 ) {
-                        console.log("Deleted ", t, 'identities. Now creating Alice (Mr. Andersson)');
-                        createIdentity(aliceAlias, done);
-                    }
-                });
-            }
-            
-            if(t===0) {
-                createIdentity(aliceAlias, done);
-            }
         });
+        
     });
     
     it('should find Alice in wld', function(done) {
@@ -138,7 +89,7 @@ describe('Wish Friends', function () {
                 //console.log("Bobs wld", err, data);
                 
                 for (var i in data) {
-                    if ( Buffer.compare(data[i].ruid, bobIdentity.uid) === 0) {
+                    if ( Buffer.compare(data[i].ruid, identity2.uid) === 0) {
                         bobWldEntry = data[i];
                         done();
                         return;
@@ -162,7 +113,7 @@ describe('Wish Friends', function () {
         });
         */        
         
-        app1.request('wld.friendRequest', [aliceIdentity.uid, bobWldEntry.ruid, bobWldEntry.rhid], function(err, data) {
+        app1.request('wld.friendRequest', [identity1.uid, bobWldEntry.ruid, bobWldEntry.rhid], function(err, data) {
             if (err) { return done(new Error(inspect(data))); }
             
             //console.log("Bobs cert", err, data);
@@ -204,7 +155,7 @@ describe('Wish Friends', function () {
                 console.log("Alice connections", err, data);
                 
                 for (var i in data) {
-                    if( Buffer.compare(data[i].ruid, bobIdentity.uid) === 0 ) {
+                    if( Buffer.compare(data[i].ruid, identity2.uid) === 0 ) {
                         done();
                         return;
                     }
