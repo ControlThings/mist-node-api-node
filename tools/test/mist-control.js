@@ -254,4 +254,14 @@ describe('MistApi Control', function () {
             }
         });
     });
+    
+    it('shuold test control.invoke with no value argument', function(done) {
+        mist.request('mist.control.invoke', [peer, 'config'], function (err, data) {
+            if (err) { return done(new Error(data.msg)); }
+
+            console.log('control.invoke with no value argument returned ', err, data);
+            done();
+            
+        });
+    });
 });
