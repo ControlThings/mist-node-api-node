@@ -189,7 +189,29 @@ describe('Wish Friends', function () {
             if (err) { return done(new Error("Error while doing identity.get from Alice " + err + " " + inspect(data))); }
             
             console.log("Bob's identity on Alice", data);
-            for (var i in data.hosts) {
+            
+            verifyTransport(data, done);
+            
+            
+        })
+    });
+    
+    it('Verify that Bob has a transport for Alice that seems valid', function(done) {
+        console.log("Alice's uid", identity1);
+        app2.request('identity.get', [identity1.uid], function(err, data) {
+            if (err) { return done(new Error("Error while doing identity.get from Bob " + err + " " + inspect(data))); }
+            
+            console.log("Alice's identity on Bob", data);
+            
+            verifyTransport(data, done);
+            
+            
+        })
+    });
+});
+
+function verifyTransport(data, done) {
+    for (var i in data.hosts) {
                 var o = data.hosts[i];
                 if (Array.isArray(o.transports)) {
                     //console.log("transports:", o.transports);
@@ -215,9 +237,4 @@ describe('Wish Friends', function () {
                     return done(new Error("There is no transports array in identity.get(Bob.uid) from Alice"));
                 }
             }
-            
-            
-            
-        })
-    })
-});
+}

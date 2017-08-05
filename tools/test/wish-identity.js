@@ -65,6 +65,7 @@ describe('MistApi Identity', function () {
             app.request('identity.get', [uid], function (err, data) {
                 if(err) { if (data.code === 997) { return done(new Error('identity.get returned '+data.code)); } }
                  
+                /* The code below is actaually a duplicate with wish-friends.js */
                 for (var i in data.hosts) {
                     var o = data.hosts[i];
                     if (Array.isArray(o.transports)) {
