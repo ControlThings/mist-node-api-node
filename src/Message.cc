@@ -18,5 +18,4 @@ Message::Message(string name, uint8_t* m, int l) : name(name) {
     
 Message::~Message() {
     //printf("Message::~Message: %p msg %p\n", this, msg);
-    free(msg);
 }
