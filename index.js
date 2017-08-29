@@ -17,6 +17,7 @@ function Mist(opts) {
     var self = this;
     this.requests = {};
     this.invokeCb = {};
+    this.writeCb = function() {};
 
     //console.log("2. Creating the MistApi.StreamingWorker.");
 

@@ -47,14 +47,14 @@ function clear(mist, done) {
         
         if (isMistApi) {
             mist.request('sandbox.list', [], function (err, data) {
-                console.log('sandbox.list', err, data);
+                //console.log('sandbox.list', err, data);
                 
                 for (var i in data) {
                     var sandboxId = data[i].id;
                     
                     (function(sandboxId) {
                         mist.request('sandbox.listPeers', [sandboxId], function(err, data) {
-                            console.log('sandbox.listPeers', err, data);
+                            //console.log('sandbox.listPeers', err, data);
 
                             for (var i in data) {
                                 var peer = data[i];
@@ -64,7 +64,7 @@ function clear(mist, done) {
 
                                 mist.request('sandbox.removePeer', [sandboxId, peer], function(err, data) {
                                     c--;
-                                    console.log('One down,', c, '('+t+')', err, data);
+                                    //console.log('One down,', c, '('+t+')', err, data);
                                     if (c === 0) { done(); }
                                 });
                             }

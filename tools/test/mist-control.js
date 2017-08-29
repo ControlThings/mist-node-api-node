@@ -11,7 +11,7 @@ describe('MistApi Control', function () {
     
     before(function (done) {
         // TODO fix this workaround which stops done being called several times ocationally...
-        var done2 = function() { console.log('donedone', arguments); done(); done = function() {}; };
+        var done2 = function() { done(); done = function() {}; };
         
         mist = new Mist({ name: 'Generic UI', coreIp: '127.0.0.1', corePort: 9094 });
 
@@ -55,7 +55,7 @@ describe('MistApi Control', function () {
         });
         
         node.write(function(epid, data) {
-            console.log('Node write:', epid, data);
+            //console.log('Node write:', epid, data);
         });
         
         setTimeout(done, 200);
@@ -114,7 +114,6 @@ describe('MistApi Control', function () {
     });
     
     it('shuold test control.model', function(done) {
-        console.log("goin into third test,");
         mist.request('mist.control.model', [peer], function (err, model) {
             if (err) { return done(new Error(inspect(model))); }
             //console.log("Got a model:", err, model);
@@ -259,7 +258,7 @@ describe('MistApi Control', function () {
         mist.request('mist.control.invoke', [peer, 'config'], function (err, data) {
             if (err) { return done(new Error(data.msg)); }
 
-            console.log('control.invoke with no value argument returned ', err, data);
+            //console.log('control.invoke with no value argument returned ', err, data);
             done();
             
         });
