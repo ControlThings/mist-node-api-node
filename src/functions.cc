@@ -665,7 +665,7 @@ static void mist_api_periodic_cb_impl(void* ctx) {
                         
                         int id = bson_iterator_int(&it);
                         
-                        mist_invoke_response(mist_app->device_rpc_server, id, (uint8_t*) msg->data);
+                        mist_invoke_response(mist_app->server, id, (uint8_t*) msg->data);
                         goto consume_and_unlock;
                     }
                     
@@ -1068,7 +1068,7 @@ static void mist_app_periodic_cb_impl(void* ctx) {
                         
                         int id = bson_iterator_int(&it);
                         
-                        mist_invoke_response(mist_app->device_rpc_server, id, (uint8_t*) msg->data);
+                        mist_invoke_response(mist_app->server, id, (uint8_t*) msg->data);
                         goto consume_and_unlock;
                     }
                     
