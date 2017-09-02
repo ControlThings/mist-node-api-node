@@ -397,7 +397,10 @@ static void wish_periodic_cb_impl(void* ctx) {
 consume_and_unlock:
         
         LL_DELETE(opts->input_queue, msg);
+        free(msg->data);
         free(msg);
+        
+        // TODO: What does this do?
         msg = opts->input_queue;
         
     }
@@ -1265,6 +1268,12 @@ static void* setupWishApi(void* ptr) {
     opts->app = NULL;
     opts->mist_app = NULL;
     opts->mist_api = NULL;
+    
+    free(opts->name);
+    free(opts->protocol);
+    free(opts->ip);
+    
+    free(opts);
     
     return NULL;
 }
