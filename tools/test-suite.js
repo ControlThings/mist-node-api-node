@@ -84,8 +84,8 @@ function done() {
 
             // To debug errors in test C/C++ code enable the below bobCore = child.spawn('gdb', ...
             
-            var test = child.spawn('../../node_modules/mocha/bin/mocha', ['--reporter', 'json', '-c', '../'+testFile], { cwd: './env' });
-            //var test = child.spawn('gdb', ['-batch', '-ex', 'set follow-fork-mode child', '-ex', 'run ../node_modules/mocha/bin/mocha --reporter json -c '+testFile, '-ex', 'bt', 'node']);
+            //var test = child.spawn('../../node_modules/mocha/bin/mocha', ['--reporter', 'json', '-c', '../'+testFile], { cwd: './env' });
+            var test = child.spawn('gdb', ['-batch', '-ex', 'set follow-fork-mode child', '-ex', 'run ../node_modules/mocha/bin/mocha --reporter json -c '+testFile, '-ex', 'bt', 'node']);
 
             test.on('error', (err) => {
                 console.log('\x1b[36m'+testFile+'> Failed to start test process.');

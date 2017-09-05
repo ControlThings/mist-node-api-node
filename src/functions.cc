@@ -132,28 +132,16 @@ static void sandboxed_response_cb(struct wish_rpc_entry* req, void* ctx, const u
     static_cast<Mist*>(ctx)->sendToNode(msg);
 }
 
-static enum mist_error hw_read(mist_ep* ep, void* result) {
-    if (ep->data == NULL) { return MIST_ERROR; }
-    
-    if (ep->type == MIST_TYPE_FLOAT) {
-        double v = *((double*) ep->data);
-        double *t = (double*) result;
-        *t = v;
-    } else if (ep->type == MIST_TYPE_INT) {
-        int v = *((int*) ep->data);
-        int *t = (int*) result;
-        *t = v;
-    } else if (ep->type == MIST_TYPE_BOOL) {
-        bool v = *((bool*) ep->data);
-        bool *t = (bool*) result;
-        *t = v;
-    }
+static enum mist_error hw_read(mist_ep* ep, mist_buf* result) {
+    if (ep->data.base == NULL) { return MIST_ERROR; }
+
+    result->base = ep->data.base;
+    result->len = ep->data.len;
+
     return MIST_NO_ERROR;
 }
 
-static enum mist_error hw_write(mist_ep* ep, void* value) {
-    if (ep->data == NULL) { return MIST_ERROR; }
-    
+static enum mist_error hw_write(mist_ep* ep, mist_buf data) {
     Mist* mist = NULL;
     struct wish_app_core_opt* opts;
     
@@ -175,20 +163,26 @@ static enum mist_error hw_write(mist_ep* ep, void* value) {
     bson_append_string(&bs, "epid", ep->id);
     
     if (ep->type == MIST_TYPE_FLOAT) {
-        double v = *((double*) value);
-        double *t = (double*) ep->data;
+        double v = *((double*) data.base);
+        double *t = (double*) ep->data.base;
         *t = v;
         bson_append_double(&bs, "data", v);
     } else if (ep->type == MIST_TYPE_INT) {
-        int v = *((int*) value);
-        int *t = (int*) ep->data;
+        int v = *((int*) data.base);
+        int *t = (int*) ep->data.base;
         *t = v;
         bson_append_int(&bs, "data", v);
     } else if (ep->type == MIST_TYPE_BOOL) {
-        bool v = *((bool*) value);
-        bool *t = (bool*) ep->data;
+        bool v = *((bool*) data.base);
+        bool *t = (bool*) ep->data.base;
         *t = v;
         bson_append_bool(&bs, "data", v);
+    } else if (ep->type == MIST_TYPE_STRING) {
+        if (ep->data.base != NULL) { free(ep->data.base); }
+        ep->data.base = (char*) malloc(data.len);
+        memcpy(ep->data.base, data.base, data.len);
+        ep->data.len = data.len;
+        bson_append_string(&bs, "data", ep->data.base);
     } else {
         printf("Unsupported MIST_TYPE %i\n", ep->type);
     }
@@ -610,24 +604,25 @@ static void mist_api_periodic_cb_impl(void* ctx) {
                         mist_ep* ep = (mist_ep*) malloc(sizeof(mist_ep));
                         if (ep == NULL) { break; }
                         memset(ep, 0, sizeof(mist_ep));
-                        ep->data = (char*) malloc(32);
-                        if (ep->data == NULL) { free(ep); break; }
-                        memset(ep->data, 0, 32);
+                        ep->data.base = (char*) malloc(32);
+                        ep->data.len = 32;
+                        if (ep->data.base == NULL) { free(ep); break; }
+                        memset(ep->data.base, 0, 32);
                         
                         ep->id = ep_id;
                         ep->label = ep_label;
                         if ( strncmp(ep_type, "float", 16) == 0 ) {
                             //printf("A float.\n");
                             ep->type = MIST_TYPE_FLOAT;
-                            *((double*) ep->data) = 0.0;
+                            *((double*) ep->data.base) = 0.0;
                         } else if ( strncmp(ep_type, "int", 16) == 0 ) {
                             //printf("An int.\n");
                             ep->type = MIST_TYPE_INT;
-                            *((int*) ep->data) = 0;
+                            *((int*) ep->data.base) = 0;
                         } else if ( strncmp(ep_type, "bool", 16) == 0 ) {
                             //printf("A bool.\n");
                             ep->type = MIST_TYPE_BOOL;
-                            *((bool*) ep->data) = false;
+                            *((bool*) ep->data.base) = false;
                         } else if (invokable) {
                             ep->type = MIST_TYPE_INVOKE;                            
                         } else {
@@ -691,27 +686,27 @@ static void mist_api_periodic_cb_impl(void* ctx) {
 
                     if (ep->type == MIST_TYPE_BOOL) {
                         if ( bson_iterator_type(&it) == BSON_BOOL ) {
-                            *((bool*)ep->data) = bson_iterator_bool(&it);
+                            *((bool*)ep->data.base) = bson_iterator_bool(&it);
                             mist_value_changed(model, ep_name);
                         }
                     } else if (ep->type == MIST_TYPE_INT) {
-                        if (ep->data == NULL) { goto consume_and_unlock; }
+                        if (ep->data.base == NULL) { goto consume_and_unlock; }
 
                         if ( bson_iterator_type(&it) == BSON_DOUBLE ) {
-                            *((int*)ep->data) = (int) bson_iterator_double(&it);
+                            *((int*)ep->data.base) = (int) bson_iterator_double(&it);
                             mist_value_changed(model, ep_name);
                         } else if ( bson_iterator_type(&it) == BSON_INT ) {
-                            *((int*)ep->data) = bson_iterator_int(&it);
+                            *((int*)ep->data.base) = bson_iterator_int(&it);
                             mist_value_changed(model, ep_name);
                         }
                     } else if (ep->type == MIST_TYPE_FLOAT) {
-                        if (ep->data == NULL) { goto consume_and_unlock; }
+                        if (ep->data.base == NULL) { goto consume_and_unlock; }
 
                         if ( bson_iterator_type(&it) == BSON_DOUBLE ) {
-                            *((double*)ep->data) = bson_iterator_double(&it);
+                            *((double*)ep->data.base) = bson_iterator_double(&it);
                             mist_value_changed(model, ep_name);
                         } else if ( bson_iterator_type(&it) == BSON_INT ) {
-                            *((double*)ep->data) = (double) bson_iterator_int(&it);
+                            *((double*)ep->data.base) = (double) bson_iterator_int(&it);
                             mist_value_changed(model, ep_name);
                         }
                     }
@@ -1012,24 +1007,29 @@ static void mist_app_periodic_cb_impl(void* ctx) {
                         mist_ep* ep = (mist_ep*) malloc(sizeof(mist_ep));
                         if (ep == NULL) { break; }
                         memset(ep, 0, sizeof(mist_ep));
-                        ep->data = (char*) malloc(32);
-                        if (ep->data == NULL) { free(ep); break; }
-                        memset(ep->data, 0, 32);
+                        ep->data.base = (char*) malloc(32);
+                        ep->data.len = 32;
+                        if (ep->data.base == NULL) { free(ep); break; }
+                        memset(ep->data.base, 0, 32);
                         
                         ep->id = ep_id;
                         ep->label = ep_label;
                         if ( strncmp(ep_type, "float", 16) == 0 ) {
                             //printf("A float.\n");
                             ep->type = MIST_TYPE_FLOAT;
-                            *((double*) ep->data) = 0.0;
+                            *((double*) ep->data.base) = 0.0;
                         } else if ( strncmp(ep_type, "int", 16) == 0 ) {
                             //printf("An int.\n");
                             ep->type = MIST_TYPE_INT;
-                            *((int*) ep->data) = 0;
+                            *((int*) ep->data.base) = 0;
                         } else if ( strncmp(ep_type, "bool", 16) == 0 ) {
                             //printf("A bool.\n");
                             ep->type = MIST_TYPE_BOOL;
-                            *((bool*) ep->data) = false;
+                            *((bool*) ep->data.base) = false;
+                        } else if ( strncmp(ep_type, "string", 16) == 0 ) {
+                            ep->type = MIST_TYPE_STRING;
+                            ep->data.base = NULL;
+                            ep->data.len = 0;
                         } else if (invokable) {
                             ep->type = MIST_TYPE_INVOKE;                            
                         } else {
@@ -1095,27 +1095,27 @@ static void mist_app_periodic_cb_impl(void* ctx) {
                     
                     if (ep->type == MIST_TYPE_BOOL) {
                         if ( bson_iterator_type(&it) == BSON_BOOL ) {
-                            *((bool*)ep->data) = bson_iterator_bool(&it);
+                            *((bool*)ep->data.base) = bson_iterator_bool(&it);
                             mist_value_changed(model, ep_name);
                         }
                     } else if (ep->type == MIST_TYPE_INT) {
-                        if (ep->data == NULL) { goto consume_and_unlock; }
+                        if (ep->data.base == NULL) { goto consume_and_unlock; }
                         
                         if ( bson_iterator_type(&it) == BSON_DOUBLE ) {
-                            *((int*)ep->data) = (int) bson_iterator_double(&it);
+                            *((int*)ep->data.base) = (int) bson_iterator_double(&it);
                             mist_value_changed(model, ep_name);
                         } else if ( bson_iterator_type(&it) == BSON_INT ) {
-                            *((int*)ep->data) = bson_iterator_int(&it);
+                            *((int*)ep->data.base) = bson_iterator_int(&it);
                             mist_value_changed(model, ep_name);
                         }
                     } else if (ep->type == MIST_TYPE_FLOAT) {
-                        if (ep->data == NULL) { goto consume_and_unlock; }
+                        if (ep->data.base == NULL) { goto consume_and_unlock; }
                         
                         if ( bson_iterator_type(&it) == BSON_DOUBLE ) {
-                            *((double*)ep->data) = bson_iterator_double(&it);
+                            *((double*)ep->data.base) = bson_iterator_double(&it);
                             mist_value_changed(model, ep_name);
                         } else if ( bson_iterator_type(&it) == BSON_INT ) {
-                            *((double*)ep->data) = (double) bson_iterator_int(&it);
+                            *((double*)ep->data.base) = (double) bson_iterator_int(&it);
                             mist_value_changed(model, ep_name);
                         }
                     }

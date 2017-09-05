@@ -46,6 +46,7 @@ describe('MistApi Control', function () {
                 enabled: { label: 'Enabled', type: 'bool', read: true, write: true },
                 lon: { label: 'Longitude', type: 'float', read: true },
                 counter: { label: 'Counter', type: 'int', read: true, write: true },
+                name: { label: 'Name', type: 'string', read: true, write: true },
                 config: { label: 'Config', invoke: true }
             } 
         });
@@ -226,6 +227,32 @@ describe('MistApi Control', function () {
             }
             
             //console.log("mist.control.write:", err, data);
+            done();
+        });
+    });
+    
+    var string = 'A balloon, celebrating arrays of characters.';
+    
+    it('shuold test control.write(value: string)', function(done) {
+        mist.request('mist.control.write', [peer, 'name', string], function (err, data) {
+            if (err) {
+                return done(new Error(inspect(data)));
+            }
+            
+            console.log("mist.control.write(name: string):", err, data);
+            done();
+        });
+    });
+    
+    it('shuold test control.read string', function(done) {
+        mist.request('mist.control.read', [peer, 'name'], function (err, data) {
+            if (err) {
+                return done(new Error(inspect(data)));
+            }
+            
+            if (data !== string) { return done(new Error('Read did not return the string written in previous test.')); }
+            
+            console.log("mist.control.read(name: string):", err, data);
             done();
         });
     });
