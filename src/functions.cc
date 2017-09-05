@@ -606,6 +606,14 @@ static void mist_node_api_handler(mist_app_t* mist_app, input_buf* msg) {
                 *((bool*)ep->data.base) = bson_iterator_bool(&it);
                 mist_value_changed(model, ep_name);
             }
+        } else if (ep->type == MIST_TYPE_STRING) {
+            if ( bson_iterator_type(&it) == BSON_STRING ) {
+                if (ep->data.base != NULL) { free(ep->data.base); ep->data.len = 0; }
+                ep->data.base = (char*) malloc(bson_iterator_string_len(&it));
+                ep->data.len = bson_iterator_string_len(&it);
+                memcpy(ep->data.base, bson_iterator_string(&it), bson_iterator_string_len(&it));
+                mist_value_changed(model, ep_name);
+            }
         } else if (ep->type == MIST_TYPE_INT) {
             if (ep->data.base == NULL) { return; }
 
