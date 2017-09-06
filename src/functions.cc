@@ -421,10 +421,8 @@ static char* endpoint_path_from_model(const char* id) {
     for (i=0; (tmp = (char*) strstr(&id[cursor], str)); i++) {
         if (first) {
             *tmp = '\0';
-            printf("First: %s (%i)\n", &id[cursor], i);
             strcpy(&out[out_cursor], &id[cursor]);
             out_cursor += strlen(&id[cursor]);
-            printf("First out: %s (%i)\n", out, i);
             *tmp = '.';
             
             first = false;
@@ -432,10 +430,7 @@ static char* endpoint_path_from_model(const char* id) {
         cursor = tmp - id + str_len;
         end = (char*) strstr(&id[cursor], str);
         if (end != NULL) { *end = '\0'; }
-        printf("Here: %s (%i)\n", &id[cursor], i);
-        if (end == NULL) {
-            printf("no more matches\n"); 
-        } else {
+        if (end != NULL) {
             strcpy(&out[out_cursor], &id[cursor]);
             out_cursor += strlen(&id[cursor]);
         }
@@ -443,8 +438,6 @@ static char* endpoint_path_from_model(const char* id) {
     }
     
     if (first) {
-        // there was no occurrence of ".#"
-        //strcpy(out, id);
         free(out);
         return NULL;
     }
@@ -452,29 +445,13 @@ static char* endpoint_path_from_model(const char* id) {
     return out;
 }
 
-typedef struct {
-    bson *bsout;
-    const char* path;
-    const char* data;
-    bson_type type;
-    bson_type parentType;
-    const char* lastkey;
-    int lastindex;
-    //const void *bsdata2; //bsdata to merge with
-    int nstack; //nested object stack pos
-    //int matched; //number of matched merge fields
-    mist_model_t* model;
-} _BSONMODELCTX;
-
 static bson_visitor_cmd_t mist_model_build_visitor(
         const char *ipath, int ipathlen, 
         const char *key, int keylen,
         const bson_iterator *it, 
         bool after, void *op) 
 {
-    _BSONMODELCTX* ctx = (_BSONMODELCTX*) op;
-    
-    bson_type bt = BSON_ITERATOR_TYPE(it);
+    mist_model_t* model = (mist_model_t*) op;
     
     char tpath[128];
     memcpy(tpath, ipath, ipathlen);
@@ -484,9 +461,6 @@ static bson_visitor_cmd_t mist_model_build_visitor(
     memcpy(tkey, key, keylen);
     tkey[keylen] = 0;
     
-    //printf("path: %s (%s) %d %s\n", tpath, tkey, bt, after ? "after" : "before");
-
-
     if (!after) {
         bson_iterator epit;
 
@@ -603,13 +577,10 @@ static bson_visitor_cmd_t mist_model_build_visitor(
         ep->dirty = false;
         ep->scaling = ep_scale;
 
-        WISHDEBUG(LOG_CRITICAL, "Should add endpoint %s", tpath+6);
-        
         char* parent = endpoint_path_from_model(tpath+6);
-
-        WISHDEBUG(LOG_CRITICAL, "mist model parent: %s", parent);
         
-        mist_add_ep(ctx->model, parent, ep);
+        mist_add_ep(model, parent, ep);
+        
         if ( parent != NULL ) { free(parent); }
         
         return has_children ? BSON_VCMD_OK : BSON_VCMD_SKIP_NESTED;
@@ -619,29 +590,10 @@ static bson_visitor_cmd_t mist_model_build_visitor(
 }
 
 static void mist_model_parse(const bson* from, mist_model_t* model) {
-    printf("mist_model_parse\n");
     bson_iterator i;
     bson_iterator_init(&i, from);
 
-    //bson_find_fieldpath_value("model.model", &i);
-    //if(bson_iterator_type(&i) != BSON_OBJECT) {
-    //    printf("model.model not object, type is %i\n", bson_iterator_type(&i));
-    //    return;
-    //}
-    
-    _BSONMODELCTX ctx = {
-        .bsout = NULL,
-        .path = "",
-        .data = NULL,
-        .type = BSON_EOO,
-        .parentType = BSON_EOO,
-        .lastkey = NULL,
-        .lastindex = 0,
-        .nstack = 0,
-        .model = model
-    };
-    
-    bson_visit_fields(&i, (bson_traverse_flags_t) 0, mist_model_build_visitor, &ctx);
+    bson_visit_fields(&i, (bson_traverse_flags_t) 0, mist_model_build_visitor, model);
 }
 
 static void mist_node_api_handler(mist_app_t* mist_app, input_buf* msg) {

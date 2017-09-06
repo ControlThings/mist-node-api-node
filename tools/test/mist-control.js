@@ -41,14 +41,11 @@ describe('MistApi Control', function () {
         node = new MistNode({ name: 'ControlThings' }); // , coreIp: '127.0.0.1', corePort: 9094
         
         node.create({
-            device: 'ControlThings',
-            model: { 
-                enabled: { label: 'Enabled', type: 'bool', read: true, write: true },
-                lon: { label: 'Longitude', type: 'float', read: true },
-                counter: { label: 'Counter', type: 'int', read: true, write: true },
-                name: { label: 'Name', type: 'string', read: true, write: true },
-                config: { label: 'Config', invoke: true }
-            } 
+            enabled: { label: 'Enabled', type: 'bool', read: true, write: true },
+            lon: { label: 'Longitude', type: 'float', read: true },
+            counter: { label: 'Counter', type: 'int', read: true, write: true },
+            name: { label: 'Name', type: 'string', read: true, write: true },
+            config: { label: 'Config', type: 'invoke', invoke: true }
         });
         
         node.invoke('config', function(args, cb) {
@@ -117,7 +114,7 @@ describe('MistApi Control', function () {
     it('shuold test control.model', function(done) {
         mist.request('mist.control.model', [peer], function (err, model) {
             if (err) { return done(new Error(inspect(model))); }
-            //console.log("Got a model:", err, model);
+            console.log("Got a model:", err, model);
             done();
         });
     });
