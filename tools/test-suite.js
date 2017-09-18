@@ -12,8 +12,8 @@ function done() {
     //console.log('Starting Wish Core.');
     
     // To debug errors in Alice core C/C++ code enable the below core = child.spawn('gdb', ...
-    //var core = child.spawn('./wish-core', [], { cwd: './env', stdio: 'inherit' });
-    var core = child.spawn('gdb', ['-batch', '-ex', 'run', '-ex', 'bt', './wish-core'], { cwd: './env', stdio: 'inherit' });
+    var core = child.spawn('./wish-core', ['-p 38001', '-a 9095', '-b', '-l', '-r', '-s'], { cwd: './env', stdio: 'inherit' });
+    //var core = child.spawn('gdb', ['-batch', '-ex', 'run -p 38001 -a 9095 -b -l -r -s', '-ex', 'bt', 'wish-core'], { cwd: './env', stdio: 'inherit' });
 
     function running() {
         //console.log('Starting node.');
@@ -75,6 +75,7 @@ function done() {
                 //fs.writeFileSync('./results.json', JSON.stringify(results, null, 2));
                 core.kill();
                 coreBob.kill();
+                coreCharlie.kill();
                 return;
             }
 
@@ -156,12 +157,14 @@ function done() {
         clearTimeout(coreTimeout);
     });
     
+    
+    /* Start core for Bob */
+    
     function runningBob() {
 
     }
     
     //console.log('Starting Wish Core for Bob.');
-    
     
     // To debug errors in Bob's core enable the below bobCore = child.spawn('gdb', ...
     
@@ -176,6 +179,7 @@ function done() {
         
         core.kill();
         coreBob.kill();
+        coreCharlie.kill();
         
         process.exit(0);
     });
@@ -195,6 +199,36 @@ function done() {
         console.log("wish (bob) exited with code:", code);
         clearTimeout(coreBobTimeout);
     });
+    
+    /* Start core for Charlie */
+    
+    function runningCharlie() {
+        
+    }
+    
+    var coreCharlie = child.spawn('../wish-core', ['-p 38003', '-a 9097', '-b', '-l', '-r', '-s'], { cwd: './env/charlie', stdio: 'inherit' });
+    //var coreCharlie = child.spawn('gdb', ['-batch', '-ex', 'run -p 38003 -a 9097 -b -l -r -s', '-ex', 'bt', '../wish-core'], { cwd: './env/charlie', stdio: 'inherit' });
+    
+    var coreCharlieTimeout = setTimeout(() => { runningCharlie(); }, 200);
+    
+    coreCharlie.on('error', (err) => {
+        console.log('\x1b[35mwish> Failed to start wish-core process for Charlie.', err,'\x1b[39m');
+        clearTimeout(coreCharlieTimeout);
+        
+        core.kill();
+        coreBob.kill();
+        coreCharlie.kill();
+        
+        process.exit(0);
+    });
+    
+    coreCharlie.on('exit', (code) => {
+        //if ( code !== null ) { console.log("wish (bob) exited with code:", code); }
+        console.log("wish (charlie) exited with code:", code);
+        clearTimeout(coreCharlieTimeout);
+    });
+    
+    
 }
 
 function start() {
@@ -208,6 +242,7 @@ function start() {
     var fileName = './env/wish-core';
     mkdirp.sync('./env/alice');
     mkdirp.sync('./env/bob');
+    mkdirp.sync('./env/charlie');
 
     if (process.env.WISH) {
         try {
