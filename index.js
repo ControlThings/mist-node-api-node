@@ -257,7 +257,8 @@ Sandboxed.prototype.request = function(op, args, cb) {
 Sandboxed.prototype.requestBare = function(op, args, cb) {
     var id = ++sharedId;
     var sandboxArgs = [this.sandboxId].concat(args);
-    console.log('sandboxed.'+op+'(', sandboxArgs, '):', id);
+    
+    //console.log('sandboxed.'+op+'(', sandboxArgs, '):', id);
     var request = { op: 'sandboxed.'+op, args: sandboxArgs, id: id };
     
     // store callback for response in the mist object

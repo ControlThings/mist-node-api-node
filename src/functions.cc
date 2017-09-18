@@ -8,6 +8,8 @@
 #include "mist_follow.h"
 #include "wish_core_client.h"
 #include "wish_platform.h"
+#include "wish_fs.h"
+#include "fs_port.h"
 #include "bson_visit.h"
 #include "bson.h"
 #include "utlist.h"
@@ -1095,8 +1097,23 @@ static void* setupWishApi(void* ptr) {
 
 void mist_addon_start(Mist* mist) {
     //printf("mist_addon_start(Mist* %p)\n", mist);
-    
+    // Initialize wish_platform functions
     wish_platform_set_malloc(malloc);
+    wish_platform_set_realloc(realloc);
+    wish_platform_set_free(free);
+    srandom(time(NULL));
+    wish_platform_set_rng(random);
+    wish_platform_set_vprintf(vprintf);
+    wish_platform_set_vsprintf(vsprintf);    
+    
+    /* File system functions are needed for Mist mappings! */
+    wish_fs_set_open(my_fs_open);
+    wish_fs_set_read(my_fs_read);
+    wish_fs_set_write(my_fs_write);
+    wish_fs_set_lseek(my_fs_lseek);
+    wish_fs_set_close(my_fs_close);
+    wish_fs_set_rename(my_fs_rename);
+    wish_fs_set_remove(my_fs_remove);    
     
     int iret;
 
