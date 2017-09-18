@@ -96,15 +96,7 @@ function Mist(opts) {
             //console.log("the answer is:", require('util').inspect(msg, { colors: true, depth: 10 }));
 
             if(typeof self.requests[id] === 'function') {
-                if (msg.err) {
-                    if(typeof msg.data === 'object') {
-                        self.requests[id](true, { code: msg.data.code, msg: msg.data.msg });
-                    } else {
-                        self.requests[id](true, { code: 100, msg: "Invalid error returned." });
-                    }
-                } else {
-                    self.requests[id](null, msg.data);
-                }
+                self.requests[id](msg);
 
                 if(!msg.sig) {
                     delete self.requests[id];
@@ -255,8 +247,17 @@ function Sandboxed(mist, sandboxId) {
 }
 
 Sandboxed.prototype.request = function(op, args, cb) {
+    return this.requestBare(op, args, function(res) {
+        if(res.err) { return cb(true, res.data); }
+        
+        cb(null, res.data);
+    });    
+};
+
+Sandboxed.prototype.requestBare = function(op, args, cb) {
     var id = ++sharedId;
     var sandboxArgs = [this.sandboxId].concat(args);
+    console.log('sandboxed.'+op+'(', sandboxArgs, '):', id);
     var request = { op: 'sandboxed.'+op, args: sandboxArgs, id: id };
     
     // store callback for response in the mist object
