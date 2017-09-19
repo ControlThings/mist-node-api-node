@@ -28,13 +28,10 @@ describe('MistApi Control', function () {
         node = new MistNode({ name: 'ControlThings', corePort: 9095 }); // , coreIp: '127.0.0.1', corePort: 9095
         
         node.create({
-            device: 'ControlThings',
-            model: { 
-                enabled: { label: 'Enabled', type: 'bool', read: true, write: true },
-                lon: { label: 'Longitude', type: 'float', read: true },
-                counter: { label: 'Counter', type: 'int', read: true, write: true },
-                config: { label: 'Config', invoke: true },
-            } 
+            enabled: { label: 'Enabled', type: 'bool', read: true, write: true },
+            lon: { label: 'Longitude', type: 'float', read: true },
+            counter: { label: 'Counter', type: 'int', read: true, write: true },
+            config: { label: 'Config', type: 'invoke', invoke: true },
         });
         
         node.invoke('config', function(args, cb) {
