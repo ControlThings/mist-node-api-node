@@ -5,7 +5,7 @@ describe('Wish Directory', function () {
     var app;
 
     before(function (done) {
-        app = new WishApp({ name: 'Generic UI' });
+        app = new WishApp({ name: 'Generic UI', corePort: 9095 });
 
         app.on('ready', function() {
             done();

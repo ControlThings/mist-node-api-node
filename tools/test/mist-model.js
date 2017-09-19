@@ -8,11 +8,11 @@ describe('MistApi Control', function () {
     var mistIdentity;
     
     before(function (done) {
-        mist = new Mist({ name: 'Generic UI', coreIp: '127.0.0.1', corePort: 9094 });
+        mist = new Mist({ name: 'Generic UI', corePort: 9095 });
 
         setTimeout(function() {
             mist.request('signals', [], function(err, data) {
-                if(data === 'ready') { done(); }; // else { done(new Error('App not ready, bailing.')); }
+                if(data[0] === 'ready') { done(); }; // else { done(new Error('App not ready, bailing.')); }
             });
         }, 200);
     });
@@ -25,7 +25,7 @@ describe('MistApi Control', function () {
     var node;
 
     it('should start a mist node', function(done) {
-        node = new MistNode({ name: 'ControlThings' }); // , coreIp: '127.0.0.1', corePort: 9094
+        node = new MistNode({ name: 'ControlThings', corePort: 9095 }); // , coreIp: '127.0.0.1', corePort: 9095
         
         node.create({
             device: 'ControlThings',

@@ -17,7 +17,7 @@ var mistIdentity2;
 describe('WishApp Peers', function () {
     before(function(done) {
         console.log('before 1');
-        app1 = new WishApp({ name: 'PeerTester1', protocols: ['test'], corePort: 9094 }); // , protocols: [] });
+        app1 = new WishApp({ name: 'PeerTester1', protocols: ['test'], corePort: 9095 }); // , protocols: [] });
 
         app1.once('ready', function() {
             done();

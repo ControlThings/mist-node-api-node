@@ -18,7 +18,7 @@ describe('Wish Friends', function () {
     var bobWldEntry;
     
     before(function (done) {
-        app1 = new WishApp({ name: 'AliceFriendManager' });
+        app1 = new WishApp({ name: 'AliceFriendManager', corePort: 9095 });
 
         app1.on('ready', () => {
             done();

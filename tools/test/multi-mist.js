@@ -38,7 +38,7 @@ describe('Multi Mist', function () {
         
         for(var i=0; i<count; i++) {
             (function(i) {
-                var mist = new Mist({ name: 'WishApp-'+i, type: 4, coreIp: '127.0.0.1', corePort: 9094 });
+                var mist = new Mist({ name: 'WishApp-'+i, type: 4, coreIp: '127.0.0.1', corePort: 9095 });
 
                 list.push(mist);
 

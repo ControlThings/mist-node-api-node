@@ -6,11 +6,11 @@ describe('MistApi Control', function () {
     var mist;
     
     before(function (done) {
-        mist = new Mist({ name: 'Generic UI' }); // , coreIp: '127.0.0.1', corePort: 9094
+        mist = new Mist({ name: 'Generic UI', corePort: 9095 }); // , coreIp: '127.0.0.1', corePort: 9094
 
         setTimeout(function() {
             mist.request('signals', [], function(err, data) {
-                if(data === 'ready') { done(); }; // else { done(new Error('App not ready, bailing.')); }
+                if(data[0] === 'ready') { done(); }; // else { done(new Error('App not ready, bailing.')); }
             });
         }, 200);
     });

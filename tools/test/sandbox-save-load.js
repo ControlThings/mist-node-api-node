@@ -6,7 +6,7 @@ describe('MistApi Sandbox', function () {
     var mist;
     
     before(function (done) {
-        mist = new Mist({ name: 'Generic UI', coreIp: '127.0.0.1', corePort: 9094 });
+        mist = new Mist({ name: 'Generic UI', coreIp: '127.0.0.1', corePort: 9095 });
 
         setTimeout(function() {
             mist.request('ready', [], function(err, ready) {
@@ -83,7 +83,7 @@ describe('MistApi Sandbox', function () {
     var node;
 
     before('should start a mist node', function(done) {
-        node = new MistNode({ name: 'ControlThings' }); // , coreIp: '127.0.0.1', corePort: 9094
+        node = new MistNode({ name: 'ControlThings', corePort: 9095 }); // , coreIp: '127.0.0.1'
         
         node.create({
             device: 'ControlThings',

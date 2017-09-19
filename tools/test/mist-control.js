@@ -13,11 +13,11 @@ describe('MistApi Control', function () {
         // TODO fix this workaround which stops done being called several times ocationally...
         var done2 = function() { done(); done = function() {}; };
         
-        mist = new Mist({ name: 'Generic UI', coreIp: '127.0.0.1', corePort: 9094 });
+        mist = new Mist({ name: 'Generic UI', corePort: 9095 }); // , coreIp: '127.0.0.1'
 
         setTimeout(function() {
             mist.request('signals', [], function(err, data) {
-                if(data === 'ready') {
+                if(data[0] === 'ready') {
                     util.clear(mist, function(err) {
                         if (err) { done2(new Error('util.js: Could not clear core.')); }
                         
@@ -38,7 +38,7 @@ describe('MistApi Control', function () {
     var node;
 
     before('should start a mist node', function(done) {
-        node = new MistNode({ name: 'ControlThings' }); // , coreIp: '127.0.0.1', corePort: 9094
+        node = new MistNode({ name: 'ControlThings', corePort: 9095 }); // , coreIp: '127.0.0.1'
         
         node.create({
             enabled: { label: 'Enabled', type: 'bool', read: true, write: true },

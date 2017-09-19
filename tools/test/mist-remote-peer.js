@@ -17,7 +17,7 @@ var mistIdentity2;
 describe('Mist remote peer', function () {
     before(function(done) {
         console.log('before 1');
-        app1 = new WishApp({ name: 'PeerTester1', protocols: ['test'], corePort: 9094 }); // , protocols: [] });
+        app1 = new WishApp({ name: 'PeerTester1', protocols: ['test'], corePort: 9095 }); // , protocols: [] });
 
         setTimeout(done, 200);
     });
@@ -81,7 +81,7 @@ describe('Mist remote peer', function () {
     var mist;
     
     before('start a mist api', function(done) {
-        mist = new Mist({ name: 'MistApi' }); // , coreIp: '127.0.0.1', corePort: 9094
+        mist = new Mist({ name: 'MistApi', corePort: 9095 }); // , coreIp: '127.0.0.1', corePort: 9095
         
         setTimeout(done, 200);
     });  
@@ -89,16 +89,13 @@ describe('Mist remote peer', function () {
     var node;
 
     before('should start a mist node', function(done) {
-        node = new MistNode({ name: 'ControlThings', coreIp: '127.0.0.1', corePort: 9096 });
+        node = new MistNode({ name: 'ControlThings', corePort: 9096 });
         
         node.create({
-            device: 'ControlThings',
-            model: { 
-                enabled: { label: 'Enabled', type: 'bool', read: true, write: true },
-                lon: { label: 'Longitude', type: 'float', read: true },
-                counter: { label: 'Counter', type: 'int', read: true, write: true },
-                config: { label: 'Config', invoke: true }
-            } 
+            enabled: { label: 'Enabled', type: 'bool', read: true, write: true },
+            lon: { label: 'Longitude', type: 'float', read: true },
+            counter: { label: 'Counter', type: 'int', read: true, write: true },
+            config: { label: 'Config', type: 'invoke', invoke: true }
         });
         
         // used to check the read
@@ -155,7 +152,7 @@ describe('Mist remote peer', function () {
         mist.request('mist.control.model', [peer], function(err, model) {
             if (err) { return done(new Error('failed making mist request:'+ inspect(model))); }
             
-            if (model.model.config.type !== 'invoke') {
+            if (model.config.type !== 'invoke') {
                 return done(new Error('failed making mist model request:'+ inspect(model)));
             }
             

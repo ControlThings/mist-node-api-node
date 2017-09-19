@@ -3,7 +3,7 @@ var inspect = require('util').inspect;
 
 describe('Wish Services', function () {
     var app;
-    var opts = { name: 'Babbel', protocols: ['chat'] };
+    var opts = { name: 'Babbel', protocols: ['chat'], corePort: 9095 };
 
     before(function (done) {
         app = new WishApp(opts);

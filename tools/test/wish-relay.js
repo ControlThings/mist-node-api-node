@@ -6,7 +6,7 @@ describe('Wish Relay', function () {
     var mist;
     
     before(function (done) {
-        mist = new Mist({ name: 'Generic UI', coreIp: '127.0.0.1', corePort: 9094 });
+        mist = new Mist({ name: 'Generic UI', corePort: 9095 });
 
         setTimeout(function() {
             mist.request('ready', [], function(err, ready) {

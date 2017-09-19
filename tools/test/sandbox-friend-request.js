@@ -19,7 +19,7 @@ describe('MistApi Sandbox', function () {
 
     before(function(done) {
         console.log('before 1');
-        app1 = new WishApp({ name: 'PeerTester1', protocols: ['test'], corePort: 9094 }); // , protocols: [] });
+        app1 = new WishApp({ name: 'PeerTester1', protocols: ['test'], corePort: 9095 }); // , protocols: [] });
 
         setTimeout(done, 200);
     });
@@ -67,7 +67,7 @@ describe('MistApi Sandbox', function () {
     });
     
     before(function (done) {
-        mist1 = new Mist({ name: 'Generic UI', coreIp: '127.0.0.1', corePort: 9094 });
+        mist1 = new Mist({ name: 'Generic UI', coreIp: '127.0.0.1', corePort: 9095 });
 
         setTimeout(function() {
             mist1.request('ready', [], function(err, ready) {
@@ -82,7 +82,7 @@ describe('MistApi Sandbox', function () {
     });
 
     before(function(done) {
-        mist2 = new Mist({ name: 'Generic UI2', coreIp: '127.0.0.1', corePort: 9096 });
+        mist2 = new Mist({ name: 'Generic UI2', corePort: 9096 });
 
         setTimeout(function() {
             mist2.request('ready', [], function(err, ready) {
@@ -97,7 +97,7 @@ describe('MistApi Sandbox', function () {
     });
     
     before(function(done) {
-        node = new MistNode({ name: 'ControlThings', coreIp: '127.0.0.1', corePort: 9096 });
+        node = new MistNode({ name: 'ControlThings', corePort: 9096 });
         node.create({
             state: { label: 'State', type: 'bool', read: true, write: true } 
         });

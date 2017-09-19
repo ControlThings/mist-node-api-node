@@ -9,11 +9,11 @@ describe('Wish Local Discovery', function () {
     var mistIdentity;
     
     before(function (done) {
-        mist = new Mist({ name: 'Generic UI', coreIp: '127.0.0.1', corePort: 9094 });
+        mist = new Mist({ name: 'Generic UI', corePort: 9095 });
 
         setTimeout(function() {
             mist.request('signals', [], function(err, data) {
-                if(data === 'ready') {
+                if(data[0] === 'ready') {
                     util.ensureIdentity(mist, name, function(err, identity) {
                         if (err) { done(new Error('util.js: Could not ensure identity.')); }
                         mistIdentity = identity;

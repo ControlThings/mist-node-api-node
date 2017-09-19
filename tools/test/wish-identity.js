@@ -5,7 +5,7 @@ describe('MistApi Identity', function () {
     var app;
     
     before(function (done) {
-        app = new WishApp({ name: 'Generic UI' });
+        app = new WishApp({ name: 'Generic UI', corePort: 9095 });
 
         setTimeout(function() {
             app.request('ready', [], function(err, ready) {
