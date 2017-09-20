@@ -453,7 +453,7 @@ static bson_visitor_cmd_t mist_model_build_visitor(
         const bson_iterator *it, 
         bool after, void *op) 
 {
-    mist_model_t* model = (mist_model_t*) op;
+    mist_model* model = (mist_model*) op;
     
     char tpath[128];
     memcpy(tpath, ipath, ipathlen);
@@ -591,7 +591,7 @@ static bson_visitor_cmd_t mist_model_build_visitor(
     return BSON_VCMD_OK;
 }
 
-static void mist_model_parse(const bson* from, mist_model_t* model) {
+static void mist_model_parse(const bson* from, mist_model* model) {
     bson_iterator i;
     bson_iterator_init(&i, from);
 
@@ -599,7 +599,7 @@ static void mist_model_parse(const bson* from, mist_model_t* model) {
 }
 
 static void mist_node_api_handler(mist_app_t* mist_app, input_buf* msg) {
-    mist_model_t* model = &mist_app->model;
+    mist_model* model = &mist_app->model;
 
     bson bs;
     bson_init_with_data(&bs, msg->data);
@@ -972,7 +972,7 @@ static void* setupMistNodeApi(void* ptr) {
         return NULL;
     }
     
-    wish_app_add_protocol(app, &mist_app->ucp_handler);
+    wish_app_add_protocol(app, &mist_app->protocol);
     mist_app->app = app;
     
     app->periodic = mist_app_periodic_cb_impl;
@@ -1012,7 +1012,7 @@ static void* setupMistApi(void* ptr) {
         return NULL;
     }
 
-    wish_app_add_protocol(app, &mist_app->ucp_handler);
+    wish_app_add_protocol(app, &mist_app->protocol);
     mist_app->app = app;
     
     app->port = opts->port;
