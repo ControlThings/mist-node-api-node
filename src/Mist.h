@@ -38,6 +38,7 @@ public:
 
 private:
     bool run;
+    bool executeCalled;
     const Nan::AsyncProgressWorker::ExecutionProgress* _progress;
     Nan::Callback *progress;
     PCQueue<Message> toNode;

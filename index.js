@@ -11,6 +11,14 @@ var sharedId = 0;
 
 var instances = [];
 
+/*
+var l = [];
+
+for(var i=0; i<4; i++) {
+    l.push(new MistApi(function (event, data) { console.log('MistApi callback:', event, data); }, { type: 4, name: 'W'+i }));
+}
+*/
+
 function Mist(opts) {
     //console.log("Nodejs new Mist()", opts);
     

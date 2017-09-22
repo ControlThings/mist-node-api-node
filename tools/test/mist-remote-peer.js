@@ -59,20 +59,21 @@ describe('Mist remote peer', function () {
         });
     });
     
-    before(function(done) {
+    before('import mistIdentity2', function(done) {
+        console.log('app1.import(mistIdentity2)');
         app1.request('identity.import', [BSON.serialize(mistIdentity2)], function(err, data) {
             done();
         });
     });
     
-    before(function(done) {
+    before('app1.identity.list', function(done) {
         app1.request('identity.list', [], function(err, data) {
             console.log('identity.list:', err, data);
             done();
         });
     });
     
-    before(function(done) {
+    before('import mistIdentity1', function(done) {
         app2.request('identity.import', [BSON.serialize(mistIdentity1)], function(err, data) {
             done();
         });

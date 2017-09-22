@@ -235,6 +235,7 @@ static void online(app_t* app, wish_protocol_peer_t* peer) {
         if(opts->app == app) {
             mist = opts->mist;
             //printf("    found Mist* %p\n", mist);
+            printf("online: %s\n", opts->wish_app->name);
             break;
         }
     }
@@ -270,6 +271,7 @@ static void offline(app_t* app, wish_protocol_peer_t* peer) {
         if(opts->app == app) {
             mist = opts->mist;
             //printf("    found Mist* %p\n", mist);
+            printf("offline: %s\n", opts->wish_app->name);
             break;
         }
     }
@@ -1049,18 +1051,14 @@ static void* setupWishApi(void* ptr) {
     wish_app_t* wish_app = wish_app_create((char*)name);
     
     if (wish_app == NULL) {
-        
+        printf("Failed creating wish app\n");
         return NULL;
     }
     
     opts->wish_app = wish_app;
     
-    if (wish_app == NULL) {
-        printf("Failed creating wish app\n");
-        return NULL;
-    }
-
-    if (opts->protocol) {
+    if (opts->protocol && strnlen(opts->protocol, 1) != 0) {
+        printf("we have a protocol here.... %s\n", opts->protocol);
         memcpy(app->protocol.protocol_name, opts->protocol, WISH_PROTOCOL_NAME_MAX_LEN);
         wish_app_add_protocol(wish_app, &app->protocol);
     }

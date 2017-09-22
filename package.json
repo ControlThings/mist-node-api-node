@@ -17,8 +17,8 @@
   "author": "André Kaustell <andre.kaustell@controlthings.fi>",
   "license": "SEE LICENSE IN LICENSE",
   "dependencies": {
-    "nan": "2.4.0",
-    "bson-buffer": "1.0.2"
+    "bson-buffer": "1.0.2",
+    "nan": "2.7.0"
   },
   "devDependencies": {
     "mkdirp": "0.5.1",

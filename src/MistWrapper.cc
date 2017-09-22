@@ -32,6 +32,8 @@ MistWrapper::New(const Nan::FunctionCallbackInfo<v8::Value>& info) {
 
         Callback *data_callback = new Callback(info[0].As<v8::Function>());
         v8::Local<v8::Object> options = info[1].As<v8::Object>();
+        
+        printf("data_callback %p\n", data_callback);
 
         Mist* mist = new Mist(data_callback);
         

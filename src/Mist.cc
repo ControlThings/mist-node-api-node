@@ -5,6 +5,7 @@
 #include "functions.h"
 #include "bson_visit.h"
 #include "MistWrapper.h"
+#include "bson_visit.h"
 
 using namespace Nan;
 using namespace std;
@@ -14,6 +15,7 @@ Mist::Mist(Callback *progress)
     //std::cout << "Mist::Mist " << this << "\n";
     _progress = NULL;
     mistWrapper = NULL;
+    executeCalled = false;
 }
 
 Mist::~Mist() {
@@ -33,10 +35,18 @@ Mist::sendToNode(Message& message) {
     //printf("Mist::sendToNode() %p _progress: %p\n", &toNode, _progress);
     
     if (_progress == NULL) {
-        printf("Mist::sendToNode before or after addon Mist::Execute has been run!!?!\n");
+        if (executeCalled) {
+            printf("Mist::sendToNode after addon Mist::Execute has been shut down!!?!\n");
+        } else {
+            printf("Mist::sendToNode before Mist::Execute has been run!!?!\n");
+            bson_visit("Mist::sendToNode before Mist::Execute has been run!!?!", message.msg);
+        }
+        
         //bson_visit("pre- or postmature  sendToNode", message.msg);
         return;
     }
+    
+    bson_visit(this->name.c_str(), message.msg);
     
     toNode.write(message);
     _progress->Send(reinterpret_cast<const char*> (&toNode), sizeof (toNode));
@@ -46,8 +56,10 @@ void
 Mist::Execute(const AsyncProgressWorker::ExecutionProgress& progress) {
     _progress = &progress;
     run = true;
+    executeCalled = true;
 
     //std::cout << "Mist::Execute " << this << ", ProgressWorker: " << this->_progress << "\n";
+    //printf("Starting AsyncQueueWorker\n");
     
     while ( run ) {
         Message m = fromNode.read();
