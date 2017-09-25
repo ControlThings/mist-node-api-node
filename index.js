@@ -325,7 +325,7 @@ function WishApp(opts) {
     setTimeout(function() { self.emit('ready'); }, 200);
     
     this.api = new MistApi(function (event, data) {
-        if (!event && !data) { return; }
+        if (!event && !data) { console.log('MistApi callback with no arguments..'); return; }
         if (event === 'done') { return; }
 
         var msg = null;

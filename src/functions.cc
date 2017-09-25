@@ -99,7 +99,9 @@ static void mist_response_cb(struct wish_rpc_entry* req, void* ctx, const uint8_
     
     Message msg("mist", (uint8_t*) data, data_len);
     
-    static_cast<Mist*>(ctx)->sendToNode(msg);
+    Mist* mist = static_cast<Mist*>(ctx);
+    //printf("mist_response_cb to Mist: %s\n", mist->name.c_str());
+    mist->sendToNode(msg);
 }
 
 static void wish_response_cb(struct wish_rpc_entry* req, void* ctx, const uint8_t* data, size_t data_len) {
@@ -115,7 +117,9 @@ static void wish_response_cb(struct wish_rpc_entry* req, void* ctx, const uint8_
     
     Message msg("wish", (uint8_t*) data, data_len);
     
-    static_cast<Mist*>(ctx)->sendToNode(msg);
+    Mist* mist = static_cast<Mist*>(ctx);
+    //printf("wish_response_cb to Mist: %s\n", mist->name.c_str());
+    mist->sendToNode(msg);
 }
 
 static void sandboxed_response_cb(struct wish_rpc_entry* req, void* ctx, const uint8_t* data, size_t data_len) {
@@ -131,7 +135,9 @@ static void sandboxed_response_cb(struct wish_rpc_entry* req, void* ctx, const u
     
     Message msg("sandboxed", (uint8_t*) data, data_len);
     
-    static_cast<Mist*>(ctx)->sendToNode(msg);
+    Mist* mist = static_cast<Mist*>(ctx);
+    //printf("sandboxed_response_cb to Mist: %s\n", mist->name.c_str());
+    mist->sendToNode(msg);
 }
 
 static enum mist_error hw_read(mist_ep* ep, mist_buf* result) {
@@ -193,7 +199,7 @@ static enum mist_error hw_write(mist_ep* ep, mist_buf data) {
 
     Message msg("write", (uint8_t*) bson_data(&bs), bson_size(&bs));
     
-    static_cast<Mist*>(mist)->sendToNode(msg);
+    mist->sendToNode(msg);
     
     return MIST_NO_ERROR;
 }
@@ -222,7 +228,7 @@ static enum mist_error hw_invoke(mist_ep* ep, mist_buf args) {
     
     Message msg("invoke", (uint8_t*) bson_data(&bs), bson_size(&bs));
     
-    static_cast<Mist*>(mist)->sendToNode(msg);
+    mist->sendToNode(msg);
     
     return MIST_NO_ERROR;
 }
@@ -260,7 +266,8 @@ static void online(app_t* app, wish_protocol_peer_t* peer) {
 
     Message msg("online", (uint8_t*) bson_data(&bs), bson_size(&bs));
     
-    static_cast<Mist*>(mist)->sendToNode(msg);
+    //printf("online to Mist: %s\n", mist->name.c_str());
+    mist->sendToNode(msg);
 }
 
 static void offline(app_t* app, wish_protocol_peer_t* peer) {
@@ -293,8 +300,9 @@ static void offline(app_t* app, wish_protocol_peer_t* peer) {
     bson_finish(&bs);
 
     Message msg("offline", (uint8_t*) bson_data(&bs), bson_size(&bs));
-    
-    static_cast<Mist*>(mist)->sendToNode(msg);
+
+    //printf("offline to Mist: %s\n", mist->name.c_str());
+    mist->sendToNode(msg);
 }
 
 static void frame(app_t* app, const uint8_t* payload, size_t payload_len, wish_protocol_peer_t* peer) {
@@ -330,7 +338,8 @@ static void frame(app_t* app, const uint8_t* payload, size_t payload_len, wish_p
     
     Message msg("frame", (uint8_t*) bson_data(&bs), bson_size(&bs));
     
-    static_cast<Mist*>(mist)->sendToNode(msg);
+    //printf("frame to Mist: %s\n", mist->name.c_str());
+    mist->sendToNode(msg);
 }
 
 static void wish_periodic_cb_impl(void* ctx) {
@@ -440,12 +449,12 @@ static char* endpoint_path_from_model(const char* id) {
         }
         if (end != NULL) { *end = '.'; }
     }
-    
+
     if (first) {
         free(out);
         return NULL;
     }
-
+    
     return out;
 }
 
@@ -984,7 +993,7 @@ static void* setupMistNodeApi(void* ptr) {
     
     wish_core_client_init(app);
 
-    printf("libuv loop closed and thread ended (setupMistNodeApi)\n");
+    //printf("libuv loop closed and thread ended (setupMistNodeApi)\n");
 
     // when core_client returns clean up 
     opts->mist = NULL;
@@ -1027,7 +1036,7 @@ static void* setupMistApi(void* ptr) {
 
     wish_core_client_init(app);
 
-    printf("libuv loop closed and thread ended (setupMistApi)\n");
+    //printf("libuv loop closed and thread ended (setupMistApi)\n");
 
     // when core_client returns clean up 
     opts->mist = NULL;
@@ -1058,7 +1067,7 @@ static void* setupWishApi(void* ptr) {
     opts->wish_app = wish_app;
     
     if (opts->protocol && strnlen(opts->protocol, 1) != 0) {
-        printf("we have a protocol here.... %s\n", opts->protocol);
+        //printf("we have a protocol here.... %s\n", opts->protocol);
         memcpy(app->protocol.protocol_name, opts->protocol, WISH_PROTOCOL_NAME_MAX_LEN);
         wish_app_add_protocol(wish_app, &app->protocol);
     }
@@ -1076,7 +1085,7 @@ static void* setupWishApi(void* ptr) {
 
     wish_core_client_init(wish_app);
     
-    printf("libuv loop closed and thread ended (setupWishApi)\n");
+    //printf("libuv loop closed and thread ended (setupWishApi)\n");
 
     // when core_client returns clean up 
     opts->mist = NULL;

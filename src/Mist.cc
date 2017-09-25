@@ -46,8 +46,6 @@ Mist::sendToNode(Message& message) {
         return;
     }
     
-    bson_visit(this->name.c_str(), message.msg);
-    
     toNode.write(message);
     _progress->Send(reinterpret_cast<const char*> (&toNode), sizeof (toNode));
 }
@@ -59,11 +57,11 @@ Mist::Execute(const AsyncProgressWorker::ExecutionProgress& progress) {
     executeCalled = true;
 
     //std::cout << "Mist::Execute " << this << ", ProgressWorker: " << this->_progress << "\n";
-    //printf("Starting AsyncQueueWorker\n");
+    //printf("AsyncQueueWorker::Execute %s\n", name.c_str());
     
     while ( run ) {
         Message m = fromNode.read();
-
+        
         while (true) {
             int type = 0;
             if (m.name == "kill") {
@@ -84,7 +82,7 @@ Mist::Execute(const AsyncProgressWorker::ExecutionProgress& progress) {
             bool success = injectMessage(this, type, m.msg, m.msg_len);
 
             if(success) { 
-                //printf("Success injecting message\n");
+                //printf("AsyncQueueWorker::injectMessage %s\n", name.c_str());
                 break; 
             } else {
                 //printf("Injecting message waiting for my turn. Mist is busy.\n");
@@ -93,7 +91,7 @@ Mist::Execute(const AsyncProgressWorker::ExecutionProgress& progress) {
         }
     };
 
-    //printf("Plugin Execute is returning.\n");
+    //printf("AsyncQueueWorker::Execute returning %s\n", name.c_str());
 }
 
 void

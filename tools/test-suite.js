@@ -3,6 +3,8 @@ const fs = require('fs');
 const mkdirp = require('mkdirp');
 const child = require('child_process');
 
+process.env.UV_THREADPOOL_SIZE = '20';
+
 var testStartTime = Date.now();
 
 var wishBinaryUrl = 'https://mist.controlthings.fi/dist/wish-core-v0.8.0-alpha-x64-linux';
@@ -85,7 +87,7 @@ function done() {
 
             // To debug errors in test C/C++ code enable the below bobCore = child.spawn('gdb', ...
             
-            //var test = child.spawn('../../node_modules/mocha/bin/mocha', ['--reporter', 'json', '-c', '../'+testFile], { cwd: './env' });
+            //var test = child.spawn('../../node_modules/mocha/bin/mocha', ['--reporter', 'json', '-c', '../'+testFile], { cwd: './env', env: { UV_THREADPOOL_SIZE: '20' } });
             var test = child.spawn('gdb', ['-batch', '-ex', 'set follow-fork-mode child', '-ex', 'run ../node_modules/mocha/bin/mocha --reporter json -c '+testFile, '-ex', 'bt', 'node']);
 
             test.on('error', (err) => {

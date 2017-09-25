@@ -28,7 +28,7 @@ var charlieWldEntry;
  * @returns {undefined}
  */
 
-describe('Mist Mappings', function () {
+describe('Mist Invite', function () {
     var requestorMist;
     var expertMist;
 
@@ -133,15 +133,21 @@ describe('Mist Mappings', function () {
             });
         }, 200);
     });
-        
+
+    var nodeName = 'src Node';
+
+    var nodeSid = Buffer.alloc(32, 0);
+    nodeSid.write(nodeName);
+    
     before(function(done) {
-        node = new MistNode({ name: 'src Node', corePort: 9096 });
+        node = new MistNode({ name: nodeName, corePort: 9096 });
         node.create({
-            output: { label: 'output', type: 'bool', read: true, write: true } 
+            output: { label: 'output', type: 'bool', read: true, write: true },
+            broken: { label: 'Device is broken', type: 'bool', read: true, write: true } 
         });
         
         node.write(function(epid, data) {
-            console.log('Src Node write:', epid, data);
+            console.log(nodeName +' write:', epid, data);
         });
         
         setTimeout(done, 100);
@@ -174,8 +180,10 @@ describe('Mist Mappings', function () {
     var connection;
     
     before('should have connection between alice and bob', function(done) {
+        this.timeout(5000);
         
         var signals = requestorApp.request('signals', [], function(err, data) {
+            console.log('requestorApp signals waiting for connections:', err, data);
             if (data[0] === 'connections') {
                 requestorApp.request('connections.list', [], function(err, data) {
                     for (var i in data) {
@@ -271,7 +279,7 @@ describe('Mist Mappings', function () {
         });
     });
 
-    it('should invite the expert', function(done) {
+    it('should have expert befriending the device', function(done) {
         dstApp.request('wld.list', [], function(err, data) {
             console.log('wld.list', data);
             
@@ -283,6 +291,7 @@ describe('Mist Mappings', function () {
                             srcApp.request('identity.friendRequestList', [], function(err, data) {
                                 srcApp.request('identity.friendRequestAccept', [data[0].luid, data[0].ruid], function(err, data) {
                                     done();
+                                    srcApp.cancel(signals);
                                 });
                             });
                         }
@@ -295,14 +304,40 @@ describe('Mist Mappings', function () {
         });
     });
     
-    it('should have peer available to expert', function(done) {
-        console.log('listing Peers in expert');
-        dstApp.request('services.list', [], function(err, data) {
-            console.log('services.list in expert:', err, data);
+    var expertsPeer;
+    
+    it('should have expert wait for a peer', function(done) {
+        this.timeout(7000);
+        
+        function checkPeers() {
+            expertMist.request('listPeers', [], function(err, data) {
+                for (var i in data) {
+                    if( Buffer.compare(data[i].rsid, nodeSid) === 0 ) {
+                        expertsPeer = data[i];
+                        done();
+                        done = function() {};
+                        return;
+                    }
+                }
+            });
+        }
+        
+        expertMist.request('signals', [], function(err, data) {
+            if (data[0] === 'peers') {
+                checkPeers();
+            }
         });
         
-        expertMist.request('listPeers', [], function(err, data) {
-            console.log('listPeers at expert:', err, data);
+        checkPeers();
+    });
+    
+    it('should have expert sending a command to device', function(done) {
+        expertMist.request('mist.control.model', [expertsPeer], function(err, data) {
+            if (!data.broken) {
+                return done(new Error('The device responded with something unexpected'));
+            }
+            
+            done();
         });
     });
 });
