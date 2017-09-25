@@ -52,7 +52,7 @@ function Mist(opts) {
 
         if (event === 'online') {
             if (typeof self.onlineCb === 'function') { self.onlineCb(msg.peer); }
-
+            
             return;
         }
 
@@ -294,6 +294,7 @@ function WishApp(opts) {
     opts.type = 4;
 
     var self = this;
+    this.peers = [];
     this.requests = {};
     this.invokeCb = {};
 
@@ -330,6 +331,8 @@ function WishApp(opts) {
         if (event === 'online') {
             if (typeof self.onlineCb === 'function') { self.onlineCb(msg.peer); }
 
+            self.peers.push(msg.peer);
+
             return;
         }
 
@@ -340,9 +343,7 @@ function WishApp(opts) {
         }
 
         if (event === 'frame') {
-            var payload = BSON.deserialize(msg.frame);
-
-            if (typeof self.frameCb === 'function') { self.frameCb(msg.peer, payload); }
+            if (typeof self.frameCb === 'function') { self.frameCb(msg.peer, msg.frame); }
 
             return;
         }
@@ -375,7 +376,18 @@ function WishApp(opts) {
 
 inherits(WishApp, EventEmitter);
 
+WishApp.prototype.send = function(peer, message, cb) {
+    this.request('services.send', [peer, message], cb || function() {});
+};
+
+WishApp.prototype.broadcast = function(message) {
+    for(var i in this.peers) {
+        this.request('services.send', [this.peers[i], message], function() {});
+    }
+};
+
 WishApp.prototype.request = function(op, args, cb) {
+    if (typeof cb !== 'function') { console.log("not function:", new Error().stack); }
     return this.requestBare(op, args, function(res) {
         if(res.err) { return cb(true, res.data); }
         
