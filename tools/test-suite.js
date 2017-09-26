@@ -87,8 +87,8 @@ function done() {
 
             // To debug errors in test C/C++ code enable the below bobCore = child.spawn('gdb', ...
             
-            //var test = child.spawn('../../node_modules/mocha/bin/mocha', ['--reporter', 'json', '-c', '../'+testFile], { cwd: './env', env: { UV_THREADPOOL_SIZE: '20' } });
-            var test = child.spawn('gdb', ['-batch', '-ex', 'set follow-fork-mode child', '-ex', 'run ../node_modules/mocha/bin/mocha --reporter json -c '+testFile, '-ex', 'bt', 'node']);
+            var test = child.spawn('../../node_modules/mocha/bin/mocha', ['--reporter', 'json', '-c', '../'+testFile], { cwd: './env' });
+            //var test = child.spawn('gdb', ['-batch', '-ex', 'set follow-fork-mode child', '-ex', 'run ../node_modules/mocha/bin/mocha --reporter json -c '+testFile, '-ex', 'bt', 'node']);
 
             test.on('error', (err) => {
                 console.log('\x1b[36m'+testFile+'> Failed to start test process.');
@@ -197,8 +197,7 @@ function done() {
     */
     
     coreBob.on('exit', (code) => {
-        //if ( code !== null ) { console.log("wish (bob) exited with code:", code); }
-        console.log("wish (bob) exited with code:", code);
+        if ( code !== null ) { console.log("wish (bob) exited with code:", code); }
         clearTimeout(coreBobTimeout);
     });
     
@@ -225,8 +224,7 @@ function done() {
     });
     
     coreCharlie.on('exit', (code) => {
-        //if ( code !== null ) { console.log("wish (bob) exited with code:", code); }
-        console.log("wish (charlie) exited with code:", code);
+        if ( code !== null ) { console.log("wish (bob) exited with code:", code); }
         clearTimeout(coreCharlieTimeout);
     });
     

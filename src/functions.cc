@@ -240,8 +240,7 @@ static void online(app_t* app, wish_protocol_peer_t* peer) {
     LL_FOREACH(wish_app_core_opts, opts) {
         if(opts->app == app) {
             mist = opts->mist;
-            //printf("    found Mist* %p\n", mist);
-            printf("online: %s\n", opts->wish_app->name);
+            //printf("online: %s\n", opts->wish_app->name);
             break;
         }
     }
@@ -278,7 +277,82 @@ static void offline(app_t* app, wish_protocol_peer_t* peer) {
         if(opts->app == app) {
             mist = opts->mist;
             //printf("    found Mist* %p\n", mist);
-            printf("offline: %s\n", opts->wish_app->name);
+            //printf("offline: %s\n", opts->wish_app->name);
+            break;
+        }
+    }
+    
+    if (mist == NULL) {
+        printf("Failed finding mist instance to call write... bailing out!\n");
+        return;
+    }
+    
+    bson bs;
+    bson_init(&bs);
+    bson_append_start_object(&bs, "peer");
+    bson_append_binary(&bs, "luid", (char*) peer->luid, WISH_ID_LEN);
+    bson_append_binary(&bs, "ruid", (char*) peer->ruid, WISH_ID_LEN);
+    bson_append_binary(&bs, "rhid", (char*) peer->rhid, WISH_WHID_LEN);
+    bson_append_binary(&bs, "rsid", (char*) peer->rsid, WISH_WSID_LEN);
+    bson_append_string(&bs, "protocol", peer->protocol);
+    bson_append_finish_object(&bs);
+    bson_finish(&bs);
+
+    Message msg("offline", (uint8_t*) bson_data(&bs), bson_size(&bs));
+
+    //printf("offline to Mist: %s\n", mist->name.c_str());
+    mist->sendToNode(msg);
+}
+
+static void mist_online(mist_app_t* mist_app, wish_protocol_peer_t* peer) {
+    WISHDEBUG(LOG_CRITICAL, "mist_online %s %p", mist_app->name, peer);
+    
+    Mist* mist = NULL;
+    struct wish_app_core_opt* opts;
+    
+    LL_FOREACH(wish_app_core_opts, opts) {
+        if(opts->mist_app == mist_app) {
+            mist = opts->mist;
+            //printf("online: %s\n", opts->wish_app->name);
+            break;
+        }
+    }
+    
+    if (mist == NULL) {
+        printf("Failed finding mist instance to call write... bailing out!\n");
+        return;
+    }
+    
+    bson bs;
+    bson_init(&bs);
+    bson_append_start_object(&bs, "peer");
+    bson_append_binary(&bs, "luid", (char*) peer->luid, WISH_ID_LEN);
+    bson_append_binary(&bs, "ruid", (char*) peer->ruid, WISH_ID_LEN);
+    bson_append_binary(&bs, "rhid", (char*) peer->rhid, WISH_WHID_LEN);
+    bson_append_binary(&bs, "rsid", (char*) peer->rsid, WISH_WSID_LEN);
+    bson_append_string(&bs, "protocol", peer->protocol);
+    bson_append_finish_object(&bs);
+    bson_finish(&bs);
+    
+    if (bs.err) { printf("Error producing bson!! %d\n", bs.err); }
+
+    Message msg("online", (uint8_t*) bson_data(&bs), bson_size(&bs));
+    
+    //printf("online to Mist: %s\n", mist->name.c_str());
+    mist->sendToNode(msg);
+}
+
+static void mist_offline(mist_app_t* mist_app, wish_protocol_peer_t* peer) {
+    WISHDEBUG(LOG_CRITICAL, "mist_offline %s %p", mist_app->name, peer);
+
+    Mist* mist = NULL;
+    struct wish_app_core_opt* opts;
+    
+    LL_FOREACH(wish_app_core_opts, opts) {
+        if(opts->mist_app == mist_app) {
+            mist = opts->mist;
+            //printf("    found Mist* %p\n", mist);
+            //printf("offline: %s\n", opts->wish_app->name);
             break;
         }
     }
@@ -615,6 +689,8 @@ static void mist_node_api_handler(mist_app_t* mist_app, input_buf* msg) {
     bson bs;
     bson_init_with_data(&bs, msg->data);
     
+    bson_visit("mist_node_api_handler:", (const uint8_t*)msg->data);
+    
     bson_iterator it;
     bson_find_from_buffer(&it, msg->data, "model");
 
@@ -635,6 +711,16 @@ static void mist_node_api_handler(mist_app_t* mist_app, input_buf* msg) {
             int id = bson_iterator_int(&it);
 
             mist_invoke_response(mist_app->server, id, (uint8_t*) msg->data);
+            return;
+        }
+
+        bson_find_from_buffer(&it, msg->data, "op");
+
+        if (bson_iterator_type(&it) == BSON_STRING) {
+            WISHDEBUG(LOG_CRITICAL, "MistNode request");
+            //int id = bson_iterator_int(&it);
+            
+            //mist_invoke_response(mist_app->server, id, (uint8_t*) msg->data);
             return;
         }
 
@@ -945,7 +1031,7 @@ static void mist_app_periodic_cb_impl(void* ctx) {
                 //printf("### Wish Api requests are disabled in MistNodeApi\n");
                 //wish_api_request(mist_app->app, &bs, mist_response_cb);
             } else if (msg->type == 2) { // MIST
-                //printf("### MistApi call from a Node instance, this is not good!\n");
+                printf("### MistApi call from a Node instance, this is not good!\n");
             } else if (msg->type == 3) { // MIST NODE API
                 mist_node_api_handler(mist_app, msg);
             } else if (msg->type == 4) { // MIST SANDBOXED API
@@ -985,6 +1071,9 @@ static void* setupMistNodeApi(void* ptr) {
     
     wish_app_add_protocol(app, &mist_app->protocol);
     mist_app->app = app;
+    
+    mist_app->online = mist_online;
+    mist_app->offline = mist_offline;
     
     app->periodic = mist_app_periodic_cb_impl;
     app->periodic_ctx = opts;

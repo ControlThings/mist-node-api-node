@@ -87,7 +87,7 @@ function ensureIdentity(mist, alias, cb) {
     
     //console.log("should create identity: getting identity list");
     mist.wish('identity.create', [alias], function(err, data) {
-        console.log("identity.create('"+alias+"'): cb", err, data);
+        //console.log("identity.create('"+alias+"'): cb", err, data);
         cb(null, data);
     });
 }

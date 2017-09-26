@@ -42,7 +42,7 @@ describe('Multi Mist', function () {
         
         for(var i=0; i<count; i++) {
             (function(i) {
-                console.log('creating instance: ', i);
+                //console.log('creating instance: ', i);
                 //var mist = new MistNode({ name: 'MistNode-'+i, protocols: [], coreIp: '127.0.0.1', corePort: 9095 });
                 //var mist = new Mist({ name: 'MistApp-'+i, protocols: [], coreIp: '127.0.0.1', corePort: 9095 });
                 var mist = new WishApp({ name: 'WishApp-'+i, protocols: [], coreIp: '127.0.0.1', corePort: 9095 });
@@ -52,19 +52,12 @@ describe('Multi Mist', function () {
                 setTimeout(function() {
                     var expired = false;
                     mist.request('signals', [], function(err, data) {
-                        console.log('signals in WishApp-'+i+": ", data); //, ' (waiting for signals: '+count+')');
+                        //console.log('signals in WishApp-'+i+": ", data); //, ' (waiting for signals: '+count+')');
                         if (expired) { return; } else { expired = true; }
                         if( --count === 0 ) { checkServiceList(done); }
                     });
                 }, 200);
             })(i);
         }
-    });
-    
-    it('should', function(done) {
-        list[0].request('services.list', [], function(err, data) {
-            console.log('Here we see the instances:', err, data);
-            done();
-        });
     });
 });

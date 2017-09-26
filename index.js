@@ -181,6 +181,29 @@ Mist.prototype.requestBare = function(op, args, cb) {
     return id;
 };
 
+Mist.prototype.requestNode = function(op, args, cb) {
+    return this.requestNodeBare(op, args, function(res) {
+        //console.log('requestBare cb:', arguments);
+        if(res.err) { return cb(true, res.data); }
+        
+        cb(null, res.data);
+    });
+};
+
+Mist.prototype.requestNodeBare = function(op, args, cb) {
+    var id = ++sharedId;
+    var request = { op: op, args: args, id: id };
+    
+    // store callback for response
+    this.requests[id] = cb;
+
+    //console.log("Making request", request, this);
+    
+    this.api.request("mistnode", BSON.serialize(request));
+    
+    return id;
+};
+
 Mist.prototype.requestCancel = function(id) {
     var request = { cancel: id };
     this.api.request("mist", BSON.serialize(request));
