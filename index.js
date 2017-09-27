@@ -37,6 +37,8 @@ function Mist(opts) {
     this.opts = opts;
     
     //console.log('Starting with opts:', opts);
+    
+    setTimeout(function() { self.emit('ready'); }, 200);
 
     this.api = new MistApi(function (event, data) {
         if (!event && !data) {
@@ -137,6 +139,8 @@ function Mist(opts) {
     // keep track of instances to shut them down on exit.
     instances.push(this);
 }
+
+inherits(Mist, EventEmitter);
 
 Mist.prototype.shutdown = function() {
     this.api.request("kill", BSON.serialize({ kill: true }));

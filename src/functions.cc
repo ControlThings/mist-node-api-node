@@ -659,9 +659,9 @@ static void mist_node_api_callback(rpc_client_req* req, void *ctx, const uint8_t
     bson_iterator it;
     if (BSON_INT != bson_find_from_buffer(&it, (const char*)payload, "ack") ) {
         if (BSON_INT != bson_find_from_buffer(&it, (const char*)payload, "sig") ) {
-            if (BSON_INT != bson_find_from_buffer(&it, (const char*)payload, "end") ) {
-                // if not ack, sig or end, just bail
-                bson_visit("mist_node_api_callback got mysterious message (no, ack, sig, end present)", payload);
+            if (BSON_INT != bson_find_from_buffer(&it, (const char*)payload, "err") ) {
+                // if not ack, sig or err, just bail
+                bson_visit("mist_node_api_callback got mysterious message (no, ack, sig or err present)", payload);
                 return;
            }
         }
@@ -1045,8 +1045,17 @@ static void mist_app_periodic_cb_impl(void* ctx) {
             }
         } else {
             if(msg->type == 1) { // WISH
-                //printf("### Wish Api requests are disabled in MistNodeApi\n");
-                //wish_api_request(mist_app->app, &bs, mist_response_cb);
+                bson bs;
+                bson_init_with_data(&bs, msg->data);
+                
+                bson_iterator it;
+                bson_find(&it, &bs, "cancel");
+
+                if (bson_iterator_type(&it) == BSON_INT) {
+                    wish_core_request_cancel(opts->wish_app, bson_iterator_int(&it));
+                } else {
+                    wish_core_request_context(opts->wish_app, &bs, wish_response_cb, opts->mist);
+                }
             } else if (msg->type == 2) { // MIST
                 printf("### MistApi call from a Node instance, this is not good!\n");
             } else if (msg->type == 3) { // MIST NODE API
