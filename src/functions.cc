@@ -88,6 +88,40 @@ bool injectMessage(Mist* mist, int type, uint8_t *msg, int len) {
     return true;
 }
 
+static Mist* instance_by_mist_app(mist_app_t* mist_app) {
+    if (mist_app == NULL) { return NULL; }
+    
+    struct wish_app_core_opt* opts;
+    
+    LL_FOREACH(wish_app_core_opts, opts) {
+        if(opts->mist_app == mist_app) {
+            return opts->mist;
+            break;
+        }
+    }
+    
+    printf("instance_by_mist_app: Failed finding Mist instance. Pointer is: %p\n", mist_app);
+    
+    return NULL;
+}
+
+static Mist* instance_by_app(app_t* app) {
+    if (app == NULL) { return NULL; }
+    
+    struct wish_app_core_opt* opts;
+    
+    LL_FOREACH(wish_app_core_opts, opts) {
+        if(opts->app == app) {
+            return opts->mist;
+            break;
+        }
+    }
+    
+    printf("instance_by_app: Failed finding Mist instance. Pointer is: %p\n", app);
+    
+    return NULL;
+}
+
 static void mist_response_cb(struct wish_rpc_entry* req, void* ctx, const uint8_t* data, size_t data_len) {
     
     if (req == NULL) {
@@ -150,16 +184,7 @@ static enum mist_error hw_read(mist_ep* ep, mist_buf* result) {
 }
 
 static enum mist_error hw_write(mist_ep* ep, mist_buf data) {
-    Mist* mist = NULL;
-    struct wish_app_core_opt* opts;
-    
-    LL_FOREACH(wish_app_core_opts, opts) {
-        if(opts->mist_app == ep->model->mist_app) {
-            mist = opts->mist;
-            //printf("    found Mist* %p\n", mist);
-            break;
-        }
-    }
+    Mist* mist = instance_by_mist_app(ep->model->mist_app);
     
     if (mist == NULL) {
         printf("Failed finding mist instance to call write... bailing out!\n");
@@ -206,17 +231,7 @@ static enum mist_error hw_write(mist_ep* ep, mist_buf data) {
 
 static enum mist_error hw_invoke(mist_ep* ep, mist_buf args) {
     //printf("in hw_invoke %p\n", ep->model->mist_app);
-    
-    struct wish_app_core_opt* opts;
-    Mist* mist = NULL;
-    
-    LL_FOREACH(wish_app_core_opts, opts) {
-        if(opts->mist_app == ep->model->mist_app) {
-            mist = opts->mist;
-            //printf("    found Mist* %p\n", mist);
-            break;
-        }
-    }
+    Mist* mist = instance_by_mist_app(ep->model->mist_app);
     
     if (mist == NULL) {
         printf("Failed finding mist instance to call... bailing out!\n");
@@ -234,16 +249,7 @@ static enum mist_error hw_invoke(mist_ep* ep, mist_buf args) {
 }
 
 static void online(app_t* app, wish_protocol_peer_t* peer) {
-    Mist* mist = NULL;
-    struct wish_app_core_opt* opts;
-    
-    LL_FOREACH(wish_app_core_opts, opts) {
-        if(opts->app == app) {
-            mist = opts->mist;
-            //printf("online: %s\n", opts->wish_app->name);
-            break;
-        }
-    }
+    Mist* mist = instance_by_app(app);
     
     if (mist == NULL) {
         printf("Failed finding mist instance to call write... bailing out!\n");
@@ -270,17 +276,7 @@ static void online(app_t* app, wish_protocol_peer_t* peer) {
 }
 
 static void offline(app_t* app, wish_protocol_peer_t* peer) {
-    Mist* mist = NULL;
-    struct wish_app_core_opt* opts;
-    
-    LL_FOREACH(wish_app_core_opts, opts) {
-        if(opts->app == app) {
-            mist = opts->mist;
-            //printf("    found Mist* %p\n", mist);
-            //printf("offline: %s\n", opts->wish_app->name);
-            break;
-        }
-    }
+    Mist* mist = instance_by_app(app);
     
     if (mist == NULL) {
         printf("Failed finding mist instance to call write... bailing out!\n");
@@ -305,18 +301,9 @@ static void offline(app_t* app, wish_protocol_peer_t* peer) {
 }
 
 static void mist_online(mist_app_t* mist_app, wish_protocol_peer_t* peer) {
-    WISHDEBUG(LOG_CRITICAL, "mist_online %s %p", mist_app->name, peer);
+    //WISHDEBUG(LOG_CRITICAL, "mist_online %s %p", mist_app->name, peer);
     
-    Mist* mist = NULL;
-    struct wish_app_core_opt* opts;
-    
-    LL_FOREACH(wish_app_core_opts, opts) {
-        if(opts->mist_app == mist_app) {
-            mist = opts->mist;
-            //printf("online: %s\n", opts->wish_app->name);
-            break;
-        }
-    }
+    Mist* mist = instance_by_mist_app(mist_app);
     
     if (mist == NULL) {
         printf("Failed finding mist instance to call write... bailing out!\n");
@@ -343,19 +330,9 @@ static void mist_online(mist_app_t* mist_app, wish_protocol_peer_t* peer) {
 }
 
 static void mist_offline(mist_app_t* mist_app, wish_protocol_peer_t* peer) {
-    WISHDEBUG(LOG_CRITICAL, "mist_offline %s %p", mist_app->name, peer);
+    //WISHDEBUG(LOG_CRITICAL, "mist_offline %s %p", mist_app->name, peer);
 
-    Mist* mist = NULL;
-    struct wish_app_core_opt* opts;
-    
-    LL_FOREACH(wish_app_core_opts, opts) {
-        if(opts->mist_app == mist_app) {
-            mist = opts->mist;
-            //printf("    found Mist* %p\n", mist);
-            //printf("offline: %s\n", opts->wish_app->name);
-            break;
-        }
-    }
+    Mist* mist = instance_by_mist_app(mist_app);
     
     if (mist == NULL) {
         printf("Failed finding mist instance to call write... bailing out!\n");
@@ -380,16 +357,7 @@ static void mist_offline(mist_app_t* mist_app, wish_protocol_peer_t* peer) {
 }
 
 static void frame(app_t* app, const uint8_t* payload, size_t payload_len, wish_protocol_peer_t* peer) {
-    Mist* mist = NULL;
-    struct wish_app_core_opt* opts;
-    
-    LL_FOREACH(wish_app_core_opts, opts) {
-        if(opts->app == app) {
-            mist = opts->mist;
-            //printf("    found Mist* %p\n", mist);
-            break;
-        }
-    }
+    Mist* mist = instance_by_app(app);
     
     if (mist == NULL) {
         printf("Failed finding mist instance to call write... bailing out!\n");
@@ -683,13 +651,35 @@ static void mist_model_parse(const bson* from, mist_model* model) {
     bson_visit_fields(&i, (bson_traverse_flags_t) 0, mist_model_build_visitor, model);
 }
 
+static void mist_node_api_callback(rpc_client_req* req, void *ctx, const uint8_t* payload, size_t payload_len) {
+    Mist* mist = instance_by_mist_app( (mist_app_t*) req->passthru_ctx );
+    
+    if (mist == NULL) { return; }
+    
+    bson_iterator it;
+    if (BSON_INT != bson_find_from_buffer(&it, (const char*)payload, "ack") ) {
+        if (BSON_INT != bson_find_from_buffer(&it, (const char*)payload, "sig") ) {
+            if (BSON_INT != bson_find_from_buffer(&it, (const char*)payload, "end") ) {
+                // if not ack, sig or end, just bail
+                bson_visit("mist_node_api_callback got mysterious message (no, ack, sig, end present)", payload);
+                return;
+           }
+        }
+    }
+    
+    // warning! writing to the const char* payload
+    bson_inplace_set_long(&it, req->passthru_id);
+
+    Message msg("mistnode", (uint8_t*) payload, (int) payload_len);
+
+    mist->sendToNode(msg);
+}
+
 static void mist_node_api_handler(mist_app_t* mist_app, input_buf* msg) {
     mist_model* model = &mist_app->model;
 
     bson bs;
     bson_init_with_data(&bs, msg->data);
-    
-    bson_visit("mist_node_api_handler:", (const uint8_t*)msg->data);
     
     bson_iterator it;
     bson_find_from_buffer(&it, msg->data, "model");
@@ -717,10 +707,37 @@ static void mist_node_api_handler(mist_app_t* mist_app, input_buf* msg) {
         bson_find_from_buffer(&it, msg->data, "op");
 
         if (bson_iterator_type(&it) == BSON_STRING) {
-            WISHDEBUG(LOG_CRITICAL, "MistNode request");
-            //int id = bson_iterator_int(&it);
+            //WISHDEBUG(LOG_CRITICAL, "MistNode request");
             
-            //mist_invoke_response(mist_app->server, id, (uint8_t*) msg->data);
+            /*
+             { peer: { luid, ruid... }, op: string, args: [arg1, arg2, ...], id: n }
+            */
+            
+            if (BSON_INT != bson_find_from_buffer(&it, msg->data, "id")) {
+                WISHDEBUG(LOG_CRITICAL, "mist_node_api_handler: id is not BSON_INT but: %i", bson_iterator_type(&it));
+                return;
+            }
+            int id = bson_iterator_int(&it);
+            
+            //const char* op = bson_iterator_string(&it);
+            
+            if (BSON_OBJECT != bson_find_from_buffer(&it, msg->data, "peer")) {
+                WISHDEBUG(LOG_CRITICAL, "peer is not object but %i", bson_iterator_type(&it));
+                return;
+            }
+            
+            wish_protocol_peer_t* peer = wish_protocol_peer_find_from_bson(&mist_app->protocol, (const uint8_t*)bson_iterator_value(&it));
+            
+            wish_rpc_id_t mist_id = mist_app_request(mist_app, peer, (uint8_t*)msg->data, msg->len, mist_node_api_callback);
+            
+            rpc_client_req* req = find_request_entry(&mist_app->protocol.rpc_client, mist_id);
+            if (req == NULL) {
+                WISHDEBUG(LOG_CRITICAL, "Could not find request %i", mist_id);
+                return;
+            }
+            req->passthru_id = id;
+            req->passthru_ctx = mist_app;
+            
             return;
         }
 

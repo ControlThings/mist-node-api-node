@@ -113,7 +113,7 @@ function Mist(opts) {
             return;
         }
 
-        if (event === 'mist' || event === 'wish') {
+        if (event === 'mist' || event === 'mistnode' || event === 'wish') {
 
             var id = msg.ack || msg.sig || msg.end || msg.err;
 
@@ -181,8 +181,8 @@ Mist.prototype.requestBare = function(op, args, cb) {
     return id;
 };
 
-Mist.prototype.requestNode = function(op, args, cb) {
-    return this.requestNodeBare(op, args, function(res) {
+Mist.prototype.requestNode = function(peer, op, args, cb) {
+    return this.requestNodeBare(peer, op, args, function(res) {
         //console.log('requestBare cb:', arguments);
         if(res.err) { return cb(true, res.data); }
         
@@ -190,9 +190,9 @@ Mist.prototype.requestNode = function(op, args, cb) {
     });
 };
 
-Mist.prototype.requestNodeBare = function(op, args, cb) {
+Mist.prototype.requestNodeBare = function(peer, op, args, cb) {
     var id = ++sharedId;
-    var request = { op: op, args: args, id: id };
+    var request = { peer: peer, op: op, args: args, id: id };
     
     // store callback for response
     this.requests[id] = cb;
