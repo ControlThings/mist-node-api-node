@@ -146,7 +146,7 @@ describe('Mist Invite', function () {
             broken: { label: 'Device is broken', type: 'bool', read: true, write: true } 
         });
         
-        node.write(function(epid, data) {
+        node.write(function(epid, peer, data) {
             console.log(nodeName +' write:', epid, data);
         });
         

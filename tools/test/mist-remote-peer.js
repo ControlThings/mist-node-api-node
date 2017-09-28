@@ -103,11 +103,11 @@ describe('Mist remote peer', function () {
         node.update('lon', 65.543);
         
         // used for invoke test
-        node.invoke('config', function(args, cb) {
+        node.invoke('config', function(args, peer, cb) {
             cb({ cool: ['a', 7, true], echo: args });
         });
         
-        node.write(function(epid, data) {
+        node.write(function(epid, peer, data) {
             console.log('Node write:', epid, data);
         });
         

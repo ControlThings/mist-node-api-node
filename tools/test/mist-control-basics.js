@@ -43,7 +43,7 @@ describe('MistApi Control', function () {
             } 
         });
         
-        node.write(function(epid, data) {
+        node.write(function(epid, peer, data) {
             console.log('Node write:', epid, data);
         });
         

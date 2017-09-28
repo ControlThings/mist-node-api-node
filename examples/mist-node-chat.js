@@ -78,7 +78,7 @@ process.stdin.on('data', function(data) {
     node.update('msg', data.toString().trim());
 });
 
-node.write(function(epid, value) {
+node.write(function(epid, peer, value) {
     node.update(epid, value);
 });
 

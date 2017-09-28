@@ -132,7 +132,7 @@ describe('Mist Mappings', function () {
             output: { label: 'output', type: 'bool', read: true, write: true } 
         });
         
-        node.write(function(epid, data) {
+        node.write(function(epid, peer, data) {
             console.log('Src Node write:', epid, data);
         });
         
@@ -146,7 +146,7 @@ describe('Mist Mappings', function () {
             input: { label: 'input', type: 'bool', read: true, write: true } 
         });
         
-        node.write(function(epid, data) {
+        node.write(function(epid, peer, data) {
             console.log('Dst Node write:', epid, data);
         });
         
