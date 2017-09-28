@@ -81,7 +81,7 @@ function Mist(opts) {
         }
 
         if (event === 'write' && typeof self.writeCb === 'function') {
-            self.writeCb(msg.epid, msg.data);
+            self.writeCb(msg.write.epid, msg.peer, msg.write.data);
             return;
         }
 

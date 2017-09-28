@@ -192,9 +192,23 @@ static enum mist_error hw_write(mist_ep* ep, wish_protocol_peer_t* peer, mist_bu
         return MIST_ERROR;
     }
     
+    // get full endpoint path
+    char full_id[256] = {'\0'};
+    mist_ep_full_epid(ep, full_id);
+    
     bson bs;
-    bson_init(&bs);
-    bson_append_string(&bs, "epid", ep->id);
+    bson_init_size(&bs, 1024);
+    
+    bson_append_start_object(&bs, "peer");
+    bson_append_binary(&bs, "luid", (char*) peer->luid, WISH_ID_LEN);
+    bson_append_binary(&bs, "ruid", (char*) peer->ruid, WISH_ID_LEN);
+    bson_append_binary(&bs, "rhid", (char*) peer->rhid, WISH_WHID_LEN);
+    bson_append_binary(&bs, "rsid", (char*) peer->rsid, WISH_WSID_LEN);
+    bson_append_string(&bs, "protocol", peer->protocol);
+    bson_append_finish_object(&bs);
+
+    bson_append_start_object(&bs, "write");
+    bson_append_string(&bs, "epid", full_id);
     
     if (ep->type == MIST_TYPE_FLOAT) {
         double v = *((double*) data.base);
@@ -220,7 +234,8 @@ static enum mist_error hw_write(mist_ep* ep, wish_protocol_peer_t* peer, mist_bu
     } else {
         printf("Unsupported MIST_TYPE %i\n", ep->type);
     }
-    
+
+    bson_append_finish_object(&bs);
     bson_finish(&bs);
 
     Message msg("write", (uint8_t*) bson_data(&bs), bson_size(&bs));
@@ -240,12 +255,19 @@ static enum mist_error hw_invoke(mist_ep* ep, wish_protocol_peer_t* peer, mist_b
         printf("Failed finding mist instance to call... bailing out!\n");
         return MIST_ERROR;
     }
+    // get full endpoint path
+    char full_id[256] = {'\0'};
+    mist_ep_full_epid(ep, full_id);
     
-    bson bs;
-    bson_init_with_data(&bs, args.base);
+    bson_iterator args_it;
+    // FIXME: Not sure this works for all data types
+    if ( BSON_EOO == bson_find_from_buffer(&args_it, args.base, "args") ) { return MIST_ERROR; }
+    
+    bson_iterator id_it;
+    if ( BSON_INT != bson_find_from_buffer(&id_it, args.base, "id") ) { return MIST_ERROR; }
     
     bson b;
-    bson_init(&b);
+    bson_init_size(&b, 1024);
     bson_append_start_object(&b, "peer");
     bson_append_binary(&b, "luid", (char*) peer->luid, WISH_ID_LEN);
     bson_append_binary(&b, "ruid", (char*) peer->ruid, WISH_ID_LEN);
@@ -253,7 +275,12 @@ static enum mist_error hw_invoke(mist_ep* ep, wish_protocol_peer_t* peer, mist_b
     bson_append_binary(&b, "rsid", (char*) peer->rsid, WISH_WSID_LEN);
     bson_append_string(&b, "protocol", peer->protocol);
     bson_append_finish_object(&b);
-    bson_append_bson(&b, "invoke", &bs);
+    
+    bson_append_start_object(&b, "invoke");
+    bson_append_string(&b, "epid", full_id);
+    bson_append_element(&b, "args", &args_it);
+    bson_append_int(&b, "id", bson_iterator_int(&id_it));
+    bson_append_finish_object(&b);
     bson_finish(&b);
     
     // epid args id

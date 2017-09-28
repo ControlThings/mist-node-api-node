@@ -41,19 +41,29 @@ describe('MistApi Control', function () {
         node = new MistNode({ name: 'ControlThings', corePort: 9095 }); // , coreIp: '127.0.0.1'
         
         node.create({
+            mist: {
+                type: 'string',
+                '#': {
+                    name: { label: 'Name', type: 'string', read: true, write: true }
+                }
+            },
             enabled: { label: 'Enabled', type: 'bool', read: true, write: true },
             lon: { label: 'Longitude', type: 'float', read: true },
-            counter: { label: 'Counter', type: 'int', read: true, write: true },
-            name: { label: 'Name', type: 'string', read: true, write: true },
-            config: { label: 'Config', type: 'invoke', invoke: true }
+            device: {
+                type: 'string',
+                '#': {
+                    config: { label: 'Config', type: 'invoke', invoke: true }
+                }
+            },
+            counter: { label: 'Counter', type: 'int', read: true, write: true }
         });
         
-        node.invoke('config', function(args, cb) {
+        node.invoke('device.config', function(args, peer, cb) {
             cb({ cool: ['a', 7, true], echo: args });
         });
         
-        node.write(function(epid, data) {
-            //console.log('Node write:', epid, data);
+        node.write(function(epid, peer, data) {
+            //console.log('Node write:', epid, peer, data);
         });
         
         setTimeout(done, 200);
@@ -114,7 +124,7 @@ describe('MistApi Control', function () {
     it('shuold test control.model', function(done) {
         mist.request('mist.control.model', [peer], function (err, model) {
             if (err) { return done(new Error(inspect(model))); }
-            console.log("Got a model:", err, model);
+            //console.log("Got a model:", err, model);
             done();
         });
     });
@@ -231,31 +241,31 @@ describe('MistApi Control', function () {
     var string = 'A balloon, celebrating arrays of characters.';
     
     it('shuold test control.write(value: string)', function(done) {
-        mist.request('mist.control.write', [peer, 'name', string], function (err, data) {
+        mist.request('mist.control.write', [peer, 'mist.name', string], function (err, data) {
             if (err) {
                 return done(new Error(inspect(data)));
             }
             
-            console.log("mist.control.write(name: string):", err, data);
+            //console.log("mist.control.write(name: string):", err, data);
             done();
         });
     });
     
     it('shuold test control.read string', function(done) {
-        mist.request('mist.control.read', [peer, 'name'], function (err, data) {
+        mist.request('mist.control.read', [peer, 'mist.name'], function (err, data) {
             if (err) {
                 return done(new Error(inspect(data)));
             }
             
             if (data !== string) { return done(new Error('Read did not return the string written in previous test.')); }
             
-            console.log("mist.control.read(name: string):", err, data);
+            //console.log("mist.control.read(name: string):", err, data);
             done();
         });
     });
     
     it('shuold test control.invoke', function(done) {
-        mist.request('mist.control.invoke', [peer, 'config', 'a-string'], function (err, data) {
+        mist.request('mist.control.invoke', [peer, 'device.config', 'a-string'], function (err, data) {
             if (err) { return done(new Error(data.msg)); }
 
             if (typeof data.echo === 'string') {
@@ -267,7 +277,7 @@ describe('MistApi Control', function () {
     });
     
     it('shuold test control.invoke', function(done) {
-        mist.request('mist.control.invoke', [peer, 'config', { complex: [1, true, "Three"] }], function (err, data) {
+        mist.request('mist.control.invoke', [peer, 'device.config', { complex: [1, true, "Three"] }], function (err, data) {
             if (err) { return done(new Error(data.msg)); }
 
             if (typeof data.echo === 'object') {
@@ -279,7 +289,7 @@ describe('MistApi Control', function () {
     });
     
     it('shuold test control.invoke with no value argument', function(done) {
-        mist.request('mist.control.invoke', [peer, 'config'], function (err, data) {
+        mist.request('mist.control.invoke', [peer, 'device.config'], function (err, data) {
             if (err) { return done(new Error(data.msg)); }
 
             //console.log('control.invoke with no value argument returned ', err, data);
