@@ -86,15 +86,15 @@ function Mist(opts) {
         }
 
         if (event === 'invoke') {
-            if(typeof self.invokeCb[msg.epid] === 'function') {
-                self.invokeCb[msg.epid](msg.args, (function (id) {
+            if(typeof self.invokeCb[msg.invoke.epid] === 'function') {
+                self.invokeCb[msg.invoke.epid](msg.invoke.args, msg.peer, (function (id) {
                     return function(data) {
                         var request = { invoke: id, data: data };
                         self.api.request("mistnode", BSON.serialize(request));
                     }; 
-                })(msg.id));
+                })(msg.invoke.id));
             } else {
-                console.log("There is no invoke function registered for", msg.epid );
+                console.log("There is no invoke function registered for", msg.invoke.epid );
             }
 
             return;

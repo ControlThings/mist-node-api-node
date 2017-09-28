@@ -83,6 +83,7 @@ Mist::Execute(const AsyncProgressWorker::ExecutionProgress& progress) {
 
             if(success) { 
                 //printf("AsyncQueueWorker::injectMessage %s\n", name.c_str());
+                free(m.msg);
                 break; 
             } else {
                 //printf("Injecting message waiting for my turn. Mist is busy.\n");
