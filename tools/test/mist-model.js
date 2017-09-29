@@ -38,10 +38,6 @@ describe('MistApi Control', function () {
             cb({ cool: ['a', 7, true], echo: args });
         });
         
-        node.write(function(epid, peer, data) {
-            console.log('Node write:', epid, data);
-        });
-        
         setTimeout(done, 200);
     });  
 

@@ -99,8 +99,11 @@ describe('MistApi Sandbox', function () {
             cb({ cool: ['a', 7, true], echo: args });
         });
         
-        node.write(function(epid, peer, data) {
-            console.log('Node write:', epid, data);
+        node.write('enabled', function(value, peer, cb) {
+            console.log('write:', value);
+        });
+        node.write('counter', function(value, peer, cb) {
+            console.log('write:', value);
         });
         
         setTimeout(done, 200);

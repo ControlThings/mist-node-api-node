@@ -10,25 +10,21 @@ describe('MistApi Control', function () {
     
     var name = 'Mr. Andersson';
     
-    before(function (done) {
-        mist = new Mist({ name: 'Generic UI', coreIp: '127.0.0.1', corePort: 9095 });
+    before('should setup calling node', function (done) {
+        mist = new MistNode({ name: 'Generic UI', coreIp: '127.0.0.1', corePort: 9095 });
 
-        setTimeout(function() {
-            mist.request('signals', [], function(err, data) {
-                if(data[0] === 'ready') {
-                    util.clear(mist, function(err) {
-                        if (err) { done(new Error('util.js: Could not clear core.')); }
-                        
-                        util.ensureIdentity(mist, name, function(err, identity) {
-                            if (err) { done(new Error('util.js: Could not ensure identity.')); }
-                            
-                            mistIdentity = identity;
-                            done(); 
-                        });
-                    });
-                }; // else { done(new Error('App not ready, bailing.')); }
+        mist.on('ready', function() {
+            util.clear(mist.wish, function(err) {
+                if (err) { done(new Error('util.js: Could not clear core.')); }
+                
+                util.ensureIdentity(mist.wish, name, function(err, identity) {
+                    if (err) { done(new Error('util.js: Could not ensure identity.')); }
+
+                    mistIdentity = identity;
+                    done(); 
+                });
             });
-        }, 200);
+        });
     });
 
     var peer;
@@ -37,21 +33,20 @@ describe('MistApi Control', function () {
     before('should start a mist node', function(done) {
         node = new MistNode({ name: 'ControlThings', corePort: 9095 }); //, coreIp: '127.0.0.1', corePort: 9095
         node.create({
-            device: 'ControlThings',
-            model: { 
-                state: { label: 'State', type: 'bool', read: true, write: true } 
-            } 
+            state: { label: 'State', type: 'bool', read: true, write: true } 
         });
         
-        node.write(function(epid, peer, data) {
-            console.log('Node write:', epid, data);
+        node.write('state', function(value, peer, cb) {
+            console.log('Node write state:', value);
+            node.update('state', value);
+            cb();
         });
         
         setTimeout(done, 1000);
     });
 
     before('should find the peer', function(done) {
-        function peers(err, data) {
+        function peers(data) {
             for(var i in data) {
                 if ( Buffer.compare(data[i].luid, mistIdentity.uid) === 0 
                         && Buffer.compare(data[i].ruid, mistIdentity.uid) === 0 ) 
@@ -68,28 +63,22 @@ describe('MistApi Control', function () {
             }
         }
         
-        mist.request('signals', [], function(err, signal) { 
-            console.log('signal:', err, signal);
-            
-            if( Array.isArray(signal) ) { signal = signal[0]; } 
-            
-            if (signal === 'peers') {
-                mist.request('listPeers', [], peers);
-            }
-        });
+        mist.onlineCb = function(peer) { 
+            peers([peer]);
+        };
         
-        mist.request('listPeers', [], peers);
+        peers(mist.peers);
     });
     
     it('shuold test control.model', function(done) {
-        mist.request('mist.control.model', [peer], function (err, model) {
+        mist.request(peer, 'control.model', [], function (err, model) {
             if (err) { return done(new Error(inspect(model))); }
             done();
         });
     });
     
     it('shuold test control.write', function(done) {
-        mist.request('mist.control.write', [peer, 'state', true], function (err, model) {
+        mist.request(peer, 'control.write', ['state', true], function (err, model) {
             if (err) { return done(new Error(inspect(model))); }
             done();
         });

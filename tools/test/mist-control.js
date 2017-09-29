@@ -62,8 +62,12 @@ describe('MistApi Control', function () {
             cb({ cool: ['a', 7, true], echo: args });
         });
         
-        node.write(function(epid, peer, data) {
+        node.write('enabled', function(value, peer, cb) {
             //console.log('Node write:', epid, peer, data);
+        });
+        
+        node.write('mist.name', function(value, peer, cb) {
+            //console.log('Node write "mist.name":', value);
         });
         
         setTimeout(done, 200);
@@ -265,6 +269,7 @@ describe('MistApi Control', function () {
     });
     
     it('shuold test control.invoke', function(done) {
+        //console.log('making an invoke to device.config');
         mist.request('mist.control.invoke', [peer, 'device.config', 'a-string'], function (err, data) {
             if (err) { return done(new Error(data.msg)); }
 

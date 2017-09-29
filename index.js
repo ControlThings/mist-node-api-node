@@ -11,13 +11,92 @@ var sharedId = 0;
 
 var instances = [];
 
-/*
-var l = [];
+function Addon(opts) {
+    var self = this;
+    
+    this.api = new MistApi(function (event, data) {
+        if (!event && !data) {
+            // seems to be HandleOKCallback from nan
+            // nan.h: AsyncWorker::WorkComplete(): callback->Call(0, NULL);
+            return;
+        }
+        
+        if (event === 'done') {
+            // Streaming worker is done and has shut down
+            return;
+        }
 
-for(var i=0; i<4; i++) {
-    l.push(new MistApi(function (event, data) { console.log('MistApi callback:', event, data); }, { type: 4, name: 'W'+i }));
+        var msg = null;
+
+        if( Buffer.isBuffer(data) && data.length >= 5 ) {
+            msg = BSON.deserialize(data);
+        }
+
+        if (!msg) { return console.log('Warning! Non BSON message from plugin.', arguments, event, data); }
+
+        if (event === 'online') {
+            self.emit('online', msg.peer);
+            msg.peer.online = true;
+            if (typeof self.onlineCb === 'function') { self.onlineCb(msg.peer); }
+            
+            return;
+        }
+
+        if (event === 'offline') {
+            self.emit('offline', msg.peer);
+            if (typeof self.offlineCb === 'function') { self.offlineCb(msg.peer); }
+
+            return;
+        }
+
+        if (event === 'frame') {
+            self.emit('frame', msg.peer, msg.frame);
+            
+            var payload = BSON.deserialize(msg.frame);
+            if (typeof self.frameCb === 'function') { self.frameCb(msg.peer, payload); }
+
+            return;
+        }
+
+        if (event === 'write') {
+            self.emit('write', msg);
+            return;
+        }
+
+        if (event === 'invoke') {
+            self.emit('invoke', msg);
+            return;
+        }
+
+        if (event === 'wish') {
+            self.emit('wish', msg);
+            return;
+        }
+
+        if (event === 'mist') {
+            self.emit('mist', msg);
+            return;
+        }
+
+        if (event === 'sandboxed') {
+            self.emit('sandboxed', msg);
+            return;
+        }
+
+        if (event === 'mistnode') {
+            self.emit('mistnode', msg);
+            return;
+        }
+        
+        console.log('Received an event from native addon which was unhandled.', event, msg);
+    }, opts);
 }
-*/
+
+inherits(Addon, EventEmitter);
+
+Addon.prototype.request = function(target, payload) {
+    this.api.request(target, payload);
+};
 
 function Mist(opts) {
     //console.log("Nodejs new Mist()", opts);
@@ -119,7 +198,7 @@ function Mist(opts) {
 
             var id = msg.ack || msg.sig || msg.end || msg.err;
 
-            //console.log("the answer is:", require('util').inspect(msg, { colors: true, depth: 10 }));
+            //console.log(event +": the answer is:", require('util').inspect(msg, { colors: true, depth: 10 }));
 
             if(typeof self.requests[id] === 'function') {
                 self.requests[id](msg);
@@ -256,14 +335,132 @@ Mist.prototype.registerSandbox = function(sandbox) {
 };
 
 function MistNode(opts) {
-    //console.log("creating new MistNode.....");
+    //console.log("Nodejs new Mist()", opts);
+    
+    var self = this;
+    this.requests = {};
+    this.invokeCb = {};
+    this.writeCb = {};
+    this.peers = [];
+
     if (!opts) { opts = {}; }
+
+    // Default to MistApi
+    if (!opts.type) { opts.type = 3; }
     
-    // force type to MistNodeApi
-    opts.type = 3;
+    this.opts = opts;
+
+    this.addon = new Addon(opts);
     
-    return new Mist(opts);
+    this.addon.on('mistnode', function(msg) {
+        var id = msg.ack || msg.sig || msg.end || msg.err;
+
+        if(typeof self.requests[id] === 'function') {
+            self.requests[id](msg);
+
+            if(!msg.sig) {
+                delete self.requests[id];
+            }
+        } else {
+            console.log('Request not found for response:', id, self, self.requests);
+        }
+    });
+    
+    this.addon.on('online', function(peer) {
+        self.peers.push(peer);
+    });
+    
+    this.addon.on('write', function(msg) {
+        if(typeof self.writeCb[msg.write.epid] === 'function') {
+            self.writeCb[msg.write.epid](msg.write.data, msg.peer, function () {
+                console.log('write should send ack');
+            });
+        } else {
+            console.log("There is no write function registered for", msg.write.epid );
+        }
+    });
+
+    this.addon.on('invoke', function(msg) {
+        if(typeof self.invokeCb[msg.invoke.epid] === 'function') {
+            self.invokeCb[msg.invoke.epid](msg.invoke.args, msg.peer, (function (id) {
+                return function(data) {
+                    var request = { invoke: id, data: data };
+                    self.addon.request("mistnode", BSON.serialize(request));
+                }; 
+            })(msg.invoke.id));
+        } else {
+            console.log("There is no invoke function registered for", msg.invoke.epid );
+        }
+    });
+
+    this.wish = new WishAppInner(this.addon);
+    
+    // keep track of instances to shut them down on exit.
+    instances.push(this);
+    
+    // FIXME get ready signal from wish-app connecting to core
+    setTimeout(function() { self.emit('ready'); }, 200);
 }
+
+inherits(MistNode, EventEmitter);
+
+MistNode.prototype.shutdown = function() {
+    this.addon.request("kill", BSON.serialize({ kill: true }));
+};
+
+MistNode.prototype.create = function(model, cb) {
+    var id = ++sharedId;
+    var request = { model: model };
+    
+    // store callback for response
+    this.requests[id] = cb;
+    
+    this.addon.request("mistnode", BSON.serialize(request));
+};
+
+MistNode.prototype.update = function(ep, value) {
+    var request = { update: ep, value: value };
+    
+    this.addon.request("mistnode", BSON.serialize(request));
+};
+
+MistNode.prototype.request = function(peer, op, args, cb) {
+    return this.requestBare(peer, op, args, function(res) {
+        //console.log('requestBare cb:', arguments);
+        if(res.err) { return cb(true, res.data); }
+        
+        cb(null, res.data);
+    });
+};
+
+MistNode.prototype.requestBare = function(peer, op, args, cb) {
+    var id = ++sharedId;
+    var request = { peer: peer, op: op, args: args, id: id };
+    
+    // store callback for response
+    this.requests[id] = cb;
+
+    //console.log("Making request", request, this);
+    
+    this.addon.request("mistnode", BSON.serialize(request));
+    
+    return id;
+};
+
+MistNode.prototype.requestCancel = function(id) {
+    var request = { cancel: id };
+    this.addon.request("mistnode", BSON.serialize(request));
+};
+
+// register write handler for epid
+MistNode.prototype.write = function(epid, cb) {
+    this.writeCb[epid] = cb;
+};
+
+// register invoke handler for epid
+MistNode.prototype.invoke = function(epid, cb) {
+    this.invokeCb[epid] = cb;
+};
 
 function Sandboxed(mist, sandboxId) {
     if (!mist || !mist.opts || !mist.opts.type === 2) {
@@ -320,6 +517,80 @@ function copy(that) {
     
     return copy;
 }
+
+function WishAppInner(addon) {
+    var self = this;
+    this.peers = [];
+    this.requests = {};
+    this.addon = addon;
+    
+    setTimeout(function() { self.emit('ready'); }, 200);
+    
+    addon.on('online', function(peer) {
+        if (typeof self.onlineCb === 'function') { self.onlineCb(peer); }
+        self.peers.push(peer);
+    });
+    
+    addon.on('offline', function(peer) {
+        if (typeof self.offlineCb === 'function') { self.offlineCb(peer); }
+    });
+    
+    addon.on('frame', function(peer, data) {
+        if (typeof self.frameCb === 'function') { self.frameCb(peer, data); }
+    });
+
+    addon.on('wish', function(msg) {
+        var id = msg.ack || msg.sig || msg.end || msg.err;
+
+        if(typeof self.requests[id] === 'function') {
+            self.requests[id](msg);
+
+            if(!msg.sig) {
+                delete self.requests[id];
+            }
+        } else {
+            console.log('Request not found for response:', id, self, self.requests);
+        }
+    });
+}
+
+inherits(WishAppInner, EventEmitter);
+
+WishAppInner.prototype.send = function(peer, message, cb) {
+    this.request('services.send', [peer, message], cb || function() {});
+};
+
+WishAppInner.prototype.broadcast = function(message) {
+    for(var i in this.peers) {
+        this.request('services.send', [this.peers[i], message], function() {});
+    }
+};
+
+WishAppInner.prototype.request = function(op, args, cb) {
+    if (typeof cb !== 'function') { console.log("not function:", new Error().stack); }
+    return this.requestBare(op, args, function(res) {
+        if(res.err) { return cb(true, res.data); }
+        
+        cb(null, res.data);
+    });
+};
+
+WishAppInner.prototype.requestBare = function(op, args, cb) {
+    var id = ++sharedId;
+    var request = { op: op, args: typeof args === 'undefined' ? [] : args, id: id };
+    
+    // store callback for response
+    this.requests[id] = cb;
+    
+    this.addon.request("wish", BSON.serialize(request));
+
+    return id;
+};
+
+WishApp.prototype.cancel = function(id) {
+    var request = { cancel: id };
+    this.addon.request("wish", BSON.serialize(request));
+};
 
 function WishApp(opts) {
     if (!opts) { opts = {}; }

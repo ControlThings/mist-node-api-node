@@ -102,8 +102,8 @@ describe('MistApi Sandbox', function () {
             state: { label: 'State', type: 'bool', read: true, write: true } 
         });
         
-        node.write(function(epid, peer, data) {
-            console.log('Node write:', epid, data);
+        node.write('state', function(value, peer, cb) {
+            console.log('write "state":', value);
         });
         
         setTimeout(done, 100);

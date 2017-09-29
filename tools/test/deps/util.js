@@ -33,7 +33,7 @@ function clear(mist, done) {
             }
             
             if (t===0) {
-                console.log("Identity does not exist.");
+                //console.log("Identity does not exist.");
                 done();
             }
         });
