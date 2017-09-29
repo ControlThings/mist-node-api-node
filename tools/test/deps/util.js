@@ -1,14 +1,11 @@
 
 function clear(mist, done) {
-    var isMistApi = true;
-        
-    if (typeof mist.wish !== 'function') {
-        mist = { wish: mist.request.bind(mist) };
-        isMistApi = false;
-    }
+    var isMistApi = typeof mist.wish === 'object' && typeof mist.node === 'object';
 
+    var wish = typeof mist.wish === 'object' ? mist.wish : mist;
+    
     function removeIdentity(done) {
-        mist.wish('identity.list', [], function(err, data) {
+        wish.request('identity.list', [], function(err, data) {
             if (err) { return done(new Error(inspect(data))); }
             
             //console.log("removeIdentity has data", data);
@@ -20,7 +17,7 @@ function clear(mist, done) {
             
             for(var i in data) {
                 (function (uid) {
-                    mist.wish('identity.remove', [uid], function(err, data) {
+                    wish.request('identity.remove', [uid], function(err, data) {
                         if (err) { return done(new Error(inspect(data))); }
 
                         //console.log("Deleted.", err, data);
@@ -46,6 +43,7 @@ function clear(mist, done) {
         var t = 0;
         
         if (isMistApi) {
+            // clear the sandboxes
             mist.request('sandbox.list', [], function (err, data) {
                 //console.log('sandbox.list', err, data);
                 
@@ -81,12 +79,10 @@ function clear(mist, done) {
 }
 
 function ensureIdentity(mist, alias, cb) {
-    if (typeof mist.wish !== 'function') {
-        mist = { wish: mist.request.bind(mist) };
-    }
+    var wish = typeof mist.wish === 'object' ? mist.wish : mist;
     
     //console.log("should create identity: getting identity list");
-    mist.wish('identity.create', [alias], function(err, data) {
+    wish.request('identity.create', [alias], function(err, data) {
         //console.log("identity.create('"+alias+"'): cb", err, data);
         cb(null, data);
     });

@@ -9,7 +9,7 @@ describe('MistApi Control', function () {
     var mistIdentity;
     var name = 'Mr. Andersson';
     
-    before(function (done) {
+    before('should setup MistApi', function (done) {
         // TODO fix this workaround which stops done being called several times ocationally...
         var done2 = function() { done(); done = function() {}; };
         
