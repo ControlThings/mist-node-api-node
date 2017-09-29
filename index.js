@@ -194,44 +194,6 @@ Mist.prototype.requestCancel = function(id) {
     this.addon.request("mist", BSON.serialize(request));
 };
 
-Mist.prototype.wish = function(op, args, cb) {
-    return this.wishBare(op, args, function(res) {
-        if(res.err) { return cb(true, res.data); }
-        
-        cb(null, res.data);
-    });
-};
-
-Mist.prototype.wishBare = function(op, args, cb) {
-    var id = ++sharedId;
-    var request = { op: op, args: typeof args === 'undefined' ? [] : args, id: id };
-    
-    // store callback for response
-    this.requests[id] = cb;
-    
-    this.addon.request("wish", BSON.serialize(request));
-
-    return id;
-};
-
-Mist.prototype.wishCancel = function(id) {
-    var request = { cancel: id };
-    this.addon.request("wish", BSON.serialize(request));
-};
-
-Mist.prototype.core = Mist.prototype.wish;
-
-Mist.prototype.coreCancel = Mist.prototype.wishCancel;
-
-Mist.prototype.write = function(cb) {
-    this.writeCb = cb;
-};
-
-Mist.prototype.invoke = function(epid, cb) {
-    this.invokeCb[epid] = cb;
-    //console.log("Registering invoke for epid:", epid, this.invokeCb);
-};
-
 Mist.prototype.registerSandbox = function(sandbox) {
     this.sandbox = sandbox;
 };
@@ -240,6 +202,9 @@ function MistNodeInner(addon) {
     var self = this;
     this.peers = [];
     this.requests = {};
+    this.invokeCb = {};
+    this.writeCb = {};
+    
     this.addon = addon;
     
     setTimeout(function() { self.emit('ready'); }, 200);
@@ -268,6 +233,29 @@ function MistNodeInner(addon) {
             }
         } else {
             console.log('Request not found for response:', id, self, self.requests);
+        }
+    });
+    
+    this.addon.on('write', function(msg) {
+        if(typeof self.writeCb[msg.write.epid] === 'function') {
+            self.writeCb[msg.write.epid](msg.write.data, msg.peer, function () {
+                console.log('write should send ack');
+            });
+        } else {
+            console.log("There is no write function registered for", msg.write.epid );
+        }
+    });
+
+    this.addon.on('invoke', function(msg) {
+        if(typeof self.invokeCb[msg.invoke.epid] === 'function') {
+            self.invokeCb[msg.invoke.epid](msg.invoke.args, msg.peer, (function (id) {
+                return function(data) {
+                    var request = { invoke: id, data: data };
+                    self.addon.request("mistnode", BSON.serialize(request));
+                }; 
+            })(msg.invoke.id));
+        } else {
+            console.log("There is no invoke function registered for", msg.invoke.epid );
         }
     });
 }
@@ -314,6 +302,16 @@ MistNodeInner.prototype.requestBare = function(op, args, cb) {
 MistNodeInner.prototype.requestCancel = function(id) {
     var request = { cancel: id };
     this.addon.request("mistnode", BSON.serialize(request));
+};
+
+// register write handler for epid
+MistNodeInner.prototype.write = function(epid, cb) {
+    this.writeCb[epid] = cb;
+};
+
+// register invoke handler for epid
+MistNodeInner.prototype.invoke = function(epid, cb) {
+    this.invokeCb[epid] = cb;
 };
 
 function MistNode(opts) {
