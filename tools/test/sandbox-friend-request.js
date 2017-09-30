@@ -150,7 +150,7 @@ describe('MistApi Sandbox', function () {
     });
     
     before(function(done) {
-        mist2.wish('identity.list', [], function(err, data) {
+        mist2.wish.request('identity.list', [], function(err, data) {
             console.log('services.list', err, data);
             done();
         });

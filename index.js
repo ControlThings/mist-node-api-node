@@ -452,7 +452,7 @@ function Sandboxed(mist, sandboxId) {
         throw new Error('Sandbox constructor parameter 2 must be Buffer(len:32).');
     }
     
-    this.api = mist.api;
+    this.addon = mist.addon;
     this.sandboxId = sandboxId;
     this.mist = mist;
     mist.registerSandbox(this);
@@ -476,7 +476,7 @@ Sandboxed.prototype.requestBare = function(op, args, cb) {
     // store callback for response in the mist object
     this.mist.requests[id] = cb;
     
-    this.api.request('sandboxed', BSON.serialize(request));
+    this.addon.request('sandboxed', BSON.serialize(request));
 
     return id;
 };
@@ -487,7 +487,7 @@ Sandboxed.prototype.requestCancel = function(id) {
     
     setTimeout(function() { if(self.mist.requests[id]) { delete self.mist.requests[id]; } }, 500);
     
-    this.api.request('sandboxed', BSON.serialize(request));
+    this.addon.request('sandboxed', BSON.serialize(request));
 };
 
 function copy(that) {
