@@ -6,7 +6,7 @@ var util = require('./deps/util.js');
 describe('MistApi Sandbox', function () {
     var mist;
     
-    before(function (done) {
+    before('Setup Generic UI', function (done) {
         mist = new Mist({ name: 'Generic UI', corePort: 9095 });
 
         setTimeout(function() {
@@ -122,7 +122,7 @@ describe('MistApi Sandbox', function () {
     });
     
     it('shuold list wish identities', function(done) {
-        mist.wish('identity.list', [], function(err, data) {
+        mist.wish.request('identity.list', [], function(err, data) {
             console.log("all identities", err, data);
             done();
         });
@@ -170,7 +170,7 @@ describe('MistApi Sandbox', function () {
             sandboxedGps.request('signals', [], function(err, data) {
                 console.log("sandboxedGps signals:", err, data);
                 
-                if (data === 'ready') {
+                if (data[0] === 'ready') {
                     sandboxedGps.request('listPeers', [], function(err, data) {
                         //console.log("sandboxedGps listPeers:", err, data);
                         
