@@ -175,12 +175,50 @@ static void sandboxed_response_cb(struct wish_rpc_entry* req, void* ctx, const u
     mist->sendToNode(msg);
 }
 
-static enum mist_error hw_read(mist_ep* ep, wish_protocol_peer_t* peer, mist_buf* result) {
-    if (ep->data.base == NULL) { return MIST_ERROR; }
-
-    result->base = ep->data.base;
-    result->len = ep->data.len;
-
+static enum mist_error hw_read(mist_ep* ep, wish_protocol_peer_t* peer, mist_buf args) {
+    //printf("in hw_invoke %p\n", ep->model->mist_app);
+    Mist* mist = instance_by_mist_app(ep->model->mist_app);
+    
+    if (mist == NULL) {
+        printf("Failed finding mist instance to call... bailing out!\n");
+        return MIST_ERROR;
+    }
+    // get full endpoint path
+    char full_id[256] = {'\0'};
+    mist_ep_full_epid(ep, full_id);
+    
+    bson_iterator args_it;
+    // FIXME: Not sure this works for all data types
+    if ( BSON_EOO == bson_find_from_buffer(&args_it, args.base, "args") ) { return MIST_ERROR; }
+    
+    bson_iterator id_it;
+    if ( BSON_INT != bson_find_from_buffer(&id_it, args.base, "id") ) { return MIST_ERROR; }
+    
+    bson b;
+    bson_init_size(&b, 1024);
+    bson_append_start_object(&b, "peer");
+    bson_append_binary(&b, "luid", (char*) peer->luid, WISH_ID_LEN);
+    bson_append_binary(&b, "ruid", (char*) peer->ruid, WISH_ID_LEN);
+    bson_append_binary(&b, "rhid", (char*) peer->rhid, WISH_WHID_LEN);
+    bson_append_binary(&b, "rsid", (char*) peer->rsid, WISH_WSID_LEN);
+    bson_append_string(&b, "protocol", peer->protocol);
+    bson_append_finish_object(&b);
+    
+    bson_append_start_object(&b, "read");
+    bson_append_string(&b, "epid", full_id);
+    bson_append_element(&b, "args", &args_it);
+    bson_append_int(&b, "id", bson_iterator_int(&id_it));
+    bson_append_finish_object(&b);
+    bson_finish(&b);
+    
+    // epid args id
+    
+    Message msg("read", (uint8_t*) bson_data(&b), bson_size(&b));
+    
+    mist->sendToNode(msg);
+    
+    bson_destroy(&b);
+    
     return MIST_NO_ERROR;
 }
 
@@ -740,19 +778,54 @@ static void mist_node_api_handler(mist_app_t* mist_app, input_buf* msg) {
         mist_model_parse(&bs, model);
     } else {
 
+        bson_find_from_buffer(&it, msg->data, "read");
+
+        if (bson_iterator_type(&it) == BSON_INT) {
+            /*
+             { read: request_id,
+               data: response_data } 
+            */
+            int id = bson_iterator_int(&it);
+
+            mist_read_response(mist_app, id, (uint8_t*) msg->data);
+            return;
+        }
+
+        bson_find_from_buffer(&it, msg->data, "write");
+
+        if (bson_iterator_type(&it) == BSON_INT) {
+            /*
+             { write: request_id,
+               data: response_data } 
+            */
+            int id = bson_iterator_int(&it);
+
+            mist_write_response(mist_app, id, (uint8_t*) msg->data);
+            return;
+        }
+
         bson_find_from_buffer(&it, msg->data, "invoke");
 
         if (bson_iterator_type(&it) == BSON_INT) {
-            // this is a response to an invoke request
-
             /*
              { invoke: request_id,
                data: response_data } 
             */
-
             int id = bson_iterator_int(&it);
 
-            mist_invoke_response(mist_app->server, id, (uint8_t*) msg->data);
+            mist_invoke_response(mist_app, id, (uint8_t*) msg->data);
+            return;
+        }
+
+        bson_find_from_buffer(&it, msg->data, "change");
+
+        if (bson_iterator_type(&it) == BSON_STRING) {
+            /*
+             { change: epid } 
+            */
+            const char* epid = bson_iterator_string(&it);
+
+            mist_value_changed(&mist_app->model, epid);
             return;
         }
 

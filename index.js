@@ -58,6 +58,11 @@ function Addon(opts) {
             return;
         }
 
+        if (event === 'read') {
+            self.emit('read', msg);
+            return;
+        }
+
         if (event === 'write') {
             self.emit('write', msg);
             return;
@@ -319,8 +324,9 @@ function MistNode(opts) {
     
     var self = this;
     this.requests = {};
-    this.invokeCb = {};
+    this.readCb = {};
     this.writeCb = {};
+    this.invokeCb = {};
     this.peers = [];
 
     if (!opts) { opts = {}; }
@@ -348,6 +354,19 @@ function MistNode(opts) {
     
     this.addon.on('online', function(peer) {
         self.peers.push(peer);
+    });
+
+    this.addon.on('read', function(msg) {
+        if(typeof self.readCb[msg.read.epid] === 'function') {
+            self.readCb[msg.read.epid](msg.read.args, msg.peer, (function (id) {
+                return function(data) {
+                    var request = { read: id, data: data };
+                    self.addon.request("mistnode", BSON.serialize(request));
+                }; 
+            })(msg.read.id));
+        } else {
+            console.log("There is no invoke function registered for", msg.read.epid );
+        }
     });
     
     this.addon.on('write', function(msg) {
@@ -400,6 +419,17 @@ MistNode.prototype.create = function(model, cb) {
 
 MistNode.prototype.update = function(ep, value) {
     var request = { update: ep, value: value };
+    
+    this.addon.request("mistnode", BSON.serialize(request));
+};
+
+// register read handler for epid
+MistNode.prototype.read = function(epid, cb) {
+    this.readCb[epid] = cb;
+};
+
+MistNode.prototype.change = function(epid) {
+    var request = { change: epid };
     
     this.addon.request("mistnode", BSON.serialize(request));
 };
