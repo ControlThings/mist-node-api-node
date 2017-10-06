@@ -36,6 +36,7 @@ describe('MistApi v2 Control', function () {
     var peer;
     var end = false;
     var node;
+    var enabled = true;
 
     before('should start a mist node', function(done) {
         node = new MistNode({ name: 'ControlThings', corePort: 9095 }); // , coreIp: '127.0.0.1'
@@ -67,7 +68,7 @@ describe('MistApi v2 Control', function () {
         
         node.read('enabled', function(args, peer, cb) {
             console.log('Node read:', args, peer);
-            cb(true);
+            cb(enabled);
         });
         
         node.read('lon', function(args, peer, cb) {
@@ -326,4 +327,19 @@ describe('MistApi v2 Control', function () {
             
         });
     });
+    
+    it('shuold test control.follow', function(done) {
+        mist.request('mist.control.follow', [peer], function (err, data) {
+            if (err) { return done(new Error(data.msg)); }
+
+            if (data.id === 'enabled' && data.data === false) {
+                console.log('id is enabled and data is false...');
+                done();
+                done = function() {};
+            }
+        });
+        
+        enabled = false;
+        node.change('enabled');
+    });    
 });

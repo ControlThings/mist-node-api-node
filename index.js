@@ -145,7 +145,7 @@ function Mist(opts) {
     this.addon.on('mist', function(msg) {
         var id = msg.ack || msg.sig || msg.end || msg.err;
 
-        //console.log(event +": the answer is:", require('util').inspect(msg, { colors: true, depth: 10 }));
+        //console.log("mist: the answer is:", require('util').inspect(msg, { colors: true, depth: 10 }));
 
         if(typeof self.requests[id] === 'function') {
             self.requests[id](msg);
@@ -360,7 +360,7 @@ function MistNode(opts) {
         if(typeof self.readCb[msg.read.epid] === 'function') {
             self.readCb[msg.read.epid](msg.read.args, msg.peer, (function (id) {
                 return function(data) {
-                    var request = { read: id, data: data };
+                    var request = { read: id, epid: msg.read.epid, data: data };
                     self.addon.request("mistnode", BSON.serialize(request));
                 }; 
             })(msg.read.id));
@@ -383,7 +383,7 @@ function MistNode(opts) {
         if(typeof self.invokeCb[msg.invoke.epid] === 'function') {
             self.invokeCb[msg.invoke.epid](msg.invoke.args, msg.peer, (function (id) {
                 return function(data) {
-                    var request = { invoke: id, data: data };
+                    var request = { invoke: id, epid: msg.invoke.epid, data: data };
                     self.addon.request("mistnode", BSON.serialize(request));
                 }; 
             })(msg.invoke.id));

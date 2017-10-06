@@ -196,13 +196,16 @@ static enum mist_error hw_read(mist_ep* ep, wish_protocol_peer_t* peer, mist_buf
     
     bson b;
     bson_init_size(&b, 1024);
-    bson_append_start_object(&b, "peer");
-    bson_append_binary(&b, "luid", (char*) peer->luid, WISH_ID_LEN);
-    bson_append_binary(&b, "ruid", (char*) peer->ruid, WISH_ID_LEN);
-    bson_append_binary(&b, "rhid", (char*) peer->rhid, WISH_WHID_LEN);
-    bson_append_binary(&b, "rsid", (char*) peer->rsid, WISH_WSID_LEN);
-    bson_append_string(&b, "protocol", peer->protocol);
-    bson_append_finish_object(&b);
+    
+    if (peer) {
+        bson_append_start_object(&b, "peer");
+        bson_append_binary(&b, "luid", (char*) peer->luid, WISH_ID_LEN);
+        bson_append_binary(&b, "ruid", (char*) peer->ruid, WISH_ID_LEN);
+        bson_append_binary(&b, "rhid", (char*) peer->rhid, WISH_WHID_LEN);
+        bson_append_binary(&b, "rsid", (char*) peer->rsid, WISH_WSID_LEN);
+        bson_append_string(&b, "protocol", peer->protocol);
+        bson_append_finish_object(&b);
+    }
     
     bson_append_start_object(&b, "read");
     bson_append_string(&b, "epid", full_id);
@@ -783,11 +786,14 @@ static void mist_node_api_handler(mist_app_t* mist_app, input_buf* msg) {
         if (bson_iterator_type(&it) == BSON_INT) {
             /*
              { read: request_id,
+               epid: String,
                data: response_data } 
             */
             int id = bson_iterator_int(&it);
+            
+            if (BSON_STRING != bson_find_from_buffer(&it, msg->data, "epid")) { return; }
 
-            mist_read_response(mist_app, id, (uint8_t*) msg->data);
+            mist_read_response(mist_app, bson_iterator_string(&it), id, (uint8_t*) msg->data);
             return;
         }
 
@@ -796,11 +802,14 @@ static void mist_node_api_handler(mist_app_t* mist_app, input_buf* msg) {
         if (bson_iterator_type(&it) == BSON_INT) {
             /*
              { write: request_id,
+               epid: String,
                data: response_data } 
             */
             int id = bson_iterator_int(&it);
 
-            mist_write_response(mist_app, id, (uint8_t*) msg->data);
+            if (BSON_STRING != bson_find_from_buffer(&it, msg->data, "epid")) { return; }
+
+            mist_write_response(mist_app, bson_iterator_string(&it), id, (uint8_t*) msg->data);
             return;
         }
 
@@ -809,11 +818,14 @@ static void mist_node_api_handler(mist_app_t* mist_app, input_buf* msg) {
         if (bson_iterator_type(&it) == BSON_INT) {
             /*
              { invoke: request_id,
+               epid: String,
                data: response_data } 
             */
             int id = bson_iterator_int(&it);
 
-            mist_invoke_response(mist_app, id, (uint8_t*) msg->data);
+            if (BSON_STRING != bson_find_from_buffer(&it, msg->data, "epid")) { return; }
+
+            mist_invoke_response(mist_app, bson_iterator_string(&it), id, (uint8_t*) msg->data);
             return;
         }
 
@@ -825,7 +837,7 @@ static void mist_node_api_handler(mist_app_t* mist_app, input_buf* msg) {
             */
             const char* epid = bson_iterator_string(&it);
 
-            mist_value_changed(&mist_app->model, epid);
+            mist_value_changed(mist_app, epid);
             return;
         }
 
@@ -887,7 +899,7 @@ static void mist_node_api_handler(mist_app_t* mist_app, input_buf* msg) {
         if (ep->type == MIST_TYPE_BOOL) {
             if ( bson_iterator_type(&it) == BSON_BOOL ) {
                 *((bool*)ep->data.base) = bson_iterator_bool(&it);
-                mist_value_changed(model, ep_name);
+                mist_value_changed(mist_app, ep_name);
             }
         } else if (ep->type == MIST_TYPE_STRING) {
             if ( bson_iterator_type(&it) == BSON_STRING ) {
@@ -895,27 +907,27 @@ static void mist_node_api_handler(mist_app_t* mist_app, input_buf* msg) {
                 ep->data.base = (char*) malloc(bson_iterator_string_len(&it));
                 ep->data.len = bson_iterator_string_len(&it);
                 memcpy(ep->data.base, bson_iterator_string(&it), bson_iterator_string_len(&it));
-                mist_value_changed(model, ep_name);
+                mist_value_changed(mist_app, ep_name);
             }
         } else if (ep->type == MIST_TYPE_INT) {
             if (ep->data.base == NULL) { return; }
 
             if ( bson_iterator_type(&it) == BSON_DOUBLE ) {
                 *((int*)ep->data.base) = (int) bson_iterator_double(&it);
-                mist_value_changed(model, ep_name);
+                mist_value_changed(mist_app, ep_name);
             } else if ( bson_iterator_type(&it) == BSON_INT ) {
                 *((int*)ep->data.base) = bson_iterator_int(&it);
-                mist_value_changed(model, ep_name);
+                mist_value_changed(mist_app, ep_name);
             }
         } else if (ep->type == MIST_TYPE_FLOAT) {
             if (ep->data.base == NULL) { return; }
 
             if ( bson_iterator_type(&it) == BSON_DOUBLE ) {
                 *((double*)ep->data.base) = bson_iterator_double(&it);
-                mist_value_changed(model, ep_name);
+                mist_value_changed(mist_app, ep_name);
             } else if ( bson_iterator_type(&it) == BSON_INT ) {
                 *((double*)ep->data.base) = (double) bson_iterator_int(&it);
-                mist_value_changed(model, ep_name);
+                mist_value_changed(mist_app, ep_name);
             }
         }
     }
