@@ -257,7 +257,7 @@ function MistNodeInner(addon) {
     
     this.addon.on('write', function(msg) {
         if(typeof self.writeCb[msg.write.epid] === 'function') {
-            self.writeCb[msg.write.epid](msg.write.data, msg.peer, function () {
+            self.writeCb[msg.write.epid](msg.write.args, msg.peer, function () {
                 console.log('write should send ack');
             });
         } else {
@@ -389,7 +389,7 @@ function MistNode(opts) {
     
     this.addon.on('write', function(msg) {
         if(typeof self.writeCb[msg.write.epid] === 'function') {
-            self.writeCb[msg.write.epid](msg.write.data, msg.peer, function () {
+            self.writeCb[msg.write.epid](msg.write.args, msg.peer, function () {
                 console.log('write should send ack');
             });
         } else {

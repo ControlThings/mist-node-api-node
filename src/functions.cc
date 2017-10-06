@@ -237,6 +237,13 @@ static enum mist_error hw_write(mist_ep* ep, wish_protocol_peer_t* peer, mist_bu
     char full_id[256] = {'\0'};
     mist_ep_full_epid(ep, full_id);
     
+    bson_iterator args_it;
+    // FIXME: Not sure this works for all data types
+    if ( BSON_EOO == bson_find_from_buffer(&args_it, data.base, "args") ) { return MIST_ERROR; }
+    
+    bson_iterator id_it;
+    if ( BSON_INT != bson_find_from_buffer(&id_it, data.base, "id") ) { return MIST_ERROR; }
+    
     bson bs;
     bson_init_size(&bs, 1024);
     
@@ -250,32 +257,8 @@ static enum mist_error hw_write(mist_ep* ep, wish_protocol_peer_t* peer, mist_bu
 
     bson_append_start_object(&bs, "write");
     bson_append_string(&bs, "epid", full_id);
-    
-    if (ep->type == MIST_TYPE_FLOAT) {
-        double v = *((double*) data.base);
-        double *t = (double*) ep->data.base;
-        *t = v;
-        bson_append_double(&bs, "data", v);
-    } else if (ep->type == MIST_TYPE_INT) {
-        int v = *((int*) data.base);
-        int *t = (int*) ep->data.base;
-        *t = v;
-        bson_append_int(&bs, "data", v);
-    } else if (ep->type == MIST_TYPE_BOOL) {
-        bool v = *((bool*) data.base);
-        bool *t = (bool*) ep->data.base;
-        *t = v;
-        bson_append_bool(&bs, "data", v);
-    } else if (ep->type == MIST_TYPE_STRING) {
-        if (ep->data.base != NULL) { free(ep->data.base); }
-        ep->data.base = (char*) malloc(data.len);
-        memcpy(ep->data.base, data.base, data.len);
-        ep->data.len = data.len;
-        bson_append_string(&bs, "data", ep->data.base);
-    } else {
-        printf("Unsupported MIST_TYPE %i\n", ep->type);
-    }
-
+    bson_append_element(&bs, "args", &args_it);
+    bson_append_int(&bs, "id", bson_iterator_int(&id_it));
     bson_append_finish_object(&bs);
     bson_finish(&bs);
 
@@ -685,31 +668,18 @@ static bson_visitor_cmd_t mist_model_build_visitor(
         mist_ep* ep = (mist_ep*) malloc(sizeof(mist_ep));
         if (ep == NULL) { return BSON_VCMD_TERMINATE; }
         memset(ep, 0, sizeof(mist_ep));
-        ep->data.base = (char*) malloc(8);
-        ep->data.len = 8;
-        if (ep->data.base == NULL) { free(ep); return BSON_VCMD_TERMINATE; }
-        memset(ep->data.base, 0, 8);
 
         ep->id = strdup(key);
         ep->label = strdup(ep_label);
         
         if ( strncmp(ep_type, "float", 16) == 0 ) {
-            //printf("A float.\n");
             ep->type = MIST_TYPE_FLOAT;
-            *((double*) ep->data.base) = 0.0;
         } else if ( strncmp(ep_type, "int", 16) == 0 ) {
-            //printf("An int.\n");
             ep->type = MIST_TYPE_INT;
-            *((int*) ep->data.base) = 0;
         } else if ( strncmp(ep_type, "bool", 16) == 0 ) {
-            //printf("A bool.\n");
             ep->type = MIST_TYPE_BOOL;
-            *((bool*) ep->data.base) = false;
         } else if ( strncmp(ep_type, "string", 16) == 0 ) {
             ep->type = MIST_TYPE_STRING;
-            if (ep->data.base != NULL) { wish_platform_free(ep->data.base); }
-            ep->data.base = NULL;
-            ep->data.len = 0;
         } else if (invokable) {
             ep->type = MIST_TYPE_INVOKE;                            
         } else {
@@ -718,7 +688,7 @@ static bson_visitor_cmd_t mist_model_build_visitor(
 
         if (readable) { ep->read = hw_read; }
         if (writable) { ep->write = hw_write; }
-        if (invokable) { ep->invoke = hw_invoke; } //hw_invoke_function;
+        if (invokable) { ep->invoke = hw_invoke; }
         ep->unit = NULL;
         ep->next = NULL;
         ep->prev = NULL;

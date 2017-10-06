@@ -78,6 +78,7 @@ describe('MistApi v2 Control', function () {
         });
         
         node.write('mist.name', function(value, peer, cb) {
+            console.log('writing mist.name to', value);
             name = value;
             node.changed('mist.name');
             cb();
@@ -221,7 +222,7 @@ describe('MistApi v2 Control', function () {
     });
     
     it('shuold test control.write', function(done) {
-        mist.request('mist.control.write', [peer, 'counter'], function (err, data) {
+        mist.request('mist.control.write', [peer, 'lon'], function (err, data) {
             if (err) { 
                 if (data.code === 105) { 
                     return done(); 
