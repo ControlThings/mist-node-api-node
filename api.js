@@ -38,10 +38,10 @@ var MistNode = {
     requestBare: fn(peer, op, args, cbBare),
     requestCancel: fn(id),
     create: fn(model),
-    update: fn(endpoint),
     read: fn(args, peer, cb),
     write: fn(args, peer, cb),
     invoke: fn(args, peer, cb),
+    changed: fn(epid),
     shutdown: fn()
 };
 

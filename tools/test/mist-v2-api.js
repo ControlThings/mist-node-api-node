@@ -61,25 +61,13 @@ describe('MistApi v2 Control', function () {
         
         var name = 'Just a Name';
         
-        node.read('mist.name', function(args, peer, cb) {
-            console.log('Node read:', args, peer);
-            cb(name);
-        });
+        node.read('mist.name', function(args, peer, cb) { cb(name); });
         
-        node.read('enabled', function(args, peer, cb) {
-            console.log('Node read:', args, peer);
-            cb(enabled);
-        });
+        node.read('enabled', function(args, peer, cb) { cb(enabled); });
         
-        node.read('lon', function(args, peer, cb) {
-            console.log('Node read:', args, peer);
-            cb(63.4);
-        });
+        node.read('lon', function(args, peer, cb) { cb(63.4); });
         
-        node.read('counter', function(args, peer, cb) {
-            console.log('Node read:', args, peer);
-            cb(56784);
-        });
+        node.read('counter', function(args, peer, cb) { cb(56784); });
         
         node.invoke('device.config', function(args, peer, cb) {
             cb({ cool: ['a', 7, true], echo: args });
@@ -90,8 +78,8 @@ describe('MistApi v2 Control', function () {
         });
         
         node.write('mist.name', function(value, peer, cb) {
-            //console.log('Node write "mist.name":', value);
             name = value;
+            node.changed('mist.name');
             cb();
         });
         
@@ -160,13 +148,19 @@ describe('MistApi v2 Control', function () {
     
     var follow;
     
+    
+    // Expect follow to return current values for all readable endpoints
     it('shuold test control.follow', function(done) {
+        var l = ['mist.name', 'enabled', 'lon', 'counter'];
         var end = false;
         follow = mist.request('mist.control.follow', [peer], function (err, data) {
             if (err) { return done(new Error(inspect(data))); }
-            //console.log("Follow update:", err, model);
+            //console.log("Follow update:", err, data, l);
             
-            if (!end) { end = true; done(); }
+            var index = l.indexOf(data.id);
+            if (index !== -1) { l.splice(index, 1); }
+            
+            if (!end && l.length === 0) { end = true; done(); }
         });
     });
     
@@ -333,13 +327,13 @@ describe('MistApi v2 Control', function () {
             if (err) { return done(new Error(data.msg)); }
 
             if (data.id === 'enabled' && data.data === false) {
-                console.log('id is enabled and data is false...');
+                //console.log('id is enabled and data is false...');
                 done();
                 done = function() {};
             }
         });
         
         enabled = false;
-        node.change('enabled');
+        node.changed('enabled');
     });    
 });

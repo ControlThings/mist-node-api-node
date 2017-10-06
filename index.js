@@ -28,11 +28,11 @@ function Addon(opts) {
 
         var msg = null;
 
-        if( Buffer.isBuffer(data) && data.length >= 5 ) {
+        try {
             msg = BSON.deserialize(data);
+        } catch(e) {
+            return console.log('Warning! Non BSON message from plugin.', arguments, event, data);
         }
-
-        if (!msg) { return console.log('Warning! Non BSON message from plugin.', arguments, event, data); }
 
         if (event === 'online') {
             self.emit('online', msg.peer);
@@ -167,10 +167,6 @@ function Mist(opts) {
 
 inherits(Mist, EventEmitter);
 
-Mist.prototype.shutdown = function() {
-    this.addon.request("kill", BSON.serialize({ kill: true }));
-};
-
 Mist.prototype.request = function(op, args, cb) {
     return this.requestBare(op, args, function(res) {
         //console.log('requestBare cb:', arguments);
@@ -203,12 +199,17 @@ Mist.prototype.registerSandbox = function(sandbox) {
     this.sandbox = sandbox;
 };
 
+Mist.prototype.shutdown = function() {
+    this.addon.request("kill", BSON.serialize({ kill: true }));
+};
+
 function MistNodeInner(addon) {
     var self = this;
     this.peers = [];
     this.requests = {};
-    this.invokeCb = {};
+    this.readCb = {};
     this.writeCb = {};
+    this.invokeCb = {};
     
     this.addon = addon;
     
@@ -241,6 +242,19 @@ function MistNodeInner(addon) {
         }
     });
     
+    this.addon.on('read', function(msg) {
+        if(typeof self.readCb[msg.read.epid] === 'function') {
+            self.readCb[msg.read.epid](msg.read.args, msg.peer, (function (id) {
+                return function(data) {
+                    var request = { read: id, epid: msg.read.epid, data: data };
+                    self.addon.request("mistnode", BSON.serialize(request));
+                }; 
+            })(msg.read.id));
+        } else {
+            console.log("There is no invoke function registered for", msg.read.epid );
+        }
+    });
+    
     this.addon.on('write', function(msg) {
         if(typeof self.writeCb[msg.write.epid] === 'function') {
             self.writeCb[msg.write.epid](msg.write.data, msg.peer, function () {
@@ -255,7 +269,7 @@ function MistNodeInner(addon) {
         if(typeof self.invokeCb[msg.invoke.epid] === 'function') {
             self.invokeCb[msg.invoke.epid](msg.invoke.args, msg.peer, (function (id) {
                 return function(data) {
-                    var request = { invoke: id, data: data };
+                    var request = { invoke: id, epid: msg.invoke.epid, data: data };
                     self.addon.request("mistnode", BSON.serialize(request));
                 }; 
             })(msg.invoke.id));
@@ -276,9 +290,23 @@ MistNodeInner.prototype.create = function(model, cb) {
     
     this.addon.request("mistnode", BSON.serialize(request));
 };
+// register read handler for epid
+MistNode.prototype.read = function(epid, cb) {
+    this.readCb[epid] = cb;
+};
 
-MistNodeInner.prototype.update = function(ep, value) {
-    var request = { update: ep, value: value };
+// register write handler for epid
+MistNode.prototype.write = function(epid, cb) {
+    this.writeCb[epid] = cb;
+};
+
+// register invoke handler for epid
+MistNode.prototype.invoke = function(epid, cb) {
+    this.invokeCb[epid] = cb;
+};
+
+MistNode.prototype.changed = function(epid) {
+    var request = { changed: epid };
     
     this.addon.request("mistnode", BSON.serialize(request));
 };
@@ -307,16 +335,6 @@ MistNodeInner.prototype.requestBare = function(op, args, cb) {
 MistNodeInner.prototype.requestCancel = function(id) {
     var request = { cancel: id };
     this.addon.request("mistnode", BSON.serialize(request));
-};
-
-// register write handler for epid
-MistNodeInner.prototype.write = function(epid, cb) {
-    this.writeCb[epid] = cb;
-};
-
-// register invoke handler for epid
-MistNodeInner.prototype.invoke = function(epid, cb) {
-    this.invokeCb[epid] = cb;
 };
 
 function MistNode(opts) {
@@ -403,10 +421,6 @@ function MistNode(opts) {
 
 inherits(MistNode, EventEmitter);
 
-MistNode.prototype.shutdown = function() {
-    this.addon.request("kill", BSON.serialize({ kill: true }));
-};
-
 MistNode.prototype.create = function(model, cb) {
     var id = ++sharedId;
     var request = { model: model };
@@ -417,19 +431,23 @@ MistNode.prototype.create = function(model, cb) {
     this.addon.request("mistnode", BSON.serialize(request));
 };
 
-MistNode.prototype.update = function(ep, value) {
-    var request = { update: ep, value: value };
-    
-    this.addon.request("mistnode", BSON.serialize(request));
-};
-
 // register read handler for epid
 MistNode.prototype.read = function(epid, cb) {
     this.readCb[epid] = cb;
 };
 
-MistNode.prototype.change = function(epid) {
-    var request = { change: epid };
+// register write handler for epid
+MistNode.prototype.write = function(epid, cb) {
+    this.writeCb[epid] = cb;
+};
+
+// register invoke handler for epid
+MistNode.prototype.invoke = function(epid, cb) {
+    this.invokeCb[epid] = cb;
+};
+
+MistNode.prototype.changed = function(epid) {
+    var request = { changed: epid };
     
     this.addon.request("mistnode", BSON.serialize(request));
 };
@@ -462,14 +480,8 @@ MistNode.prototype.requestCancel = function(id) {
     this.addon.request("mistnode", BSON.serialize(request));
 };
 
-// register write handler for epid
-MistNode.prototype.write = function(epid, cb) {
-    this.writeCb[epid] = cb;
-};
-
-// register invoke handler for epid
-MistNode.prototype.invoke = function(epid, cb) {
-    this.invokeCb[epid] = cb;
+MistNode.prototype.shutdown = function() {
+    this.addon.request("kill", BSON.serialize({ kill: true }));
 };
 
 function Sandboxed(mist, sandboxId) {
@@ -638,11 +650,11 @@ function WishApp(opts) {
 
         var msg = null;
 
-        if( Buffer.isBuffer(data) && data.length >= 5 ) {
+        try {
             msg = BSON.deserialize(data);
+        } catch(e) {
+            return console.log('Warning! Non BSON message from plugin.', arguments, event, data);
         }
-
-        if (!msg) { return console.log('Warning! Non BSON message from plugin.', arguments, event, data); }
 
         if (event === 'online') {
             if (typeof self.onlineCb === 'function') { self.onlineCb(msg.peer); }

@@ -771,165 +771,102 @@ static void mist_node_api_callback(rpc_client_req* req, void *ctx, const uint8_t
 static void mist_node_api_handler(mist_app_t* mist_app, input_buf* msg) {
     mist_model* model = &mist_app->model;
 
-    bson bs;
-    bson_init_with_data(&bs, msg->data);
-    
     bson_iterator it;
-    bson_find_from_buffer(&it, msg->data, "model");
 
-    if(bson_iterator_type(&it) != BSON_EOO) {
+    // model
+    if (BSON_EOO != bson_find_from_buffer(&it, msg->data, "model")) {
+        bson bs;
+        bson_init_with_data(&bs, msg->data);
         mist_model_parse(&bs, model);
-    } else {
+        return;
+    }
 
-        bson_find_from_buffer(&it, msg->data, "read");
+    // read response
+    if (BSON_INT == bson_find_from_buffer(&it, msg->data, "read")) {
+        /*
+         { read: request_id,
+           epid: String,
+           data: response_data } 
+        */
+        int id = bson_iterator_int(&it);
 
-        if (bson_iterator_type(&it) == BSON_INT) {
-            /*
-             { read: request_id,
-               epid: String,
-               data: response_data } 
-            */
-            int id = bson_iterator_int(&it);
-            
-            if (BSON_STRING != bson_find_from_buffer(&it, msg->data, "epid")) { return; }
+        if (BSON_STRING != bson_find_from_buffer(&it, msg->data, "epid")) { return; }
 
-            mist_read_response(mist_app, bson_iterator_string(&it), id, (uint8_t*) msg->data);
+        mist_read_response(mist_app, bson_iterator_string(&it), id, (uint8_t*) msg->data);
+        return;
+    }
+
+    // write response
+    if (BSON_INT == bson_find_from_buffer(&it, msg->data, "write")) {
+        /*
+         { write: request_id,
+           epid: String,
+           data: response_data } 
+        */
+        int id = bson_iterator_int(&it);
+
+        if (BSON_STRING != bson_find_from_buffer(&it, msg->data, "epid")) { return; }
+
+        mist_write_response(mist_app, bson_iterator_string(&it), id, (uint8_t*) msg->data);
+        return;
+    }
+
+    // invoke response
+    if (BSON_INT == bson_find_from_buffer(&it, msg->data, "invoke")) {
+        /*
+         { invoke: request_id,
+           epid: String,
+           data: response_data } 
+        */
+        int id = bson_iterator_int(&it);
+
+        if (BSON_STRING != bson_find_from_buffer(&it, msg->data, "epid")) { return; }
+
+        mist_invoke_response(mist_app, bson_iterator_string(&it), id, (uint8_t*) msg->data);
+        return;
+    }
+
+    if (BSON_STRING == bson_find_from_buffer(&it, msg->data, "changed")) {
+        /*
+         { changed: epid } 
+        */
+        const char* epid = bson_iterator_string(&it);
+
+        mist_value_changed(mist_app, epid);
+        return;
+    }
+
+    if (BSON_STRING == bson_find_from_buffer(&it, msg->data, "op")) {
+        /*
+         { peer: { luid, ruid... }, op: string, args: [arg1, arg2, ...], id: n }
+        */
+
+        if (BSON_INT != bson_find_from_buffer(&it, msg->data, "id")) {
+            WISHDEBUG(LOG_CRITICAL, "mist_node_api_handler: id is not BSON_INT but: %i", bson_iterator_type(&it));
+            return;
+        }
+        int id = bson_iterator_int(&it);
+
+        //const char* op = bson_iterator_string(&it);
+
+        if (BSON_OBJECT != bson_find_from_buffer(&it, msg->data, "peer")) {
+            WISHDEBUG(LOG_CRITICAL, "peer is not object but %i", bson_iterator_type(&it));
             return;
         }
 
-        bson_find_from_buffer(&it, msg->data, "write");
+        wish_protocol_peer_t* peer = wish_protocol_peer_find_from_bson(&mist_app->protocol, (const uint8_t*)bson_iterator_value(&it));
 
-        if (bson_iterator_type(&it) == BSON_INT) {
-            /*
-             { write: request_id,
-               epid: String,
-               data: response_data } 
-            */
-            int id = bson_iterator_int(&it);
+        wish_rpc_id_t mist_id = mist_app_request(mist_app, peer, (uint8_t*)msg->data, msg->len, mist_node_api_callback);
 
-            if (BSON_STRING != bson_find_from_buffer(&it, msg->data, "epid")) { return; }
-
-            mist_write_response(mist_app, bson_iterator_string(&it), id, (uint8_t*) msg->data);
+        rpc_client_req* req = find_request_entry(&mist_app->protocol.rpc_client, mist_id);
+        if (req == NULL) {
+            WISHDEBUG(LOG_CRITICAL, "Could not find request %i", mist_id);
             return;
         }
+        req->passthru_id = id;
+        req->passthru_ctx = mist_app;
 
-        bson_find_from_buffer(&it, msg->data, "invoke");
-
-        if (bson_iterator_type(&it) == BSON_INT) {
-            /*
-             { invoke: request_id,
-               epid: String,
-               data: response_data } 
-            */
-            int id = bson_iterator_int(&it);
-
-            if (BSON_STRING != bson_find_from_buffer(&it, msg->data, "epid")) { return; }
-
-            mist_invoke_response(mist_app, bson_iterator_string(&it), id, (uint8_t*) msg->data);
-            return;
-        }
-
-        bson_find_from_buffer(&it, msg->data, "change");
-
-        if (bson_iterator_type(&it) == BSON_STRING) {
-            /*
-             { change: epid } 
-            */
-            const char* epid = bson_iterator_string(&it);
-
-            mist_value_changed(mist_app, epid);
-            return;
-        }
-
-        bson_find_from_buffer(&it, msg->data, "op");
-
-        if (bson_iterator_type(&it) == BSON_STRING) {
-            //WISHDEBUG(LOG_CRITICAL, "MistNode request");
-            
-            /*
-             { peer: { luid, ruid... }, op: string, args: [arg1, arg2, ...], id: n }
-            */
-            
-            if (BSON_INT != bson_find_from_buffer(&it, msg->data, "id")) {
-                WISHDEBUG(LOG_CRITICAL, "mist_node_api_handler: id is not BSON_INT but: %i", bson_iterator_type(&it));
-                return;
-            }
-            int id = bson_iterator_int(&it);
-            
-            //const char* op = bson_iterator_string(&it);
-            
-            if (BSON_OBJECT != bson_find_from_buffer(&it, msg->data, "peer")) {
-                WISHDEBUG(LOG_CRITICAL, "peer is not object but %i", bson_iterator_type(&it));
-                return;
-            }
-            
-            wish_protocol_peer_t* peer = wish_protocol_peer_find_from_bson(&mist_app->protocol, (const uint8_t*)bson_iterator_value(&it));
-            
-            wish_rpc_id_t mist_id = mist_app_request(mist_app, peer, (uint8_t*)msg->data, msg->len, mist_node_api_callback);
-            
-            rpc_client_req* req = find_request_entry(&mist_app->protocol.rpc_client, mist_id);
-            if (req == NULL) {
-                WISHDEBUG(LOG_CRITICAL, "Could not find request %i", mist_id);
-                return;
-            }
-            req->passthru_id = id;
-            req->passthru_ctx = mist_app;
-            
-            return;
-        }
-
-
-        bson_find_from_buffer(&it, msg->data, "update");
-        mist_ep* ep = NULL;
-        char* ep_name = (char*) "";
-
-        if ( bson_iterator_type(&it) != BSON_STRING ) {
-            return;
-        }
-
-        ep_name = (char*) bson_iterator_string(&it);
-        mist_find_endpoint_by_name(model, ep_name, &ep);
-        if (ep == NULL) {
-            WISHDEBUG(LOG_CRITICAL, "update could not find endpoint %s", ep_name);
-            return;
-        }
-
-        bson_find_from_buffer(&it, msg->data, "value");
-
-        if (ep->type == MIST_TYPE_BOOL) {
-            if ( bson_iterator_type(&it) == BSON_BOOL ) {
-                *((bool*)ep->data.base) = bson_iterator_bool(&it);
-                mist_value_changed(mist_app, ep_name);
-            }
-        } else if (ep->type == MIST_TYPE_STRING) {
-            if ( bson_iterator_type(&it) == BSON_STRING ) {
-                if (ep->data.base != NULL) { free(ep->data.base); ep->data.len = 0; }
-                ep->data.base = (char*) malloc(bson_iterator_string_len(&it));
-                ep->data.len = bson_iterator_string_len(&it);
-                memcpy(ep->data.base, bson_iterator_string(&it), bson_iterator_string_len(&it));
-                mist_value_changed(mist_app, ep_name);
-            }
-        } else if (ep->type == MIST_TYPE_INT) {
-            if (ep->data.base == NULL) { return; }
-
-            if ( bson_iterator_type(&it) == BSON_DOUBLE ) {
-                *((int*)ep->data.base) = (int) bson_iterator_double(&it);
-                mist_value_changed(mist_app, ep_name);
-            } else if ( bson_iterator_type(&it) == BSON_INT ) {
-                *((int*)ep->data.base) = bson_iterator_int(&it);
-                mist_value_changed(mist_app, ep_name);
-            }
-        } else if (ep->type == MIST_TYPE_FLOAT) {
-            if (ep->data.base == NULL) { return; }
-
-            if ( bson_iterator_type(&it) == BSON_DOUBLE ) {
-                *((double*)ep->data.base) = bson_iterator_double(&it);
-                mist_value_changed(mist_app, ep_name);
-            } else if ( bson_iterator_type(&it) == BSON_INT ) {
-                *((double*)ep->data.base) = (double) bson_iterator_int(&it);
-                mist_value_changed(mist_app, ep_name);
-            }
-        }
+        return;
     }
 }
 
