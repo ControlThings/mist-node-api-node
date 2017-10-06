@@ -291,21 +291,21 @@ MistNodeInner.prototype.create = function(model, cb) {
     this.addon.request("mistnode", BSON.serialize(request));
 };
 // register read handler for epid
-MistNode.prototype.read = function(epid, cb) {
+MistNodeInner.prototype.read = function(epid, cb) {
     this.readCb[epid] = cb;
 };
 
 // register write handler for epid
-MistNode.prototype.write = function(epid, cb) {
+MistNodeInner.prototype.write = function(epid, cb) {
     this.writeCb[epid] = cb;
 };
 
 // register invoke handler for epid
-MistNode.prototype.invoke = function(epid, cb) {
+MistNodeInner.prototype.invoke = function(epid, cb) {
     this.invokeCb[epid] = cb;
 };
 
-MistNode.prototype.changed = function(epid) {
+MistNodeInner.prototype.changed = function(epid) {
     var request = { changed: epid };
     
     this.addon.request("mistnode", BSON.serialize(request));
@@ -383,7 +383,7 @@ function MistNode(opts) {
                 }; 
             })(msg.read.id));
         } else {
-            console.log("There is no invoke function registered for", msg.read.epid );
+            console.log("There is no read function registered for", msg.read.epid );
         }
     });
     
