@@ -37,7 +37,7 @@ describe('Wish RPC', function () {
     });
 
     it('should get error on invalid parameters', function(done) {
-        mist.wish('identity.export', [], function (err, data) {
+        mist.wish.request('identity.export', [], function (err, data) {
             if(err) { if (data.code === 8) { return done(); } }
             
             done(new Error('Not the expected error. '+inspect(data)));
@@ -45,7 +45,7 @@ describe('Wish RPC', function () {
     });
     
     it('should get version string', function(done) {
-        mist.wish('version', [], function(err, data) { 
+        mist.wish.request('version', [], function(err, data) { 
             if (err) { return done(new Error(inspect(data))); }
             
             console.log("wish-core version string:", err, data);
@@ -54,12 +54,12 @@ describe('Wish RPC', function () {
     });
     
     it('should get signals', function(done) {
-        var signalsId = mist.wish('signals', [], function(err, data) { 
+        var signalsId = mist.wish.request('signals', [], function(err, data) { 
             if (err) { return done(new Error(inspect(data))); }
             if (data[0] !== 'ok') { return; }
             
             console.log("wish-core signals:", err, data, signalsId);
-            mist.wishCancel(signalsId);
+            mist.wish.cancel(signalsId);
             done();
         });
     });

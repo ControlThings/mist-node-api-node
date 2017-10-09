@@ -37,15 +37,15 @@ describe('MistApi Friends', function () {
         
         
         // subscribe to signals from core and automatically accept friend request from Alice
-        bob.wish('signals', [], function(err, data) {
+        bob.wish.request('signals', [], function(err, data) {
             if (data[0] && data[0] === 'friendRequest') {
-                bob.wish('identity.friendRequestList', [], function(err, data) {
+                bob.wish.request('identity.friendRequestList', [], function(err, data) {
                     for (var i in data) {
                         if( Buffer.compare(data[i].luid, bobIdentity.uid) === 0 
                                 && Buffer.compare(data[i].ruid, aliceIdentity.uid) === 0 ) 
                         {
                             console.log("declining request.");
-                            bob.wish('identity.friendRequestDecline', [data[i].luid, data[i].ruid], function(err, data) {
+                            bob.wish.request('identity.friendRequestDecline', [data[i].luid, data[i].ruid], function(err, data) {
                                 console.log("Declined friend request from Alice:", err, data);
                             });
                             break;
@@ -58,7 +58,7 @@ describe('MistApi Friends', function () {
 
     it('should ensure identity', function(done) {
         function createIdentity(alias) {
-            bob.wish('identity.create', [alias], function(err, data) {
+            bob.wish.request('identity.create', [alias], function(err, data) {
                 if (err) { return done(new Error(inspect(data))); }
                 //console.log("Setting Bobs identity to:", data);
                 bobIdentity = data;
@@ -66,7 +66,7 @@ describe('MistApi Friends', function () {
             });
         }
         
-        bob.wish('identity.list', [], function(err, data) {
+        bob.wish.request('identity.list', [], function(err, data) {
             if (err) { return done(new Error(inspect(data))); }
             
             //console.log("Ensuring identity of Bob.", data);
@@ -77,7 +77,7 @@ describe('MistApi Friends', function () {
             for(var i in data) {
                 c++;
                 t++;
-                bob.wish('identity.remove', [data[i].uid], function(err, data) {
+                bob.wish.request('identity.remove', [data[i].uid], function(err, data) {
                     if (err) { return done(new Error(inspect(data))); }
 
                     c--;
@@ -97,7 +97,7 @@ describe('MistApi Friends', function () {
 
     it('should ensure identity for Mr. Andersson', function(done) {
         function createIdentity(alias) {
-            mist.wish('identity.create', [alias], function(err, data) {
+            mist.wish.request('identity.create', [alias], function(err, data) {
                 if (err) { return done(new Error(inspect(data))); }
                 //console.log("Setting Alice identity to:", err, data);
                 aliceIdentity = data;
@@ -105,7 +105,7 @@ describe('MistApi Friends', function () {
             });
         }
         
-        mist.wish('identity.list', [], function(err, data) {
+        mist.wish.request('identity.list', [], function(err, data) {
             if (err) { return done(new Error(inspect(data))); }
             
             //console.log("Ensuring identity of Alice.", data);
@@ -116,7 +116,7 @@ describe('MistApi Friends', function () {
             for(var i in data) {
                 c++;
                 t++;
-                mist.wish('identity.remove', [data[i].uid], function(err, data) {
+                mist.wish.request('identity.remove', [data[i].uid], function(err, data) {
                     if (err) { return done(new Error(inspect(data))); }
 
                     c--;
@@ -138,7 +138,7 @@ describe('MistApi Friends', function () {
         this.timeout(35000);
         
         function poll() {
-            mist.wish('wld.list', [], function(err, data) {
+            mist.wish.request('wld.list', [], function(err, data) {
                 if (err) { return done(new Error(inspect(data))); }
 
                 //console.log("Bobs wld", err, data);
@@ -160,13 +160,13 @@ describe('MistApi Friends', function () {
     
     it('should be declined friendRequest sent to Bob', function(done) {
         //console.log("Friend request params:", [aliceIdentity.uid, bobWldEntry.ruid, bobWldEntry.rhid]);
-        mist.wish('wld.friendRequest', [aliceIdentity.uid, bobWldEntry.ruid, bobWldEntry.rhid], function(err, data) {
+        mist.wish.request('wld.friendRequest', [aliceIdentity.uid, bobWldEntry.ruid, bobWldEntry.rhid], function(err, data) {
             if (err) { return done(new Error(inspect(data))); }
             
             console.log("Bobs cert", err, data);
             
             setTimeout(function() {
-                mist.wish('identity.list', [], function(err, data) {
+                mist.wish.request('identity.list', [], function(err, data) {
                     if (err) { return done(new Error(inspect(data))); }
 
                     //console.log("Alice's identity.list", err,data);

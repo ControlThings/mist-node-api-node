@@ -32,39 +32,6 @@ describe('MistApi Sandbox', function () {
             done();
         });
     });
-
-    before(function(done) {
-        util.clear(app1, done);
-    });
-
-    before(function(done) {
-        util.clear(app2, done);
-    });
-
-    var name1 = 'Alice';
-    
-    before(function(done) {
-        util.ensureIdentity(app1, name1, function(err, identity) {
-            if (err) { done(new Error('util.js: Could not ensure identity.')); }
-            mistIdentity1 = identity;
-            done(); 
-        });
-    });
-    
-    var name2 = 'Bob';
-    
-    before(function(done) {
-        util.ensureIdentity(app2, name2, function(err, identity) {
-            if (err) { done(new Error('util.js: Could not ensure identity.')); }
-            mistIdentity2 = identity;
-            done(); 
-        });
-    });
-    
-    before(function(done) {
-        // wait for relay connections to init
-        setTimeout(function(){ done(); },200);
-    });
     
     before(function (done) {
         mist1 = new Mist({ name: 'Generic UI', coreIp: '127.0.0.1', corePort: 9095 });
@@ -94,6 +61,39 @@ describe('MistApi Sandbox', function () {
                 }
             });
         }, 200);
+    });
+    
+    before(function(done) {
+        util.clear(mist1, done);
+    });
+
+    before(function(done) {
+        util.clear(mist2, done);
+    });
+
+    var name1 = 'Alice';
+    
+    before(function(done) {
+        util.ensureIdentity(app1, name1, function(err, identity) {
+            if (err) { done(new Error('util.js: Could not ensure identity.')); }
+            mistIdentity1 = identity;
+            done(); 
+        });
+    });
+    
+    var name2 = 'Bob';
+    
+    before(function(done) {
+        util.ensureIdentity(app2, name2, function(err, identity) {
+            if (err) { done(new Error('util.js: Could not ensure identity.')); }
+            mistIdentity2 = identity;
+            done(); 
+        });
+    });
+    
+    before(function(done) {
+        // wait for relay connections to init
+        setTimeout(function(){ done(); },200);
     });
     
     before(function(done) {
@@ -221,10 +221,11 @@ describe('MistApi Sandbox', function () {
     });
     
     it('should accept friend request and see peer in sandbox', function(done) {
+        this.timeout(5000);
         var signals = sandboxedGps.request('signals', [], function(err, data) {
             if (data === 'peers' || data[0] === 'peers') {
                 sandboxedGps.request('listPeers', [], function(err, data) {
-                    if (data.length !== 1) { return done(new Error('Not exactly one peer in sandbox!')); }
+                    if (data.length !== 1) { return done(new Error('Not exactly one peer in sandbox! '+ data.length)); }
                     
                     var peerCert = BSON.deserialize(app2serviceCert.data);
                     

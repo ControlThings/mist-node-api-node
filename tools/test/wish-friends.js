@@ -212,29 +212,29 @@ describe('Wish Friends', function () {
 
 function verifyTransport(data, done) {
     for (var i in data.hosts) {
-                var o = data.hosts[i];
-                if (Array.isArray(o.transports)) {
-                    //console.log("transports:", o.transports);
-                    
-                    /* Test success criterion: There must be at least one transport, and it must be string starting with: wish */
-                    var url = o.transports[0];
-                    
-                    if (typeof(url) === "string") {
-                        if (url.startsWith("wish")) {
-                            done();
-                            return;
-                        }
-                        else {
-                            console.log("url is", url);
-                            return done(new Error("Transport url is malformed in identity.get(Bob.uid) from Alice, does not start with 'wish': " + url));
-                        }
-                    } else {
-                        return done(new Error("Transport url is not string in identity.get(Bob.uid) from Alice"));
-                    }
-                    
-                    
-                } else {
-                    return done(new Error("There is no transports array in identity.get(Bob.uid) from Alice"));
+        var o = data.hosts[i];
+        if (Array.isArray(o.transports)) {
+            //console.log("transports:", o.transports);
+
+            /* Test success criterion: There must be at least one transport, and it must be string starting with: wish */
+            var url = o.transports[0];
+
+            if (typeof(url) === "string") {
+                if (url.startsWith("wish")) {
+                    done();
+                    return;
                 }
+                else {
+                    console.log("url is", url);
+                    return done(new Error("Transport url is malformed in identity.get(Bob.uid) from Alice, does not start with 'wish': " + url));
+                }
+            } else {
+                return done(new Error("Transport url is not string in identity.get(Bob.uid) from Alice"));
             }
+
+
+        } else {
+            return done(new Error("There is no transports array in identity.get(Bob.uid) from Alice"));
+        }
+    }
 }

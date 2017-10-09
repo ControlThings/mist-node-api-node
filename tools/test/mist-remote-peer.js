@@ -99,8 +99,9 @@ describe('Mist remote peer', function () {
             config: { label: 'Config', type: 'invoke', invoke: true }
         });
         
-        // used to check the read
-        node.update('lon', 65.543);
+        node.read('lon', function(args, peer, cb) {
+            cb(65.543);
+        });
         
         // used for invoke test
         node.invoke('config', function(args, peer, cb) {

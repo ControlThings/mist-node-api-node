@@ -33,7 +33,7 @@ describe('MistApi Sandbox', function () {
     var unimportantIdentity;
 
     before('should ensure identity for Alice', function(done) {
-        mist.wish('identity.list', [], function(err, data) {
+        mist.wish.request('identity.list', [], function(err, data) {
             if (err) { return done(new Error(inspect(data))); }
             
             //console.log("Ensuring identity of Alice.", data);
@@ -44,7 +44,7 @@ describe('MistApi Sandbox', function () {
             for(var i in data) {
                 c++;
                 t++;
-                mist.wish('identity.remove', [data[i].uid], function(err, data) {
+                mist.wish.request('identity.remove', [data[i].uid], function(err, data) {
                     if (err) { return done(new Error(inspect(data))); }
 
                     c--;
@@ -61,7 +61,7 @@ describe('MistApi Sandbox', function () {
     });
 
     before('should ensure identity for Alice', function(done) {
-        mist.wish('identity.create', [aliceAlias], function(err, data) {
+        mist.wish.request('identity.create', [aliceAlias], function(err, data) {
             if (err) { return done(new Error(inspect(data))); }
             //console.log("Setting Alice identity to:", err, data);
             aliceIdentity = data;
@@ -70,7 +70,7 @@ describe('MistApi Sandbox', function () {
     });
 
     before('should ensure identity for Mr. Unimportant', function(done) {
-        mist.wish('identity.create', ['Mr. Unimportant'], function(err, data) {
+        mist.wish.request('identity.create', ['Mr. Unimportant'], function(err, data) {
             if (err) { return done(new Error(inspect(data))); }
             unimportantIdentity = data;
             done();
@@ -142,7 +142,7 @@ describe('MistApi Sandbox', function () {
     });
     
     it('shuold list wish identities', function(done) {
-        mist.wish('identity.list', [], function(err, data) {
+        mist.wish.request('identity.list', [], function(err, data) {
             console.log("all identities", err, data);
             done();
         });

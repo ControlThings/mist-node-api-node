@@ -31,7 +31,7 @@ describe('Wish Relay', function () {
     it('should wait for relays to connect', function(done) { setTimeout(done, 300); });
     
     it('should get list of relays', function(done) {
-        mist.wish('relay.list', [], function(err, data) { 
+        mist.wish.request('relay.list', [], function(err, data) { 
             if (err) { return done(new Error(inspect(data))); }
             
             console.log("wish-core relays:", err, data);
@@ -41,10 +41,10 @@ describe('Wish Relay', function () {
     
     it('should add relay server', function(done) {
         var host = '127.0.0.1:37008';
-        mist.wish('relay.add', [host], function(err, data) { 
+        mist.wish.request('relay.add', [host], function(err, data) { 
             if (err) { return done(new Error(inspect(data))); }
             
-            mist.wish('relay.list', [], function(err, data) { 
+            mist.wish.request('relay.list', [], function(err, data) { 
                 if (err) { return done(new Error(inspect(data))); }
 
                 var found = false;
@@ -67,10 +67,10 @@ describe('Wish Relay', function () {
     
     it('should delete relay server', function(done) {
         var host = '127.0.0.1:37008';
-        mist.wish('relay.remove', [host], function(err, data) {
+        mist.wish.request('relay.remove', [host], function(err, data) {
             if (err) { return done(new Error(inspect(data))); }
             
-            mist.wish('relay.list', [], function(err, data) { 
+            mist.wish.request('relay.list', [], function(err, data) { 
                 if (err) { return done(new Error(inspect(data))); }
 
                 var found = false;

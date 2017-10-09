@@ -36,9 +36,16 @@ describe('MistApi Control', function () {
             state: { label: 'State', type: 'bool', read: true, write: true } 
         });
         
+        var state = false;
+        
+        node.read('state', function(args, peer, cb) {
+            cb(state);
+        });
+        
         node.write('state', function(value, peer, cb) {
-            console.log('Node write state:', value);
-            node.update('state', value);
+            //console.log('Node write state:', value);
+            state = value;
+            node.changed('state');
             cb();
         });
         
@@ -80,6 +87,15 @@ describe('MistApi Control', function () {
     it('shuold test control.write', function(done) {
         mist.request(peer, 'control.write', ['state', true], function (err, model) {
             if (err) { return done(new Error(inspect(model))); }
+            done();
+        });
+    });
+    
+    it('shuold test control.read', function(done) {
+        mist.request(peer, 'control.read', ['state'], function (err, value) {
+            if (err) { return done(new Error(inspect(model))); }
+            
+            if(value !== true) { return done(new Error('Value of state not true as expected.')); }
             done();
         });
     });

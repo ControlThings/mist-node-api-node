@@ -34,11 +34,11 @@ describe('Wish Local Discovery', function () {
 
     it('should get a localdiscovery signal', function(done) {
         this.timeout(10000);
-        mist.wish('signals', [], function (err, data) {
+        mist.wish.request('signals', [], function (err, data) {
             if (err) { return done(new Error('Signals returned error.')); }
             
             if(data[0] && data[0] === 'ok') {
-                mist.wish('wld.announce', [], function(err, data) {
+                mist.wish.request('wld.announce', [], function(err, data) {
                     if (err) { if (data.code === 8) { done(new Error('wld.announce does not exist')); } }
                     
                     console.log("Announce returned:", err, data);

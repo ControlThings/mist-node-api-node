@@ -36,6 +36,7 @@ describe('MistApi Control', function () {
     var peer;
     var end = false;
     var node;
+    var enabled = true;
 
     before('should start a mist node', function(done) {
         node = new MistNode({ name: 'ControlThings', corePort: 9095 }); // , coreIp: '127.0.0.1'
@@ -58,6 +59,16 @@ describe('MistApi Control', function () {
             counter: { label: 'Counter', type: 'int', read: true, write: true }
         });
         
+        var name = 'Just a Name';
+        
+        node.read('mist.name', function(args, peer, cb) { cb(name); });
+        
+        node.read('enabled', function(args, peer, cb) { cb(enabled); });
+        
+        node.read('lon', function(args, peer, cb) { cb(63.4); });
+        
+        node.read('counter', function(args, peer, cb) { cb(56784); });
+        
         node.invoke('device.config', function(args, peer, cb) {
             cb({ cool: ['a', 7, true], echo: args });
         });
@@ -67,7 +78,10 @@ describe('MistApi Control', function () {
         });
         
         node.write('mist.name', function(value, peer, cb) {
-            //console.log('Node write "mist.name":', value);
+            console.log('writing mist.name to', value);
+            name = value;
+            node.changed('mist.name');
+            cb();
         });
         
         setTimeout(done, 200);
@@ -135,17 +149,23 @@ describe('MistApi Control', function () {
     
     var follow;
     
+    
+    // Expect follow to return current values for all readable endpoints
     it('shuold test control.follow', function(done) {
+        var l = ['mist.name', 'enabled', 'lon', 'counter'];
         var end = false;
         follow = mist.request('mist.control.follow', [peer], function (err, data) {
             if (err) { return done(new Error(inspect(data))); }
-            //console.log("Follow update:", err, model);
+            //console.log("Follow update:", err, data, l);
             
-            if (!end) { end = true; done(); }
+            var index = l.indexOf(data.id);
+            if (index !== -1) { l.splice(index, 1); }
+            
+            if (!end && l.length === 0) { end = true; done(); }
         });
     });
     
-    it('shuold test control.read', function(done) {
+    it('shuold test control.read(counter)', function(done) {
         mist.request('mist.control.read', [peer, 'counter'], function (err, value) {
             if (err) { return done(new Error(inspect(value))); }
             
@@ -158,7 +178,7 @@ describe('MistApi Control', function () {
         });
     });
     
-    it('shuold test control.read', function(done) {
+    it('shuold test control.read(lon)', function(done) {
         mist.request('mist.control.read', [peer, 'lon'], function (err, value) {
             if (err) { return done(new Error(inspect(value))); }
             
@@ -171,7 +191,7 @@ describe('MistApi Control', function () {
         });
     });
     
-    it('shuold test control.read', function(done) {
+    it('shuold test control.read(enabled)', function(done) {
         mist.request('mist.control.read', [peer, 'enabled'], function (err, value) {
             if (err) { 
                 return done(new Error(inspect(value)));
@@ -202,7 +222,7 @@ describe('MistApi Control', function () {
     });
     
     it('shuold test control.write', function(done) {
-        mist.request('mist.control.write', [peer, 'counter'], function (err, data) {
+        mist.request('mist.control.write', [peer, 'lon'], function (err, data) {
             if (err) { 
                 if (data.code === 105) { 
                     return done(); 
@@ -261,7 +281,7 @@ describe('MistApi Control', function () {
                 return done(new Error(inspect(data)));
             }
             
-            if (data !== string) { return done(new Error('Read did not return the string written in previous test.')); }
+            if (data !== string) { return done(new Error('Read did not return the string written in previous test. '+ data +' !== '+ string)); }
             
             //console.log("mist.control.read(name: string):", err, data);
             done();
@@ -302,4 +322,19 @@ describe('MistApi Control', function () {
             
         });
     });
+    
+    it('shuold test control.follow', function(done) {
+        mist.request('mist.control.follow', [peer], function (err, data) {
+            if (err) { return done(new Error(data.msg)); }
+
+            if (data.id === 'enabled' && data.data === false) {
+                //console.log('id is enabled and data is false...');
+                done();
+                done = function() {};
+            }
+        });
+        
+        enabled = false;
+        node.changed('enabled');
+    });    
 });
