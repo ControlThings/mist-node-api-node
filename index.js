@@ -105,6 +105,10 @@ Addon.prototype.request = function(target, payload) {
     this.api.request(target, payload);
 };
 
+Addon.prototype.shutdown = function() {
+    this.request("kill", { kill: true });
+};
+
 function Mist(opts) {
     //console.log("Nodejs new Mist()", opts);
     
@@ -283,6 +287,16 @@ function MistNodeInner(addon) {
 
 inherits(MistNodeInner, EventEmitter);
 
+MistNodeInner.prototype.create = function(model, cb) {
+    var id = ++sharedId;
+    var request = { model: model };
+    
+    // store callback for response
+    this.requests[id] = cb;
+    
+    this.addon.request("mistnode", request);
+};
+
 MistNodeInner.prototype.endpointAdd = function(epid, endpoint) {
     var path = epid.split('.');
     
@@ -329,24 +343,26 @@ MistNodeInner.prototype.changed = function(epid) {
     this.addon.request("mistnode", request);
 };
 
-MistNodeInner.prototype.request = function(op, args, cb) {
-    if (typeof cb !== 'function') { console.log("not function:", new Error().stack); }
-    return this.requestBare(op, args, function(res) {
+MistNodeInner.prototype.request = function(peer, op, args, cb) {
+    return this.requestBare(peer, op, args, function(res) {
+        //console.log('requestBare cb:', arguments);
         if(res.err) { return cb(true, res.data); }
         
         cb(null, res.data);
     });
 };
 
-MistNodeInner.prototype.requestBare = function(op, args, cb) {
+MistNodeInner.prototype.requestBare = function(peer, op, args, cb) {
     var id = ++sharedId;
-    var request = { op: op, args: typeof args === 'undefined' ? [] : args, id: id };
+    var request = { peer: peer, op: op, args: args, id: id };
     
     // store callback for response
     this.requests[id] = cb;
+
+    //console.log("Making request", request, this);
     
     this.addon.request("mistnode", request);
-
+    
     return id;
 };
 
@@ -367,100 +383,10 @@ function MistNode(opts) {
     node.wish = new WishAppInner(this.addon);
     
     // keep track of instances to shut them down on exit.
-    instances.push(this);
+    instances.push(this.addon);
     
     return node;
 }
-
-inherits(MistNode, EventEmitter);
-
-MistNode.prototype.create = function(model, cb) {
-    var id = ++sharedId;
-    var request = { model: model };
-    
-    // store callback for response
-    this.requests[id] = cb;
-    
-    this.addon.request("mistnode", request);
-};
-
-MistNode.prototype.endpointAdd = function(epid, endpoint) {
-    var path = epid.split('.');
-    
-    var parent;
-    
-    if (path.length === 1) {
-        parent = null;
-    } else if (path.length > 1) {
-        parent = path.slice(0, path.length-1).join('.');
-    } else {
-        return console.log('endpoint could not be added, due to invalid arguments');
-    }
-    
-    epid = path.slice(-1)[0];
-    
-    endpoint.parent = parent;
-    endpoint.epid = epid;
-    
-    this.addon.request("mistnode", { endpointAdd: true, ep: endpoint });
-};
-
-MistNode.prototype.endpointRemove = function(epid) {
-    this.addon.request("mistnode", { endpointRemove: epid });
-};
-
-// register read handler for epid
-MistNode.prototype.read = function(epid, cb) {
-    this.readCb[epid] = cb;
-};
-
-// register write handler for epid
-MistNode.prototype.write = function(epid, cb) {
-    this.writeCb[epid] = cb;
-};
-
-// register invoke handler for epid
-MistNode.prototype.invoke = function(epid, cb) {
-    this.invokeCb[epid] = cb;
-};
-
-MistNode.prototype.changed = function(epid) {
-    var request = { changed: epid };
-    
-    this.addon.request("mistnode", request);
-};
-
-MistNode.prototype.request = function(peer, op, args, cb) {
-    return this.requestBare(peer, op, args, function(res) {
-        //console.log('requestBare cb:', arguments);
-        if(res.err) { return cb(true, res.data); }
-        
-        cb(null, res.data);
-    });
-};
-
-MistNode.prototype.requestBare = function(peer, op, args, cb) {
-    var id = ++sharedId;
-    var request = { peer: peer, op: op, args: args, id: id };
-    
-    // store callback for response
-    this.requests[id] = cb;
-
-    //console.log("Making request", request, this);
-    
-    this.addon.request("mistnode", request);
-    
-    return id;
-};
-
-MistNode.prototype.requestCancel = function(id) {
-    var request = { cancel: id };
-    this.addon.request("mistnode", request);
-};
-
-MistNode.prototype.shutdown = function() {
-    this.addon.request("kill", { kill: true });
-};
 
 function MistNodeSimple(node) {
     this.node = node;
@@ -603,13 +529,6 @@ function WishApp(opts) {
     // force type to WishApp
     opts.type = 4;
 
-    var self = this;
-    this.peers = [];
-    this.requests = {};
-    this.invokeCb = {};
-
-    this.opts = opts;
-    
     if ( Array.isArray(opts.protocols) ) {
         if (opts.protocols.length === 1) {
             opts.protocols =  opts.protocols[0];
@@ -624,111 +543,18 @@ function WishApp(opts) {
         throw new Error('WishApp protocols must be array or non-existing.');
     }
     
-    setTimeout(function() { self.emit('ready'); }, 200);
+    var addon = new Addon(opts);
+
+    var wish = new WishAppInner(addon);
     
-    this.api = new MistApi(function (event, data) {
-        if (!event && !data) { console.log('MistApi callback with no arguments..'); return; }
-        if (event === 'done') { return; }
-
-        var msg = null;
-
-        try {
-            msg = BSON.deserialize(data);
-        } catch(e) {
-            return console.log('Warning! Non BSON message from plugin.', arguments, event, data);
-        }
-
-        if (event === 'online') {
-            if (typeof self.onlineCb === 'function') { self.onlineCb(msg.peer); }
-
-            self.peers.push(msg.peer);
-
-            return;
-        }
-
-        if (event === 'offline') {
-            if (typeof self.offlineCb === 'function') { self.offlineCb(msg.peer); }
-
-            return;
-        }
-
-        if (event === 'frame') {
-            if (typeof self.frameCb === 'function') { self.frameCb(msg.peer, msg.frame); }
-
-            return;
-        }
-
-        if (event === 'wish') {
-
-            var id = msg.ack || msg.sig || msg.end || msg.err;
-
-            //console.log("the answer is:", require('util').inspect(msg, { colors: true, depth: 10 }));
-
-            if(typeof self.requests[id] === 'function') {
-                self.requests[id](msg);
-
-                if(!msg.sig) {
-                    delete self.requests[id];
-                }
-            } else {
-                console.log('Request not found for response:', id, self, self.requests);
-            }
-            return;
-        }
-        
-        console.log('Received an event from native addon which was unhandled.', arguments);
-    }, opts);
+    // FIXME this is required by multi-mist.js test, but should be removed
+    wish.opts = opts;
     
     // keep track of instances to shut them down on exit.
-    instances.push(this);
+    instances.push(addon);
     
+    return wish;
 }
-
-inherits(WishApp, EventEmitter);
-
-WishApp.prototype.send = function(peer, message, cb) {
-    this.request('services.send', [peer, message], cb || function() {});
-};
-
-WishApp.prototype.broadcast = function(message) {
-    for(var i in this.peers) {
-        this.request('services.send', [this.peers[i], message], function() {});
-    }
-};
-
-WishApp.prototype.request = function(op, args, cb) {
-    if (typeof cb !== 'function') { console.log("not function:", new Error().stack); }
-    return this.requestBare(op, args, function(res) {
-        if(res.err) { return cb(true, res.data); }
-        
-        cb(null, res.data);
-    });
-};
-
-WishApp.prototype.requestBare = function(op, args, cb) {
-    var id = ++sharedId;
-    var request = { op: op, args: typeof args === 'undefined' ? [] : args, id: id };
-    
-    // store callback for response
-    this.requests[id] = cb;
-    
-    this.api.request("wish", BSON.serialize(request));
-
-    return id;
-};
-
-WishApp.prototype.cancel = function(id) {
-    var request = { cancel: id };
-    this.api.request("wish", BSON.serialize(request));
-};
-
-WishApp.prototype.disconnect = function() {
-    this.api.request("kill", BSON.serialize({ kill: true }));
-};
-
-WishApp.prototype.shutdown = function() {
-    this.api.request("kill", BSON.serialize({ kill: true }));
-};
 
 process.on('exit', function() {
     for(var i in instances) {
