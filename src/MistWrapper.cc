@@ -94,6 +94,11 @@ MistWrapper::request(const Nan::FunctionCallbackInfo<v8::Value>& info) {
         Nan::ThrowTypeError("Wrong arguments");
         return;
     }
+
+    if (!info[1]->ToObject()->IsUint8Array()) {
+        Nan::ThrowTypeError("Argument 2 is not a Buffer");
+        return;
+    }
     
     v8::String::Utf8Value name(info[0]->ToString());
     

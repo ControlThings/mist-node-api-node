@@ -41,27 +41,22 @@ describe('MistApi Control', function () {
     before('should start a mist node', function(done) {
         node = new MistNode({ name: 'ControlThings', corePort: 9095 }); // , coreIp: '127.0.0.1'
         
-        node.create({
-            mist: {
-                type: 'string',
-                '#': {
-                    name: { label: 'Name', type: 'string', read: true, write: true }
-                }
-            },
-            enabled: { label: 'Enabled', type: 'bool', read: true, write: true },
-            lon: { label: 'Longitude', type: 'float', read: true },
-            device: {
-                type: 'string',
-                '#': {
-                    config: { label: 'Config', type: 'invoke', invoke: true }
-                }
-            },
-            counter: { label: 'Counter', type: 'int', read: true, write: true }
-        });
-        
+        node.endpointAdd('mist', { type: 'string' });
+        node.endpointAdd('mist.name', { label: 'Name', type: 'string', read: true, write: true });
+        node.endpointAdd('name', { label: 'Name', type: 'string', read: true, write: true });
+        node.endpointAdd('enabled', { label: 'Enabled', type: 'bool', read: true, write: true });
+        node.endpointAdd('lon', { label: 'Longitude', type: 'float', read: true });
+        node.endpointAdd('device', { type: 'string' });
+        node.endpointAdd('device.config', { label: 'Config', type: 'invoke', invoke: true });
+        node.endpointAdd('counter', { label: 'Counter', type: 'int', read: true, write: true });
+        node.endpointAdd('temporary', { label: 'Removable', type: 'int', read: true, write: true });
+        node.endpointRemove('temporary');
+
         var name = 'Just a Name';
         
         node.read('mist.name', function(args, peer, cb) { cb(name); });
+        
+        node.read('name', function(args, peer, cb) { cb('root:'+ name); });
         
         node.read('enabled', function(args, peer, cb) { cb(enabled); });
         
@@ -78,7 +73,7 @@ describe('MistApi Control', function () {
         });
         
         node.write('mist.name', function(value, peer, cb) {
-            console.log('writing mist.name to', value);
+            //console.log('writing mist.name to', value);
             name = value;
             node.changed('mist.name');
             cb();
@@ -142,7 +137,7 @@ describe('MistApi Control', function () {
     it('shuold test control.model', function(done) {
         mist.request('mist.control.model', [peer], function (err, model) {
             if (err) { return done(new Error(inspect(model))); }
-            //console.log("Got a model:", err, model);
+            //console.log("Got a model:", err, inspect(model, null, 10, true));
             done();
         });
     });
@@ -337,4 +332,33 @@ describe('MistApi Control', function () {
         enabled = false;
         node.changed('enabled');
     });    
+    
+    it('shuold remove device endpoint', function(done) {
+        node.endpointRemove('device');
+        mist.request('mist.control.model', [peer], function (err, model) {
+            if (err) { return done(new Error(inspect(model))); }
+            //console.log("Got a model:", err, inspect(model, null, 10, true));
+            done();
+        });
+    });
+    
+    it('shuold remove first root endpoint', function(done) {
+        node.endpointRemove('mist');
+        mist.request('mist.control.model', [peer], function (err, model) {
+            if (err) { return done(new Error(inspect(model))); }
+            //console.log("Got a model:", err, inspect(model, null, 10, true));
+            done();
+        });
+    });
+    
+    it('shuold remove all endpoints', function(done) {
+        node.endpointRemove('enabled');
+        node.endpointRemove('lon');
+        node.endpointRemove('counter');
+        mist.request('mist.control.model', [peer], function (err, model) {
+            if (err) { return done(new Error(inspect(model))); }
+            //console.log("Got a model:", err, inspect(model, null, 10, true));
+            done();
+        });
+    });
 });

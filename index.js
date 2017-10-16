@@ -100,6 +100,8 @@ function Addon(opts) {
 inherits(Addon, EventEmitter);
 
 Addon.prototype.request = function(target, payload) {
+    if (Buffer.isBuffer(payload)) { console.log('A buffer was sent to Addon', new Error().stack); }
+    if (typeof payload === 'object') { payload = BSON.serialize(payload); }
     this.api.request(target, payload);
 };
 
@@ -185,14 +187,14 @@ Mist.prototype.requestBare = function(op, args, cb) {
 
     //console.log("Making request", request, this);
     
-    this.addon.request("mist", BSON.serialize(request));
+    this.addon.request("mist", request);
     
     return id;
 };
 
 Mist.prototype.requestCancel = function(id) {
     var request = { cancel: id };
-    this.addon.request("mist", BSON.serialize(request));
+    this.addon.request("mist", request);
 };
 
 Mist.prototype.registerSandbox = function(sandbox) {
@@ -200,7 +202,7 @@ Mist.prototype.registerSandbox = function(sandbox) {
 };
 
 Mist.prototype.shutdown = function() {
-    this.addon.request("kill", BSON.serialize({ kill: true }));
+    this.addon.request("kill", { kill: true });
 };
 
 function MistNodeInner(addon) {
@@ -247,7 +249,7 @@ function MistNodeInner(addon) {
             self.readCb[msg.read.epid](msg.read.args, msg.peer, (function (id) {
                 return function(data) {
                     var request = { read: id, epid: msg.read.epid, data: data };
-                    self.addon.request("mistnode", BSON.serialize(request));
+                    self.addon.request("mistnode", request);
                 }; 
             })(msg.read.id));
         } else {
@@ -270,7 +272,7 @@ function MistNodeInner(addon) {
             self.invokeCb[msg.invoke.epid](msg.invoke.args, msg.peer, (function (id) {
                 return function(data) {
                     var request = { invoke: id, epid: msg.invoke.epid, data: data };
-                    self.addon.request("mistnode", BSON.serialize(request));
+                    self.addon.request("mistnode", request);
                 }; 
             })(msg.invoke.id));
         } else {
@@ -288,7 +290,7 @@ MistNodeInner.prototype.create = function(model, cb) {
     // store callback for response
     this.requests[id] = cb;
     
-    this.addon.request("mistnode", BSON.serialize(request));
+    this.addon.request("mistnode", request);
 };
 // register read handler for epid
 MistNodeInner.prototype.read = function(epid, cb) {
@@ -308,7 +310,7 @@ MistNodeInner.prototype.invoke = function(epid, cb) {
 MistNodeInner.prototype.changed = function(epid) {
     var request = { changed: epid };
     
-    this.addon.request("mistnode", BSON.serialize(request));
+    this.addon.request("mistnode", request);
 };
 
 MistNodeInner.prototype.request = function(op, args, cb) {
@@ -327,14 +329,14 @@ MistNodeInner.prototype.requestBare = function(op, args, cb) {
     // store callback for response
     this.requests[id] = cb;
     
-    this.addon.request("mistnode", BSON.serialize(request));
+    this.addon.request("mistnode", request);
 
     return id;
 };
 
 MistNodeInner.prototype.requestCancel = function(id) {
     var request = { cancel: id };
-    this.addon.request("mistnode", BSON.serialize(request));
+    this.addon.request("mistnode", request);
 };
 
 function MistNode(opts) {
@@ -379,7 +381,7 @@ function MistNode(opts) {
             self.readCb[msg.read.epid](msg.read.args, msg.peer, (function (id) {
                 return function(data) {
                     var request = { read: id, epid: msg.read.epid, data: data };
-                    self.addon.request("mistnode", BSON.serialize(request));
+                    self.addon.request("mistnode", request);
                 }; 
             })(msg.read.id));
         } else {
@@ -402,7 +404,7 @@ function MistNode(opts) {
             self.invokeCb[msg.invoke.epid](msg.invoke.args, msg.peer, (function (id) {
                 return function(data) {
                     var request = { invoke: id, epid: msg.invoke.epid, data: data };
-                    self.addon.request("mistnode", BSON.serialize(request));
+                    self.addon.request("mistnode", request);
                 }; 
             })(msg.invoke.id));
         } else {
@@ -428,7 +430,32 @@ MistNode.prototype.create = function(model, cb) {
     // store callback for response
     this.requests[id] = cb;
     
-    this.addon.request("mistnode", BSON.serialize(request));
+    this.addon.request("mistnode", request);
+};
+
+MistNode.prototype.endpointAdd = function(epid, endpoint) {
+    var path = epid.split('.');
+    
+    var parent;
+    
+    if (path.length === 1) {
+        parent = null;
+    } else if (path.length > 1) {
+        parent = path.slice(0, path.length-1).join('.');
+    } else {
+        return console.log('endpoint could not be added, due to invalid arguments');
+    }
+    
+    epid = path.slice(-1)[0];
+    
+    endpoint.parent = parent;
+    endpoint.epid = epid;
+    
+    this.addon.request("mistnode", { endpointAdd: true, ep: endpoint });
+};
+
+MistNode.prototype.endpointRemove = function(epid) {
+    this.addon.request("mistnode", { endpointRemove: epid });
 };
 
 // register read handler for epid
@@ -449,7 +476,7 @@ MistNode.prototype.invoke = function(epid, cb) {
 MistNode.prototype.changed = function(epid) {
     var request = { changed: epid };
     
-    this.addon.request("mistnode", BSON.serialize(request));
+    this.addon.request("mistnode", request);
 };
 
 MistNode.prototype.request = function(peer, op, args, cb) {
@@ -470,19 +497,23 @@ MistNode.prototype.requestBare = function(peer, op, args, cb) {
 
     //console.log("Making request", request, this);
     
-    this.addon.request("mistnode", BSON.serialize(request));
+    this.addon.request("mistnode", request);
     
     return id;
 };
 
 MistNode.prototype.requestCancel = function(id) {
     var request = { cancel: id };
-    this.addon.request("mistnode", BSON.serialize(request));
+    this.addon.request("mistnode", request);
 };
 
 MistNode.prototype.shutdown = function() {
-    this.addon.request("kill", BSON.serialize({ kill: true }));
+    this.addon.request("kill", { kill: true });
 };
+
+function MistNodeSimple(node) {
+    this.node = node;
+}
 
 function Sandboxed(mist, sandboxId) {
     if (!mist || !mist.opts || !mist.opts.type === 2) {
@@ -518,7 +549,7 @@ Sandboxed.prototype.requestBare = function(op, args, cb) {
     // store callback for response in the mist object
     this.mist.requests[id] = cb;
     
-    this.addon.request('sandboxed', BSON.serialize(request));
+    this.addon.request('sandboxed', request);
 
     return id;
 };
@@ -529,7 +560,7 @@ Sandboxed.prototype.requestCancel = function(id) {
     
     setTimeout(function() { if(self.mist.requests[id]) { delete self.mist.requests[id]; } }, 500);
     
-    this.addon.request('sandboxed', BSON.serialize(request));
+    this.addon.request('sandboxed', request);
 };
 
 function copy(that) {
@@ -604,14 +635,14 @@ WishAppInner.prototype.requestBare = function(op, args, cb) {
     // store callback for response
     this.requests[id] = cb;
     
-    this.addon.request("wish", BSON.serialize(request));
+    this.addon.request("wish", request);
 
     return id;
 };
 
 WishAppInner.prototype.cancel = function(id) {
     var request = { cancel: id };
-    this.addon.request("wish", BSON.serialize(request));
+    this.addon.request("wish", request);
 };
 
 function WishApp(opts) {
@@ -757,6 +788,7 @@ process.on('exit', function() {
 module.exports = {
     Mist: Mist,
     MistNode: MistNode,
+    MistNodeSimple: MistNodeSimple,
     Sandboxed: Sandboxed,
     WishApp: WishApp };
 

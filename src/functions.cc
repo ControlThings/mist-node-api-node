@@ -575,6 +575,114 @@ static char* endpoint_path_from_model(const char* id) {
     return out;
 }
 
+static void mist_add_ep_bson(mist_app_t* mist_app, const bson* ep_bson) {
+    mist_model* model = &mist_app->model;
+
+    bson_iterator it;
+    bson_iterator_init(&it, ep_bson);
+    
+    const char* parent = NULL;
+
+    bson_iterator_init(&it, ep_bson);
+    bson_find_fieldpath_value("ep.parent", &it);
+    if( bson_iterator_type(&it) == BSON_STRING) { parent = bson_iterator_string(&it); }
+
+    const char* epid = NULL;
+    
+    bson_iterator_init(&it, ep_bson);
+    bson_find_fieldpath_value("ep.epid", &it);
+    if( bson_iterator_type(&it) == BSON_STRING) { epid = bson_iterator_string(&it); }
+
+
+    const char* ep_label = NULL;
+
+    bson_iterator_init(&it, ep_bson);
+    bson_find_fieldpath_value("ep.label", &it);
+    if( bson_iterator_type(&it) != BSON_STRING) {
+        ep_label = epid;
+    } else {
+        ep_label = bson_iterator_string(&it);
+    }
+
+    bson_iterator_init(&it, ep_bson);
+    bson_find_fieldpath_value("ep.type", &it);
+
+    char* ep_type;
+
+    if( bson_iterator_type(&it) != BSON_STRING) {
+        return;
+    } else {
+        ep_type = (char*) bson_iterator_string(&it);
+    }
+
+    char* ep_scale = NULL;
+    bson_iterator_init(&it, ep_bson);
+    bson_find_fieldpath_value("ep.scale", &it);
+    if( bson_iterator_type(&it) == BSON_STRING) {
+        ep_scale = (char*) bson_iterator_string(&it);
+    }
+
+    bool readable = false;
+
+    // read: true
+    bson_iterator_init(&it, ep_bson);
+    bson_find_fieldpath_value("ep.read", &it);
+    if( bson_iterator_type(&it) == BSON_BOOL) {
+        if ( bson_iterator_bool(&it) ) {
+            readable = true;
+        }
+    }
+
+    bool writable = false;
+
+    bson_iterator_init(&it, ep_bson);
+    bson_find_fieldpath_value("ep.write", &it);
+    if( bson_iterator_type(&it) == BSON_BOOL) {
+        writable = bson_iterator_bool(&it);
+    }
+
+    bool invokable = false;
+
+    bson_iterator_init(&it, ep_bson);
+    bson_find_fieldpath_value("ep.invoke", &it);
+    if( bson_iterator_type(&it) != BSON_EOO) {
+        invokable = true;
+    }
+
+    // allocate a new endpoint and space for data
+    mist_ep* ep = (mist_ep*) malloc(sizeof(mist_ep));
+    if (ep == NULL) { return; }
+    memset(ep, 0, sizeof(mist_ep));
+
+    ep->id = strdup(epid);
+    ep->label = strdup(ep_label);
+
+    if ( strncmp(ep_type, "float", 16) == 0 ) {
+        ep->type = MIST_TYPE_FLOAT;
+    } else if ( strncmp(ep_type, "int", 16) == 0 ) {
+        ep->type = MIST_TYPE_INT;
+    } else if ( strncmp(ep_type, "bool", 16) == 0 ) {
+        ep->type = MIST_TYPE_BOOL;
+    } else if ( strncmp(ep_type, "string", 16) == 0 ) {
+        ep->type = MIST_TYPE_STRING;
+    } else if (invokable) {
+        ep->type = MIST_TYPE_INVOKE;                            
+    } else {
+         return;
+    }
+
+    if (readable) { ep->read = hw_read; }
+    if (writable) { ep->write = hw_write; }
+    if (invokable) { ep->invoke = hw_invoke; }
+    ep->unit = NULL;
+    ep->next = NULL;
+    ep->prev = NULL;
+    ep->dirty = false;
+    ep->scaling = ep_scale;
+
+    mist_ep_add(model, parent, ep);
+}
+
 static bson_visitor_cmd_t mist_model_build_visitor(
         const char *ipath, int ipathlen, 
         const char *key, int keylen,
@@ -697,7 +805,7 @@ static bson_visitor_cmd_t mist_model_build_visitor(
 
         char* parent = endpoint_path_from_model(tpath+6);
         
-        mist_add_ep(model, parent, ep);
+        mist_ep_add(model, parent, ep);
         
         if ( parent != NULL ) { free(parent); }
         
@@ -748,6 +856,22 @@ static void mist_node_api_handler(mist_app_t* mist_app, input_buf* msg) {
         bson bs;
         bson_init_with_data(&bs, msg->data);
         mist_model_parse(&bs, model);
+        return;
+    }
+
+    // endpointAdd
+    if (BSON_EOO != bson_find_from_buffer(&it, msg->data, "endpointAdd")) {
+        bson bs;
+        bson_init_with_data(&bs, msg->data);
+        
+        mist_add_ep_bson(mist_app, &bs);
+        return;
+    }
+
+    // endpointRemove
+    if (BSON_STRING == bson_find_from_buffer(&it, msg->data, "endpointRemove")) {
+        
+        mist_ep_remove(model, bson_iterator_string(&it));
         return;
     }
 
