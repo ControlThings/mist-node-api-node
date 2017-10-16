@@ -114,23 +114,11 @@ describe('MistApi Control', function () {
         mist.request('listPeers', [], peers);
     });
     
-    xit('should check identity in core', function (done) {
-        console.log('going into second test...');
-        mist.wish('identity.list', [], function(err, data) {
+    it('should check identity in core', function (done) {
+        node.wish.request('identity.list', [], function(err, data) {
             if (err) { return done(new Error('wish rpc returned error')); }
-            
-            console.log("got the identity list", err, data);
-            
-            if (data.length === 0) {
-                //console.log("Created identity.");
-                mist.wish('identity.create', ['Mr. Andersson'], function(err, data) {
-                    console.log("Wish core had no identities. One has been created. Re-run test.");
-                    process.exit(1);
-                    //done();
-                });
-            } else {
-                done();
-            }
+            //console.log("got the identity list", err, data);
+            done();
         });
     });
     

@@ -283,15 +283,31 @@ function MistNodeInner(addon) {
 
 inherits(MistNodeInner, EventEmitter);
 
-MistNodeInner.prototype.create = function(model, cb) {
-    var id = ++sharedId;
-    var request = { model: model };
+MistNodeInner.prototype.endpointAdd = function(epid, endpoint) {
+    var path = epid.split('.');
     
-    // store callback for response
-    this.requests[id] = cb;
+    var parent;
     
-    this.addon.request("mistnode", request);
+    if (path.length === 1) {
+        parent = null;
+    } else if (path.length > 1) {
+        parent = path.slice(0, path.length-1).join('.');
+    } else {
+        return console.log('endpoint could not be added, due to invalid arguments');
+    }
+    
+    epid = path.slice(-1)[0];
+    
+    endpoint.parent = parent;
+    endpoint.epid = epid;
+    
+    this.addon.request("mistnode", { endpointAdd: true, ep: endpoint });
 };
+
+MistNodeInner.prototype.endpointRemove = function(epid) {
+    this.addon.request("mistnode", { endpointRemove: epid });
+};
+
 // register read handler for epid
 MistNodeInner.prototype.read = function(epid, cb) {
     this.readCb[epid] = cb;
@@ -357,68 +373,17 @@ function MistNode(opts) {
     this.opts = opts;
 
     this.addon = new Addon(opts);
-    
-    this.addon.on('mistnode', function(msg) {
-        var id = msg.ack || msg.sig || msg.end || msg.err;
 
-        if(typeof self.requests[id] === 'function') {
-            self.requests[id](msg);
-
-            if(!msg.sig) {
-                delete self.requests[id];
-            }
-        } else {
-            console.log('Request not found for response:', id, self, self.requests);
-        }
-    });
-    
-    this.addon.on('online', function(peer) {
-        self.peers.push(peer);
-    });
-
-    this.addon.on('read', function(msg) {
-        if(typeof self.readCb[msg.read.epid] === 'function') {
-            self.readCb[msg.read.epid](msg.read.args, msg.peer, (function (id) {
-                return function(data) {
-                    var request = { read: id, epid: msg.read.epid, data: data };
-                    self.addon.request("mistnode", request);
-                }; 
-            })(msg.read.id));
-        } else {
-            console.log("There is no read function registered for", msg.read.epid );
-        }
-    });
-    
-    this.addon.on('write', function(msg) {
-        if(typeof self.writeCb[msg.write.epid] === 'function') {
-            self.writeCb[msg.write.epid](msg.write.args, msg.peer, function () {
-                console.log('write should send ack');
-            });
-        } else {
-            console.log("There is no write function registered for", msg.write.epid );
-        }
-    });
-
-    this.addon.on('invoke', function(msg) {
-        if(typeof self.invokeCb[msg.invoke.epid] === 'function') {
-            self.invokeCb[msg.invoke.epid](msg.invoke.args, msg.peer, (function (id) {
-                return function(data) {
-                    var request = { invoke: id, epid: msg.invoke.epid, data: data };
-                    self.addon.request("mistnode", request);
-                }; 
-            })(msg.invoke.id));
-        } else {
-            console.log("There is no invoke function registered for", msg.invoke.epid );
-        }
-    });
-
-    this.wish = new WishAppInner(this.addon);
+    var node = new MistNodeInner(this.addon);
+    node.wish = new WishAppInner(this.addon);
     
     // keep track of instances to shut them down on exit.
     instances.push(this);
     
     // FIXME get ready signal from wish-app connecting to core
     setTimeout(function() { self.emit('ready'); }, 200);
+    
+    return node;
 }
 
 inherits(MistNode, EventEmitter);
