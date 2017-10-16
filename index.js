@@ -356,22 +356,11 @@ MistNodeInner.prototype.requestCancel = function(id) {
 };
 
 function MistNode(opts) {
-    //console.log("Nodejs new Mist()", opts);
-    
-    var self = this;
-    this.requests = {};
-    this.readCb = {};
-    this.writeCb = {};
-    this.invokeCb = {};
-    this.peers = [];
-
     if (!opts) { opts = {}; }
 
     // Default to MistApi
     if (!opts.type) { opts.type = 3; }
     
-    this.opts = opts;
-
     this.addon = new Addon(opts);
 
     var node = new MistNodeInner(this.addon);
@@ -379,9 +368,6 @@ function MistNode(opts) {
     
     // keep track of instances to shut them down on exit.
     instances.push(this);
-    
-    // FIXME get ready signal from wish-app connecting to core
-    setTimeout(function() { self.emit('ready'); }, 200);
     
     return node;
 }
