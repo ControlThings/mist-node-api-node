@@ -45,13 +45,13 @@ describe('Multi Mist', function () {
                 //console.log('creating instance: ', i);
                 //var mist = new MistNode({ name: 'MistNode-'+i, protocols: [], coreIp: '127.0.0.1', corePort: 9095 });
                 //var mist = new Mist({ name: 'MistApp-'+i, protocols: [], coreIp: '127.0.0.1', corePort: 9095 });
-                var mist = new WishApp({ name: 'WishApp-'+i, protocols: [], coreIp: '127.0.0.1', corePort: 9095 });
+                var wish = new WishApp({ name: 'WishApp-'+i, protocols: [], coreIp: '127.0.0.1', corePort: 9095 });
 
-                list.push(mist);
+                list.push(wish);
 
                 setTimeout(function() {
                     var expired = false;
-                    mist.request('signals', [], function(err, data) {
+                    wish.request('signals', [], function(err, data) {
                         //console.log('signals in WishApp-'+i+": ", data); //, ' (waiting for signals: '+count+')');
                         if (expired) { return; } else { expired = true; }
                         if( --count === 0 ) { checkServiceList(done); }
