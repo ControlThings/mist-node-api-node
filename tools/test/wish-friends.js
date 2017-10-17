@@ -27,7 +27,7 @@ describe('Wish Friends', function () {
     
     before('Should attach signals to app1', function(done) {
         app1.request('signals', [], function(err, data) {
-            console.log("App1: Got signal", data);
+            //console.log("App1: Got signal", data);
         });
         
         done();
@@ -45,7 +45,7 @@ describe('Wish Friends', function () {
     before('Should attach signals to app2', function(done) {
         // subscribe to signals from core and automatically accept friend request from Alice
         app2.request('signals', [], function(err, data) {
-            console.log("App2: Got signal", data);
+            //console.log("App2: Got signal", data);
             if (data[0] && data[0] === 'friendRequest') {
                 console.log("Friend request signal");
                 app2.request('identity.friendRequestList', [], function(err, data) {
@@ -137,7 +137,7 @@ describe('Wish Friends', function () {
                 app1.request('identity.list', [], function(err, data) {
                     if (err) { return done(new Error(inspect(data))); }
 
-                    console.log("Alice's identity.list after wld.friendRequest", err,data);
+                    //console.log("Alice's identity.list after wld.friendRequest", err,data);
                     done();
                 });
             }, 250);
@@ -147,7 +147,7 @@ describe('Wish Friends', function () {
     it('should get bobs identity list', function(done) {
         app2.request('identity.list', [], function(err, data) {
             if (err) { return done(new Error(inspect(data))); }
-            console.log("Bobs identity.list:", inspect(data, {colors:true}));
+            //console.log("Bobs identity.list:", inspect(data, {colors:true}));
             done();
         });
     });
@@ -155,7 +155,7 @@ describe('Wish Friends', function () {
     it('should get Alices identity list', function(done) {
         app1.request('identity.list', [], function(err, data) {
             if (err) { return done(new Error(inspect(data))); }
-            console.log("Alices identity.list:", inspect(data, {colors:true}));
+            //console.log("Alices identity.list:", inspect(data, {colors:true}));
             done();
         });
     });
@@ -167,7 +167,7 @@ describe('Wish Friends', function () {
             app1.request('connections.list', [], function(err, data) {
                 if (err) { return done(new Error(inspect(data))); }
 
-                console.log("Alice connections", err, data);
+                //console.log("Alice connections", err, data);
                 
                 for (var i in data) {
                     if( Buffer.compare(data[i].ruid, identity2.uid) === 0 ) {
@@ -184,11 +184,11 @@ describe('Wish Friends', function () {
     });
     
     it('Verify that Alice has a transport for Bob that seems valid', function(done) {
-        console.log("Bob's uid", identity2);
+        //console.log("Bob's uid", identity2);
         app1.request('identity.get', [identity2.uid], function(err, data) {
             if (err) { return done(new Error("Error while doing identity.get from Alice " + err + " " + inspect(data))); }
             
-            console.log("Bob's identity on Alice", data);
+            //console.log("Bob's identity on Alice", data);
             
             verifyTransport(data, done);
             
@@ -197,11 +197,11 @@ describe('Wish Friends', function () {
     });
     
     it('Verify that Bob has a transport for Alice that seems valid', function(done) {
-        console.log("Alice's uid", identity1);
+        //console.log("Alice's uid", identity1);
         app2.request('identity.get', [identity1.uid], function(err, data) {
             if (err) { return done(new Error("Error while doing identity.get from Bob " + err + " " + inspect(data))); }
             
-            console.log("Alice's identity on Bob", data);
+            //console.log("Alice's identity on Bob", data);
             
             verifyTransport(data, done);
             

@@ -33,14 +33,12 @@ describe('Mist Invite', function () {
     var expertMist;
 
     before(function(done) {
-        console.log('before 1');
         requestorApp = new WishApp({ name: 'control app', protocols: ['test'], corePort: 9095 }); // , protocols: [] });
 
         setTimeout(done, 200);
     });
    
     before(function(done) {
-        console.log('before 2');
         srcApp = new WishApp({ name: 'app1', protocols: ['test'], corePort: 9096 }); // , protocols: [] });
 
         srcApp.once('ready', function() {
@@ -49,7 +47,6 @@ describe('Mist Invite', function () {
     });
     
     before(function(done) {
-        console.log('before 3');
         dstApp = new WishApp({ name: 'app2', protocols: ['test'], corePort: 9097 }); // , protocols: [] });
 
         dstApp.once('ready', function() {
@@ -243,7 +240,7 @@ describe('Mist Invite', function () {
     
     it('should remotely export identity of bob', function(done) {
         requestorApp.request('connections.request', [connection, 'identity.export', [connection.ruid]], function(err, data) {
-            console.log('bob identity exported:', err, data);
+            //console.log('bob identity exported:', err, data);
             var cert = BSON.deserialize(data.data);
             cert.hid = connection.rhid;
             cert.sid = peer.rsid;
@@ -285,7 +282,7 @@ describe('Mist Invite', function () {
 
     it('should have expert befriending the device', function(done) {
         dstApp.request('wld.list', [], function(err, data) {
-            console.log('wld.list', data);
+            //console.log('wld.list', data);
             
             for (var i in data) {
                 if (data[i].type === 'friendReq') {
