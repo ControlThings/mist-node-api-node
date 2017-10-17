@@ -172,6 +172,7 @@ describe('MistApi Sandbox', function () {
             if(data[0] && data[0] === 'sandboxed.settings') {
                 requestToBeAccepted = data[1];
                 done();
+                console.log('canceling', signals);
                 mist1.requestCancel(signals);
             }
         });

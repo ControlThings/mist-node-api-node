@@ -1,113 +1,9 @@
-var MistApi = require('./addon.js');
+var Addon = require('./addon.js').Addon;
+var WishAppInner = require('./wish-app-inner.js').WishAppInner;
+var MistNodeInner = require('./mist-node-inner.js').MistNodeInner;
 
 var EventEmitter = require("events").EventEmitter;
 var inherits = require('util').inherits;
-
-var bson = require('bson-buffer');
-var BSON = new bson();
-
-// request id shared by all
-var sharedId = 0;
-
-var instances = [];
-
-function Addon(opts) {
-    var self = this;
-    
-    this.api = new MistApi(function (event, data) {
-        if (!event && !data) {
-            // seems to be HandleOKCallback from nan
-            // nan.h: AsyncWorker::WorkComplete(): callback->Call(0, NULL);
-            return;
-        }
-        
-        if (event === 'done') {
-            // Streaming worker is done and has shut down
-            return;
-        }
-
-        var msg = null;
-
-        try {
-            msg = BSON.deserialize(data);
-        } catch(e) {
-            return console.log('Warning! Non BSON message from plugin.', arguments, event, data);
-        }
-
-        if (event === 'online') {
-            self.emit('online', msg.peer);
-            msg.peer.online = true;
-            if (typeof self.onlineCb === 'function') { self.onlineCb(msg.peer); }
-            
-            return;
-        }
-
-        if (event === 'offline') {
-            self.emit('offline', msg.peer);
-            if (typeof self.offlineCb === 'function') { self.offlineCb(msg.peer); }
-
-            return;
-        }
-
-        if (event === 'frame') {
-            self.emit('frame', msg.peer, msg.frame);
-            
-            var payload = BSON.deserialize(msg.frame);
-            if (typeof self.frameCb === 'function') { self.frameCb(msg.peer, payload); }
-
-            return;
-        }
-
-        if (event === 'read') {
-            self.emit('read', msg);
-            return;
-        }
-
-        if (event === 'write') {
-            self.emit('write', msg);
-            return;
-        }
-
-        if (event === 'invoke') {
-            self.emit('invoke', msg);
-            return;
-        }
-
-        if (event === 'wish') {
-            self.emit('wish', msg);
-            return;
-        }
-
-        if (event === 'mist') {
-            self.emit('mist', msg);
-            return;
-        }
-
-        if (event === 'sandboxed') {
-            self.emit('sandboxed', msg);
-            return;
-        }
-
-        if (event === 'mistnode') {
-            self.emit('mistnode', msg);
-            return;
-        }
-        
-        console.log('Received an event from native addon which was unhandled.', event, msg);
-    }, opts);
-}
-
-inherits(Addon, EventEmitter);
-
-Addon.prototype.request = function(target, payload) {
-    if (Buffer.isBuffer(payload)) { console.log('A buffer was sent to Addon', new Error().stack); }
-    if (typeof payload === 'object') { payload = BSON.serialize(payload); }
-    this.api.request(target, payload);
-};
-
-Addon.prototype.shutdown = function() {
-    this.request("kill", { kill: true });
-};
 
 function Mist(opts) {
     //console.log("Nodejs new Mist()", opts);
@@ -166,9 +62,6 @@ function Mist(opts) {
 
     this.node = new MistNodeInner(this.addon);
     this.wish = new WishAppInner(this.addon);
-    
-    // keep track of instances to shut them down on exit.
-    instances.push(this);
 }
 
 inherits(Mist, EventEmitter);
@@ -183,7 +76,7 @@ Mist.prototype.request = function(op, args, cb) {
 };
 
 Mist.prototype.requestBare = function(op, args, cb) {
-    var id = ++sharedId;
+    var id = ++this.addon.sharedRequestId;
     var request = { op: op, args: args, id: id };
     
     // store callback for response
@@ -209,168 +102,6 @@ Mist.prototype.shutdown = function() {
     this.addon.request("kill", { kill: true });
 };
 
-function MistNodeInner(addon) {
-    var self = this;
-    this.peers = [];
-    this.requests = {};
-    this.readCb = {};
-    this.writeCb = {};
-    this.invokeCb = {};
-    
-    this.addon = addon;
-    
-    setTimeout(function() { self.emit('ready'); }, 200);
-    
-    addon.on('online', function(peer) {
-        if (typeof self.onlineCb === 'function') { self.onlineCb(peer); }
-        self.peers.push(peer);
-    });
-    
-    addon.on('offline', function(peer) {
-        if (typeof self.offlineCb === 'function') { self.offlineCb(peer); }
-    });
-    
-    addon.on('frame', function(peer, data) {
-        if (typeof self.frameCb === 'function') { self.frameCb(peer, data); }
-    });
-
-    addon.on('mistnode', function(msg) {
-        var id = msg.ack || msg.sig || msg.end || msg.err;
-
-        if(typeof self.requests[id] === 'function') {
-            self.requests[id](msg);
-
-            if(!msg.sig) {
-                delete self.requests[id];
-            }
-        } else {
-            console.log('Request not found for response:', id, self, self.requests);
-        }
-    });
-    
-    this.addon.on('read', function(msg) {
-        if(typeof self.readCb[msg.read.epid] === 'function') {
-            self.readCb[msg.read.epid](msg.read.args, msg.peer, (function (id) {
-                return function(data) {
-                    var request = { read: id, epid: msg.read.epid, data: data };
-                    self.addon.request("mistnode", request);
-                }; 
-            })(msg.read.id));
-        } else {
-            console.log("There is no invoke function registered for", msg.read.epid );
-        }
-    });
-    
-    this.addon.on('write', function(msg) {
-        if(typeof self.writeCb[msg.write.epid] === 'function') {
-            self.writeCb[msg.write.epid](msg.write.args, msg.peer, function () {
-                console.log('write should send ack');
-            });
-        } else {
-            console.log("There is no write function registered for", msg.write.epid );
-        }
-    });
-
-    this.addon.on('invoke', function(msg) {
-        if(typeof self.invokeCb[msg.invoke.epid] === 'function') {
-            self.invokeCb[msg.invoke.epid](msg.invoke.args, msg.peer, (function (id) {
-                return function(data) {
-                    var request = { invoke: id, epid: msg.invoke.epid, data: data };
-                    self.addon.request("mistnode", request);
-                }; 
-            })(msg.invoke.id));
-        } else {
-            console.log("There is no invoke function registered for", msg.invoke.epid );
-        }
-    });
-}
-
-inherits(MistNodeInner, EventEmitter);
-
-MistNodeInner.prototype.create = function(model, cb) {
-    var id = ++sharedId;
-    var request = { model: model };
-    
-    // store callback for response
-    this.requests[id] = cb;
-    
-    this.addon.request("mistnode", request);
-};
-
-MistNodeInner.prototype.endpointAdd = function(epid, endpoint) {
-    var path = epid.split('.');
-    
-    var parent;
-    
-    if (path.length === 1) {
-        parent = null;
-    } else if (path.length > 1) {
-        parent = path.slice(0, path.length-1).join('.');
-    } else {
-        return console.log('endpoint could not be added, due to invalid arguments');
-    }
-    
-    epid = path.slice(-1)[0];
-    
-    endpoint.parent = parent;
-    endpoint.epid = epid;
-    
-    this.addon.request("mistnode", { endpointAdd: true, ep: endpoint });
-};
-
-MistNodeInner.prototype.endpointRemove = function(epid) {
-    this.addon.request("mistnode", { endpointRemove: epid });
-};
-
-// register read handler for epid
-MistNodeInner.prototype.read = function(epid, cb) {
-    this.readCb[epid] = cb;
-};
-
-// register write handler for epid
-MistNodeInner.prototype.write = function(epid, cb) {
-    this.writeCb[epid] = cb;
-};
-
-// register invoke handler for epid
-MistNodeInner.prototype.invoke = function(epid, cb) {
-    this.invokeCb[epid] = cb;
-};
-
-MistNodeInner.prototype.changed = function(epid) {
-    var request = { changed: epid };
-    
-    this.addon.request("mistnode", request);
-};
-
-MistNodeInner.prototype.request = function(peer, op, args, cb) {
-    return this.requestBare(peer, op, args, function(res) {
-        //console.log('requestBare cb:', arguments);
-        if(res.err) { return cb(true, res.data); }
-        
-        cb(null, res.data);
-    });
-};
-
-MistNodeInner.prototype.requestBare = function(peer, op, args, cb) {
-    var id = ++sharedId;
-    var request = { peer: peer, op: op, args: args, id: id };
-    
-    // store callback for response
-    this.requests[id] = cb;
-
-    //console.log("Making request", request, this);
-    
-    this.addon.request("mistnode", request);
-    
-    return id;
-};
-
-MistNodeInner.prototype.requestCancel = function(id) {
-    var request = { cancel: id };
-    this.addon.request("mistnode", request);
-};
-
 function MistNode(opts) {
     if (!opts) { opts = {}; }
 
@@ -382,14 +113,7 @@ function MistNode(opts) {
     var node = new MistNodeInner(this.addon);
     node.wish = new WishAppInner(this.addon);
     
-    // keep track of instances to shut them down on exit.
-    instances.push(this.addon);
-    
     return node;
-}
-
-function MistNodeSimple(node) {
-    this.node = node;
 }
 
 function Sandboxed(mist, sandboxId) {
@@ -417,7 +141,7 @@ Sandboxed.prototype.request = function(op, args, cb) {
 };
 
 Sandboxed.prototype.requestBare = function(op, args, cb) {
-    var id = ++sharedId;
+    var id = ++this.addon.sharedRequestId;
     var sandboxArgs = [this.sandboxId].concat(args);
     
     //console.log('sandboxed.'+op+'(', sandboxArgs, '):', id);
@@ -448,80 +172,6 @@ function copy(that) {
     return copy;
 }
 
-function WishAppInner(addon) {
-    var self = this;
-    this.peers = [];
-    this.requests = {};
-    this.addon = addon;
-    
-    setTimeout(function() { self.emit('ready'); }, 200);
-    
-    addon.on('online', function(peer) {
-        if (typeof self.onlineCb === 'function') { self.onlineCb(peer); }
-        self.peers.push(peer);
-    });
-    
-    addon.on('offline', function(peer) {
-        if (typeof self.offlineCb === 'function') { self.offlineCb(peer); }
-    });
-    
-    addon.on('frame', function(peer, data) {
-        if (typeof self.frameCb === 'function') { self.frameCb(peer, data); }
-    });
-
-    addon.on('wish', function(msg) {
-        var id = msg.ack || msg.sig || msg.end || msg.err;
-
-        if(typeof self.requests[id] === 'function') {
-            self.requests[id](msg);
-
-            if(!msg.sig) {
-                delete self.requests[id];
-            }
-        } else {
-            console.log('Request not found for response:', id, self, self.requests);
-        }
-    });
-}
-
-inherits(WishAppInner, EventEmitter);
-
-WishAppInner.prototype.send = function(peer, message, cb) {
-    this.request('services.send', [peer, message], cb || function() {});
-};
-
-WishAppInner.prototype.broadcast = function(message) {
-    for(var i in this.peers) {
-        this.request('services.send', [this.peers[i], message], function() {});
-    }
-};
-
-WishAppInner.prototype.request = function(op, args, cb) {
-    if (typeof cb !== 'function') { console.log("not function:", new Error().stack); }
-    return this.requestBare(op, args, function(res) {
-        if(res.err) { return cb(true, res.data); }
-        
-        cb(null, res.data);
-    });
-};
-
-WishAppInner.prototype.requestBare = function(op, args, cb) {
-    var id = ++sharedId;
-    var request = { op: op, args: typeof args === 'undefined' ? [] : args, id: id };
-    
-    // store callback for response
-    this.requests[id] = cb;
-    
-    this.addon.request("wish", request);
-
-    return id;
-};
-
-WishAppInner.prototype.cancel = function(id) {
-    var request = { cancel: id };
-    this.addon.request("wish", request);
-};
-
 function WishApp(opts) {
     if (!opts) { opts = {}; }
     opts = copy(opts);    
@@ -550,22 +200,12 @@ function WishApp(opts) {
     // FIXME this is required by multi-mist.js test, but should be removed
     wish.opts = opts;
     
-    // keep track of instances to shut them down on exit.
-    instances.push(addon);
-    
     return wish;
 }
-
-process.on('exit', function() {
-    for(var i in instances) {
-        try { instances[i].shutdown(); } catch(e) { console.log('MistApi instance '+i+' shutdown() command failed.', e); }
-    }
-});
 
 module.exports = {
     Mist: Mist,
     MistNode: MistNode,
-    MistNodeSimple: MistNodeSimple,
     Sandboxed: Sandboxed,
     WishApp: WishApp };
 
