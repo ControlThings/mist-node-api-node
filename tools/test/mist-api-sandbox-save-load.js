@@ -188,7 +188,7 @@ describe('MistApi Sandbox', function () {
             sandboxedGps.request('signals', [], function(err, data) {
                 console.log("sandboxedGps signals:", err, data);
                 
-                if (data === 'ready') {
+                if (data[0] === 'ready') {
                     sandboxedGps.request('listPeers', [], function(err, data) {
                         //console.log("sandboxedGps listPeers:", err, data);
                         
