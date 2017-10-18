@@ -175,7 +175,7 @@ static void sandboxed_response_cb(struct wish_rpc_entry* req, void* ctx, const u
     mist->sendToNode(msg);
 }
 
-static enum mist_error hw_read(mist_ep* ep, wish_protocol_peer_t* peer, mist_buf args) {
+static enum mist_error hw_read(mist_ep* ep, wish_protocol_peer_t* peer, int id, bson* args) {
     //printf("in hw_invoke %p\n", ep->model->mist_app);
     Mist* mist = instance_by_mist_app(ep->model->mist_app);
     
@@ -189,10 +189,7 @@ static enum mist_error hw_read(mist_ep* ep, wish_protocol_peer_t* peer, mist_buf
     
     bson_iterator args_it;
     // FIXME: Not sure this works for all data types
-    if ( BSON_EOO == bson_find_from_buffer(&args_it, args.base, "args") ) { return MIST_ERROR; }
-    
-    bson_iterator id_it;
-    if ( BSON_INT != bson_find_from_buffer(&id_it, args.base, "id") ) { return MIST_ERROR; }
+    if ( BSON_EOO == bson_find(&args_it, args, "args") ) { return MIST_ERROR; }
     
     bson b;
     bson_init_size(&b, 1024);
@@ -210,7 +207,7 @@ static enum mist_error hw_read(mist_ep* ep, wish_protocol_peer_t* peer, mist_buf
     bson_append_start_object(&b, "read");
     bson_append_string(&b, "epid", full_id);
     bson_append_element(&b, "args", &args_it);
-    bson_append_int(&b, "id", bson_iterator_int(&id_it));
+    bson_append_int(&b, "id", id);
     bson_append_finish_object(&b);
     bson_finish(&b);
     
@@ -225,7 +222,7 @@ static enum mist_error hw_read(mist_ep* ep, wish_protocol_peer_t* peer, mist_buf
     return MIST_NO_ERROR;
 }
 
-static enum mist_error hw_write(mist_ep* ep, wish_protocol_peer_t* peer, mist_buf data) {
+static enum mist_error hw_write(mist_ep* ep, wish_protocol_peer_t* peer, int id, bson* data) {
     Mist* mist = instance_by_mist_app(ep->model->mist_app);
     
     if (mist == NULL) {
@@ -239,10 +236,7 @@ static enum mist_error hw_write(mist_ep* ep, wish_protocol_peer_t* peer, mist_bu
     
     bson_iterator args_it;
     // FIXME: Not sure this works for all data types
-    if ( BSON_EOO == bson_find_from_buffer(&args_it, data.base, "args") ) { return MIST_ERROR; }
-    
-    bson_iterator id_it;
-    if ( BSON_INT != bson_find_from_buffer(&id_it, data.base, "id") ) { return MIST_ERROR; }
+    if ( BSON_EOO == bson_find(&args_it, data, "args") ) { return MIST_ERROR; }
     
     bson bs;
     bson_init_size(&bs, 1024);
@@ -258,7 +252,7 @@ static enum mist_error hw_write(mist_ep* ep, wish_protocol_peer_t* peer, mist_bu
     bson_append_start_object(&bs, "write");
     bson_append_string(&bs, "epid", full_id);
     bson_append_element(&bs, "args", &args_it);
-    bson_append_int(&bs, "id", bson_iterator_int(&id_it));
+    bson_append_int(&bs, "id", id);
     bson_append_finish_object(&bs);
     bson_finish(&bs);
 
@@ -271,7 +265,7 @@ static enum mist_error hw_write(mist_ep* ep, wish_protocol_peer_t* peer, mist_bu
     return MIST_NO_ERROR;
 }
 
-static enum mist_error hw_invoke(mist_ep* ep, wish_protocol_peer_t* peer, mist_buf args) {
+static enum mist_error hw_invoke(mist_ep* ep, wish_protocol_peer_t* peer, int id, bson* args) {
     //printf("in hw_invoke %p\n", ep->model->mist_app);
     Mist* mist = instance_by_mist_app(ep->model->mist_app);
     
@@ -285,10 +279,7 @@ static enum mist_error hw_invoke(mist_ep* ep, wish_protocol_peer_t* peer, mist_b
     
     bson_iterator args_it;
     // FIXME: Not sure this works for all data types
-    if ( BSON_EOO == bson_find_from_buffer(&args_it, args.base, "args") ) { return MIST_ERROR; }
-    
-    bson_iterator id_it;
-    if ( BSON_INT != bson_find_from_buffer(&id_it, args.base, "id") ) { return MIST_ERROR; }
+    if ( BSON_EOO == bson_find(&args_it, args, "args") ) { return MIST_ERROR; }
     
     bson b;
     bson_init_size(&b, 1024);
@@ -303,7 +294,7 @@ static enum mist_error hw_invoke(mist_ep* ep, wish_protocol_peer_t* peer, mist_b
     bson_append_start_object(&b, "invoke");
     bson_append_string(&b, "epid", full_id);
     bson_append_element(&b, "args", &args_it);
-    bson_append_int(&b, "id", bson_iterator_int(&id_it));
+    bson_append_int(&b, "id", id);
     bson_append_finish_object(&b);
     bson_finish(&b);
     
