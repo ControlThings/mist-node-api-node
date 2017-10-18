@@ -100,12 +100,12 @@ describe('Mist remote peer', function () {
         });
         
         node.read('lon', function(args, peer, cb) {
-            cb(65.543);
+            cb(null, 65.543);
         });
         
         // used for invoke test
         node.invoke('config', function(args, peer, cb) {
-            cb({ cool: ['a', 7, true], echo: args });
+            cb(null, { cool: ['a', 7, true], echo: args });
         });
         
         setTimeout(done, 200);

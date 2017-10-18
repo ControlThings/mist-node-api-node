@@ -102,6 +102,7 @@ describe('MistApi Sandbox', function () {
         
         node.write('state', function(value, peer, cb) {
             console.log('write "state":', value);
+            cb(null);
         });
         
         setTimeout(done, 100);

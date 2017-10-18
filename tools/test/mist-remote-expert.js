@@ -145,10 +145,12 @@ describe('Mist Invite', function () {
         
         node.write('output', function(value, peer, cb) {
             console.log(nodeName +' write "output":', value);
+            cb();
         });
         
         node.write('broken', function(value, peer, cb) {
             console.log(nodeName +' write "broken":', value);
+            cb();
         });
         
         setTimeout(done, 100);

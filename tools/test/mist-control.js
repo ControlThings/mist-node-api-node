@@ -50,37 +50,41 @@ describe('MistApi Control', function () {
         node.endpointAdd('name', { label: 'Name', type: 'string', read: true, write: true });
         node.endpointAdd('enabled', { label: 'Enabled', type: 'bool', read: true, write: true });
         node.endpointAdd('lon', { label: 'Longitude', type: 'float', read: true });
-        node.endpointAdd('device', { type: 'string' });
-        node.endpointAdd('device.config', { label: 'Config', type: 'invoke', invoke: true });
         node.endpointAdd('counter', { label: 'Counter', type: 'int', read: true, write: true });
+        node.endpointAdd('device', { type: 'string' });
+        node.endpointAdd('device.config', { label: 'Config', invoke: true });
+        node.endpointAdd('readProblem', { label: 'Problem', type: 'string', read: function(args, peer, cb) { cb({ code: 6, msg: 'Read says no.' }); } });
+        node.endpointAdd('writeProblem', { label: 'Problem', type: 'string', write: function(args, peer, cb) { cb({ code: 6, msg: 'Write says no.' }); } });
+        node.endpointAdd('invokeProblem', { label: 'Problem', invoke: function(args, peer, cb) { cb({ code: 6, msg: 'Invoke says no.' }); } });
         node.endpointAdd('temporary', { label: 'Removable', type: 'int', read: true, write: true });
         node.endpointRemove('temporary');
 
         var name = 'Just a Name';
         
-        node.read('mist.name', function(args, peer, cb) { cb(name); });
+        node.read('mist.name', function(args, peer, cb) { cb(null, name); });
         
-        node.read('name', function(args, peer, cb) { cb('root:'+ name); });
+        node.read('name', function(args, peer, cb) { cb(null, 'root:'+ name); });
         
-        node.read('enabled', function(args, peer, cb) { cb(enabled); });
+        node.read('enabled', function(args, peer, cb) { cb(null, enabled); });
         
-        node.read('lon', function(args, peer, cb) { cb(63.4); });
+        node.read('lon', function(args, peer, cb) { cb(null, 63.4); });
         
-        node.read('counter', function(args, peer, cb) { cb(56784); });
+        node.read('counter', function(args, peer, cb) { cb(null, 56784); });
         
         node.invoke('device.config', function(args, peer, cb) {
-            cb({ cool: ['a', 7, true], echo: args });
+            cb(null, { cool: ['a', 7, true], echo: args });
         });
         
         node.write('enabled', function(value, peer, cb) {
             //console.log('Node write:', epid, peer, data);
+            cb(null);
         });
         
         node.write('mist.name', function(value, peer, cb) {
             //console.log('writing mist.name to', value);
             name = value;
             node.changed('mist.name');
-            cb();
+            cb(null);
         });
         
         setTimeout(done, 200);
@@ -143,7 +147,7 @@ describe('MistApi Control', function () {
         var l = ['mist.name', 'enabled', 'lon', 'counter'];
         var end = false;
         follow = mist.request('mist.control.follow', [peer], function (err, data) {
-            if (err) { return done(new Error(inspect(data))); }
+            if (err) { if(data.code === 6) { return; } return done(new Error(inspect(data))); }
             //console.log("Follow update:", err, data, l);
             
             var index = l.indexOf(data.id);
@@ -194,7 +198,7 @@ describe('MistApi Control', function () {
         });
     });
     
-    it('shuold test control.write', function(done) {
+    it('shuold test control.write(non-existing)', function(done) {
         mist.request('mist.control.write', [peer, 'non-existing'], function (err, data) {
             if (err) { 
                 if (data.code === 104) { 
@@ -209,7 +213,7 @@ describe('MistApi Control', function () {
         });
     });
     
-    it('shuold test control.write', function(done) {
+    it('shuold test control.write(no data argument)', function(done) {
         mist.request('mist.control.write', [peer, 'lon'], function (err, data) {
             if (err) { 
                 if (data.code === 105) { 
@@ -224,7 +228,7 @@ describe('MistApi Control', function () {
         });
     });
     
-    it('shuold test control.write', function(done) {
+    it('shuold test control.write(string to bool endpoint)', function(done) {
         mist.request('mist.control.write', [peer, 'enabled', 'not-a-bool-value'], function (err, data) {
             if (err) { 
                 if (data.code === 105) { 
@@ -239,7 +243,7 @@ describe('MistApi Control', function () {
         });
     });
     
-    it('shuold test control.write', function(done) {
+    it('shuold test control.write(bool to false)', function(done) {
         mist.request('mist.control.write', [peer, 'enabled', false], function (err, data) {
             if (err) {
                 return done(new Error(inspect(data)));
@@ -308,6 +312,36 @@ describe('MistApi Control', function () {
             //console.log('control.invoke with no value argument returned ', err, data);
             done();
             
+        });
+    });
+    
+    it('shuold test control.read error response', function(done) {
+        mist.request('mist.control.read', [peer, 'readProblem'], function (err, data) {
+            if (!err) { return done(new Error('Not an error as expected.')); }
+
+            if (data.code !== 6) { return done(new Error('Not the expected error. '+data.code+': '+data.msg)); }
+
+            done();
+        });
+    });
+    
+    it('shuold test control.write error response', function(done) {
+        mist.request('mist.control.write', [peer, 'writeProblem'], function (err, data) {
+            if (!err) { return done(new Error('Not an error as expected.')); }
+
+            if (data.code !== 6) { return done(new Error('Not the expected error. '+data.code+': '+data.msg)); }
+
+            done();
+        });
+    });
+    
+    it('shuold test control.invoke error response', function(done) {
+        mist.request('mist.control.invoke', [peer, 'invokeProblem'], function (err, data) {
+            if (!err) { return done(new Error('Not an error as expected.')); }
+
+            if (data.code !== 6) { return done(new Error('Not the expected error. '+data.code+': '+data.msg)); }
+
+            done();
         });
     });
     

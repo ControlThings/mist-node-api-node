@@ -134,6 +134,7 @@ describe('Mist Mappings', function () {
         
         node.write('output', function(value, peer, cb) {
             console.log('write:', value);
+            cb();
         });
         
         setTimeout(done, 100);
@@ -148,6 +149,7 @@ describe('Mist Mappings', function () {
         
         node.write('input', function(value, peer, cb) {
             console.log('write:', value);
+            cb();
         });
         
         setTimeout(done, 100);

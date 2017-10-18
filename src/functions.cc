@@ -861,44 +861,67 @@ static void mist_node_api_handler(mist_app_t* mist_app, input_buf* msg) {
     }
 
     // read response
+    /*
+     { read: request_id,
+       epid: String,
+       data: response_data } 
+    */
     if (BSON_INT == bson_find_from_buffer(&it, msg->data, "read")) {
-        /*
-         { read: request_id,
-           epid: String,
-           data: response_data } 
-        */
         int id = bson_iterator_int(&it);
-
         if (BSON_STRING != bson_find_from_buffer(&it, msg->data, "epid")) { return; }
 
         bson b;
         bson_init_with_data(&b, msg->data);
-        
         mist_read_response(mist_app, bson_iterator_string(&it), id, &b);
         return;
     }
 
-    // write response
-    if (BSON_INT == bson_find_from_buffer(&it, msg->data, "write")) {
-        /*
-         { write: request_id,
-           epid: String } 
-        */
+    if (BSON_INT == bson_find_from_buffer(&it, msg->data, "readError")) {
         int id = bson_iterator_int(&it);
+        if (BSON_STRING != bson_find_from_buffer(&it, msg->data, "epid")) { return; }
+        const char* epid = bson_iterator_string(&it);
+        if (BSON_INT != bson_find_from_buffer(&it, msg->data, "code")) { return; }
+        int code = bson_iterator_int(&it);
+        if (BSON_STRING != bson_find_from_buffer(&it, msg->data, "msg")) { return; }
+        const char* msg = bson_iterator_string(&it);
 
+        mist_read_error(mist_app, epid, id, code, msg);
+        return;
+    }
+
+    // write response
+    /*
+     { write: request_id,
+       epid: String } 
+    */
+    if (BSON_INT == bson_find_from_buffer(&it, msg->data, "write")) {
+        int id = bson_iterator_int(&it);
         if (BSON_STRING != bson_find_from_buffer(&it, msg->data, "epid")) { return; }
 
         mist_write_response(mist_app, bson_iterator_string(&it), id);
         return;
     }
 
+    if (BSON_INT == bson_find_from_buffer(&it, msg->data, "writeError")) {
+        int id = bson_iterator_int(&it);
+        if (BSON_STRING != bson_find_from_buffer(&it, msg->data, "epid")) { return; }
+        const char* epid = bson_iterator_string(&it);
+        if (BSON_INT != bson_find_from_buffer(&it, msg->data, "code")) { return; }
+        int code = bson_iterator_int(&it);
+        if (BSON_STRING != bson_find_from_buffer(&it, msg->data, "msg")) { return; }
+        const char* msg = bson_iterator_string(&it);
+
+        mist_write_error(mist_app, epid, id, code, msg);
+        return;
+    }
+
     // invoke response
+    /*
+     { invoke: request_id,
+       epid: String,
+       data: response_data } 
+    */
     if (BSON_INT == bson_find_from_buffer(&it, msg->data, "invoke")) {
-        /*
-         { invoke: request_id,
-           epid: String,
-           data: response_data } 
-        */
         int id = bson_iterator_int(&it);
 
         if (BSON_STRING != bson_find_from_buffer(&it, msg->data, "epid")) { return; }
@@ -907,6 +930,19 @@ static void mist_node_api_handler(mist_app_t* mist_app, input_buf* msg) {
         bson_init_with_data(&b, msg->data);
 
         mist_invoke_response(mist_app, bson_iterator_string(&it), id, &b);
+        return;
+    }
+
+    if (BSON_INT == bson_find_from_buffer(&it, msg->data, "invokeError")) {
+        int id = bson_iterator_int(&it);
+        if (BSON_STRING != bson_find_from_buffer(&it, msg->data, "epid")) { return; }
+        const char* epid = bson_iterator_string(&it);
+        if (BSON_INT != bson_find_from_buffer(&it, msg->data, "code")) { return; }
+        int code = bson_iterator_int(&it);
+        if (BSON_STRING != bson_find_from_buffer(&it, msg->data, "msg")) { return; }
+        const char* msg = bson_iterator_string(&it);
+
+        mist_invoke_error(mist_app, epid, id, code, msg);
         return;
     }
 
@@ -1247,8 +1283,6 @@ static void* setupMistNodeApi(void* ptr) {
     mist_app_t* mist_app = opts->mist_app; // start_mist_app();
     opts->mist_app = mist_app;
     
-    mist_set_name(mist_app, name);
-    
     wish_app_t* app = wish_app_create(name);
     opts->wish_app = app;
     
@@ -1290,8 +1324,6 @@ static void* setupMistApi(void* ptr) {
     //start wish apps
     mist_app_t* mist_app = opts->mist_app; // start_mist_app();
     
-    mist_set_name(mist_app, name);
-
     wish_app_t* app = wish_app_create((char*)name);
     opts->wish_app = app;
 

@@ -43,9 +43,10 @@ function MistNodeInner(addon) {
     this.addon.on('read', function(msg) {
         if(typeof self.readCb[msg.read.epid] === 'function') {
             self.readCb[msg.read.epid](msg.read.args, msg.peer, (function (id) {
-                return function(data) {
-                    var request = { read: id, epid: msg.read.epid, data: data };
-                    self.addon.request("mistnode", request);
+                return function(err, data) {
+                    if (err) { return self.addon.request("mistnode", { readError: id, epid: msg.read.epid, code: err.code, msg: err.msg }); }
+                    
+                    self.addon.request("mistnode", { read: id, epid: msg.read.epid, data: data });
                 }; 
             })(msg.read.id));
         } else {
@@ -55,8 +56,10 @@ function MistNodeInner(addon) {
     
     this.addon.on('write', function(msg) {
         if(typeof self.writeCb[msg.write.epid] === 'function') {
-            self.writeCb[msg.write.epid](msg.write.args, msg.peer, function () {
-                console.log('write should send ack');
+            self.writeCb[msg.write.epid](msg.write.args, msg.peer, function (err) {
+                if (err) { return self.addon.request("mistnode", { writeError: msg.write.id, epid: msg.write.epid, code: err.code, msg: err.msg }); }
+
+                self.addon.request("mistnode", { write: msg.write.id, epid: msg.write.epid });
             });
         } else {
             console.log("There is no write function registered for", msg.write.epid );
@@ -66,9 +69,10 @@ function MistNodeInner(addon) {
     this.addon.on('invoke', function(msg) {
         if(typeof self.invokeCb[msg.invoke.epid] === 'function') {
             self.invokeCb[msg.invoke.epid](msg.invoke.args, msg.peer, (function (id) {
-                return function(data) {
-                    var request = { invoke: id, epid: msg.invoke.epid, data: data };
-                    self.addon.request("mistnode", request);
+                return function(err, data) {
+                    if (err) { return self.addon.request("mistnode", { invokeError: id, epid: msg.invoke.epid, code: err.code, msg: err.msg }); }
+                    
+                    self.addon.request("mistnode", { invoke: id, epid: msg.invoke.epid, data: data });
                 }; 
             })(msg.invoke.id));
         } else {
@@ -83,8 +87,8 @@ MistNodeInner.prototype.create = function(model, cb) {
     this.addon.request("mistnode", { model: model });
 };
 
-MistNodeInner.prototype.endpointAdd = function(epid, endpoint) {
-    var path = epid.split('.');
+MistNodeInner.prototype.endpointAdd = function(fepid, endpoint) {
+    var path = fepid.split('.');
     
     var parent;
     
@@ -96,10 +100,15 @@ MistNodeInner.prototype.endpointAdd = function(epid, endpoint) {
         return console.log('endpoint could not be added, due to invalid arguments');
     }
     
-    epid = path.slice(-1)[0];
+    var epid = path.slice(-1)[0];
     
     endpoint.parent = parent;
     endpoint.epid = epid;
+    
+    if (typeof endpoint.read === 'function') { this.read(fepid, endpoint.read); endpoint.read = true; }
+    if (typeof endpoint.write === 'function') { this.write(fepid, endpoint.write); endpoint.write = true; }
+    if (typeof endpoint.invoke === 'function') { this.invoke(fepid, endpoint.invoke); endpoint.invoke = true; }
+    if (endpoint.invoke) { endpoint.type = 'invoke'; }
     
     this.addon.request("mistnode", { endpointAdd: true, ep: endpoint });
 };
