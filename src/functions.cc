@@ -123,7 +123,7 @@ bool injectMessage(Mist* mist, int type, uint8_t *msg, int len) {
     return true;
 }
 
-static void mist_response_cb(struct wish_rpc_entry* req, void* ctx, const uint8_t* data, size_t data_len) {
+static void mist_response_cb(rpc_client_req* req, void* ctx, const uint8_t* data, size_t data_len) {
     
     if (req == NULL) {
         // regular request
@@ -139,7 +139,7 @@ static void mist_response_cb(struct wish_rpc_entry* req, void* ctx, const uint8_
     mist->sendToNode(msg);
 }
 
-static void wish_response_cb(struct wish_rpc_entry* req, void* ctx, const uint8_t* data, size_t data_len) {
+static void wish_response_cb(rpc_client_req* req, void* ctx, const uint8_t* data, size_t data_len) {
     if(ctx == NULL) {
         if (req->passthru_ctx2 != NULL) {
             ctx = req->passthru_ctx2;
@@ -157,7 +157,7 @@ static void wish_response_cb(struct wish_rpc_entry* req, void* ctx, const uint8_
     mist->sendToNode(msg);
 }
 
-static void sandboxed_response_cb(struct wish_rpc_entry* req, void* ctx, const uint8_t* data, size_t data_len) {
+static void sandboxed_response_cb(rpc_client_req* req, void* ctx, const uint8_t* data, size_t data_len) {
     //printf("sandboxed response going towards node.js. ctx %p req %p\n", ctx, req);
     //bson_visit("sandboxed response going towards node.js.", data);
     
@@ -183,20 +183,14 @@ static enum mist_error hw_read(mist_ep* ep, wish_protocol_peer_t* peer, int id) 
         return MIST_ERROR;
     }
     // get full endpoint path
-    char full_id[256] = {'\0'};
+    char full_id[MIST_EPID_LEN] = {'\0'};
     mist_ep_full_epid(ep, full_id);
     
     bson b;
     bson_init_size(&b, 1024);
     
     if (peer) {
-        bson_append_start_object(&b, "peer");
-        bson_append_binary(&b, "luid", (char*) peer->luid, WISH_ID_LEN);
-        bson_append_binary(&b, "ruid", (char*) peer->ruid, WISH_ID_LEN);
-        bson_append_binary(&b, "rhid", (char*) peer->rhid, WISH_WHID_LEN);
-        bson_append_binary(&b, "rsid", (char*) peer->rsid, WISH_WSID_LEN);
-        bson_append_string(&b, "protocol", peer->protocol);
-        bson_append_finish_object(&b);
+        bson_append_peer(&b, "peer", peer);
     }
     
     bson_append_start_object(&b, "read");
@@ -225,7 +219,7 @@ static enum mist_error hw_write(mist_ep* ep, wish_protocol_peer_t* peer, int id,
     }
     
     // get full endpoint path
-    char full_id[256] = {'\0'};
+    char full_id[MIST_EPID_LEN] = {'\0'};
     mist_ep_full_epid(ep, full_id);
     
     bson_iterator args_it;
@@ -234,15 +228,8 @@ static enum mist_error hw_write(mist_ep* ep, wish_protocol_peer_t* peer, int id,
     
     bson bs;
     bson_init_size(&bs, 1024);
-    
-    bson_append_start_object(&bs, "peer");
-    bson_append_binary(&bs, "luid", (char*) peer->luid, WISH_ID_LEN);
-    bson_append_binary(&bs, "ruid", (char*) peer->ruid, WISH_ID_LEN);
-    bson_append_binary(&bs, "rhid", (char*) peer->rhid, WISH_WHID_LEN);
-    bson_append_binary(&bs, "rsid", (char*) peer->rsid, WISH_WSID_LEN);
-    bson_append_string(&bs, "protocol", peer->protocol);
-    bson_append_finish_object(&bs);
 
+    bson_append_peer(&bs, "peer", peer);
     bson_append_start_object(&bs, "write");
     bson_append_string(&bs, "epid", full_id);
     bson_append_element(&bs, "args", &args_it);
@@ -268,7 +255,7 @@ static enum mist_error hw_invoke(mist_ep* ep, wish_protocol_peer_t* peer, int id
         return MIST_ERROR;
     }
     // get full endpoint path
-    char full_id[256] = {'\0'};
+    char full_id[MIST_EPID_LEN] = {'\0'};
     mist_ep_full_epid(ep, full_id);
     
     bson_iterator args_it;
@@ -277,14 +264,8 @@ static enum mist_error hw_invoke(mist_ep* ep, wish_protocol_peer_t* peer, int id
     
     bson b;
     bson_init_size(&b, 1024);
-    bson_append_start_object(&b, "peer");
-    bson_append_binary(&b, "luid", (char*) peer->luid, WISH_ID_LEN);
-    bson_append_binary(&b, "ruid", (char*) peer->ruid, WISH_ID_LEN);
-    bson_append_binary(&b, "rhid", (char*) peer->rhid, WISH_WHID_LEN);
-    bson_append_binary(&b, "rsid", (char*) peer->rsid, WISH_WSID_LEN);
-    bson_append_string(&b, "protocol", peer->protocol);
-    bson_append_finish_object(&b);
     
+    bson_append_peer(&b, "peer", peer);
     bson_append_start_object(&b, "invoke");
     bson_append_string(&b, "epid", full_id);
     bson_append_element(&b, "args", &args_it);
@@ -313,13 +294,7 @@ static void online(app_t* app, wish_protocol_peer_t* peer) {
     
     bson bs;
     bson_init(&bs);
-    bson_append_start_object(&bs, "peer");
-    bson_append_binary(&bs, "luid", (char*) peer->luid, WISH_ID_LEN);
-    bson_append_binary(&bs, "ruid", (char*) peer->ruid, WISH_ID_LEN);
-    bson_append_binary(&bs, "rhid", (char*) peer->rhid, WISH_WHID_LEN);
-    bson_append_binary(&bs, "rsid", (char*) peer->rsid, WISH_WSID_LEN);
-    bson_append_string(&bs, "protocol", peer->protocol);
-    bson_append_finish_object(&bs);
+    bson_append_peer(&bs, "peer", peer);
     bson_finish(&bs);
     
     if (bs.err) { printf("Error producing bson!! %d\n", bs.err); }
@@ -341,13 +316,7 @@ static void offline(app_t* app, wish_protocol_peer_t* peer) {
     
     bson bs;
     bson_init(&bs);
-    bson_append_start_object(&bs, "peer");
-    bson_append_binary(&bs, "luid", (char*) peer->luid, WISH_ID_LEN);
-    bson_append_binary(&bs, "ruid", (char*) peer->ruid, WISH_ID_LEN);
-    bson_append_binary(&bs, "rhid", (char*) peer->rhid, WISH_WHID_LEN);
-    bson_append_binary(&bs, "rsid", (char*) peer->rsid, WISH_WSID_LEN);
-    bson_append_string(&bs, "protocol", peer->protocol);
-    bson_append_finish_object(&bs);
+    bson_append_peer(&bs, "peer", peer);
     bson_finish(&bs);
 
     Message msg("offline", (uint8_t*) bson_data(&bs), bson_size(&bs));
@@ -369,13 +338,7 @@ static void mist_online(mist_app_t* mist_app, wish_protocol_peer_t* peer) {
     
     bson bs;
     bson_init(&bs);
-    bson_append_start_object(&bs, "peer");
-    bson_append_binary(&bs, "luid", (char*) peer->luid, WISH_ID_LEN);
-    bson_append_binary(&bs, "ruid", (char*) peer->ruid, WISH_ID_LEN);
-    bson_append_binary(&bs, "rhid", (char*) peer->rhid, WISH_WHID_LEN);
-    bson_append_binary(&bs, "rsid", (char*) peer->rsid, WISH_WSID_LEN);
-    bson_append_string(&bs, "protocol", peer->protocol);
-    bson_append_finish_object(&bs);
+    bson_append_peer(&bs, "peer", peer);
     bson_finish(&bs);
     
     if (bs.err) { printf("Error producing bson!! %d\n", bs.err); }
@@ -399,13 +362,7 @@ static void mist_offline(mist_app_t* mist_app, wish_protocol_peer_t* peer) {
     
     bson bs;
     bson_init(&bs);
-    bson_append_start_object(&bs, "peer");
-    bson_append_binary(&bs, "luid", (char*) peer->luid, WISH_ID_LEN);
-    bson_append_binary(&bs, "ruid", (char*) peer->ruid, WISH_ID_LEN);
-    bson_append_binary(&bs, "rhid", (char*) peer->rhid, WISH_WHID_LEN);
-    bson_append_binary(&bs, "rsid", (char*) peer->rsid, WISH_WSID_LEN);
-    bson_append_string(&bs, "protocol", peer->protocol);
-    bson_append_finish_object(&bs);
+    bson_append_peer(&bs, "peer", peer);
     bson_finish(&bs);
 
     Message msg("offline", (uint8_t*) bson_data(&bs), bson_size(&bs));
@@ -426,13 +383,7 @@ static void frame(app_t* app, const uint8_t* payload, size_t payload_len, wish_p
     bson bs;
     bson_init(&bs);
     bson_append_binary(&bs, "frame", (char*) payload, payload_len);
-    bson_append_start_object(&bs, "peer");
-    bson_append_binary(&bs, "luid", (char*) peer->luid, WISH_ID_LEN);
-    bson_append_binary(&bs, "ruid", (char*) peer->ruid, WISH_ID_LEN);
-    bson_append_binary(&bs, "rhid", (char*) peer->rhid, WISH_WHID_LEN);
-    bson_append_binary(&bs, "rsid", (char*) peer->rsid, WISH_WSID_LEN);
-    bson_append_string(&bs, "protocol", peer->protocol);
-    bson_append_finish_object(&bs);
+    bson_append_peer(&bs, "peer", peer);
     bson_finish(&bs);
 
     if (bs.err) { printf("Error producing bson!! %d\n", bs.err); }
@@ -499,7 +450,7 @@ static void wish_periodic_cb_impl(void* ctx) {
                     goto consume_and_unlock;
                 }
 
-                wish_core_request_context(opts->wish_app, &bs, wish_response_cb, opts->mist);
+                wish_app_request_passthru(opts->wish_app, &bs, wish_response_cb, opts->mist);
             }
         }
         
@@ -976,15 +927,17 @@ static void mist_node_api_handler(mist_app_t* mist_app, input_buf* msg) {
 
         wish_protocol_peer_t* peer = wish_protocol_peer_find_from_bson(&mist_app->protocol, (const uint8_t*)bson_iterator_value(&it));
 
-        wish_rpc_id_t mist_id = mist_app_request(mist_app, peer, (uint8_t*)msg->data, msg->len, mist_node_api_callback);
+        bson req;
+        bson_init_with_data(&req, msg->data);
+        
+        rpc_client_req* creq = mist_app_request(mist_app, peer, &req, mist_node_api_callback);
 
-        rpc_client_req* req = find_request_entry(&mist_app->protocol.rpc_client, mist_id);
-        if (req == NULL) {
-            WISHDEBUG(LOG_CRITICAL, "Could not find request %i", mist_id);
+        if (creq == NULL) {
+            WISHDEBUG(LOG_CRITICAL, "Failed making request %i");
             return;
         }
-        req->passthru_id = id;
-        req->passthru_ctx = mist_app;
+        creq->passthru_id = id;
+        creq->passthru_ctx = mist_app;
 
         return;
     }
@@ -1165,9 +1118,6 @@ static void mist_api_periodic_cb_impl(void* ctx) {
             bson_init_with_data(&bs, msg->data);
 
             if(msg->type == 1) { // WISH
-                //printf("Making wish_api_request\n");
-                //bson_visit("Making wish_api_request bson data:", (uint8_t*)bson_data(&bs));
-                
                 bson_iterator it;
                 bson_find(&it, &bs, "cancel");
 
@@ -1176,8 +1126,22 @@ static void mist_api_periodic_cb_impl(void* ctx) {
                     wish_api_request_cancel(mist_api, bson_iterator_int(&it));
                     goto consume_and_unlock;
                 }
+
+                //printf("Making wish_api_request\n");
+                //bson_visit("Making wish_api_request bson data:", (uint8_t*)bson_data(&bs));
                 
                 wish_api_request_context(mist_api, &bs, wish_response_cb, opts->mist);
+                
+                /*
+                rpc_client_req* req = wish_app_request(mist_api->wish_app, &bs, wish_response_cb, opts->mist);
+                
+                if (req == NULL) {
+                    WISHDEBUG(LOG_CRITICAL, "Request failed...");
+                    goto consume_and_unlock;
+                }
+                */
+                
+                
             } else if (msg->type == 2) { // MIST
                 //printf("### Mist\n");
                 
@@ -1249,7 +1213,7 @@ static void mist_app_periodic_cb_impl(void* ctx) {
                 if (bson_iterator_type(&it) == BSON_INT) {
                     wish_core_request_cancel(opts->wish_app, bson_iterator_int(&it));
                 } else {
-                    wish_core_request_context(opts->wish_app, &bs, wish_response_cb, opts->mist);
+                    wish_app_request_passthru(opts->wish_app, &bs, wish_response_cb, opts->mist);
                 }
             } else if (msg->type == 2) { // MIST
                 printf("### MistApi call from a Node instance, this is not good!\n");
