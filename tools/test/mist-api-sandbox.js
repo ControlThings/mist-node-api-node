@@ -3,6 +3,9 @@ var Sandboxed = require('../../index.js').Sandboxed;
 var MistNode = require('../../index.js').MistNode;
 var util = require('./deps/util.js');
 
+var bson = require('bson-buffer');
+var BSON = new bson();
+
 describe('MistApi Sandbox', function () {
     var mist;
     
@@ -206,6 +209,21 @@ describe('MistApi Sandbox', function () {
                     console.log("ControlThings sandbox identities:", err, data);
                     done();
                 });
+            });
+        });
+    });
+    
+    it('shuold sign document in sandbox', function(done) {
+        sandboxedGps.request('login', ['Gps App'], function(err, data) {
+            //console.log("ControlThings Sandbox login reponse:", err, data);
+            sandboxedGps.request('wish.identity.sign', [mistIdentity1.uid, { data: BSON.serialize({ msg: 'sandboxed signature' }) }], function(err, data) {
+                //console.log("ControlThings sandbox signature:", err, data);
+                if (!data.data) { return done(new Error('No data-field in response.')); }
+                if (!data.signatures) { return done(new Error('No signaures-field in response.')); }
+                if (!data.signatures[0]) { return done(new Error('No signaure[0]-field in response.')); }
+                if (!data.signatures[0].sign) { return done(new Error('No signaure[0].sign-field in response.')); }
+                
+                done();
             });
         });
     });
