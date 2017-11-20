@@ -19,8 +19,9 @@ var bobWldEntry;
 var charlieWldEntry;
 
 /*
- * Test for correct closing of parallel connections.
- * FIXME this test is too simple, think of a better scenario
+ * Test for correct closing of parallel (redundant) connections.
+ * FIXME this test is too simple, think of a better scenario. For example, nothing ensures that the cores actually try to make several connections to each other.
+ * This test correctly tests the correct situation only if it so happens that the cores make symmetric connections to each other. This is in no way ensured by the test. 
  * 
  * @returns {undefined}
  */
