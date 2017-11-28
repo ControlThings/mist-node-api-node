@@ -164,14 +164,14 @@ describe('MistApi Sandbox', function () {
     
     var sandboxedGps;
     
-    var requestToBeAccepted;
+    var requestToBeDenied;
     
     it('shuold test sandbox settings without hint', function(done) {
 
         var signals = mist1.request('signals', [], function(err, data) {
             //console.log("Signal from MistApi", err, inspect(data, null, 10, true));
             if(data[0] && data[0] === 'sandboxed.settings') {
-                requestToBeAccepted = data[1];
+                requestToBeDenied = data[1];
                 done();
                 //console.log('canceling', signals);
                 mist1.requestCancel(signals);
@@ -203,9 +203,10 @@ describe('MistApi Sandbox', function () {
         });
     });
     
-    it('should accept the request from sandbox', function(done) {
+    it('should deny the request from sandbox', function(done) {
         // 'sandbox.addPeer'
-        
+
+        /*
         var signals = app2.request('signals', [], function(err, data) {
             //console.log('app2 signals:', err, data);
             if (data[0] === 'friendRequest')  {
@@ -213,43 +214,13 @@ describe('MistApi Sandbox', function () {
                 done();
             }
         });
+        */
+       
+       console.log('Going to deny this:', requestToBeDenied.hint.id);
         
-        mist1.request('sandbox.allowRequest', [requestToBeAccepted.id, requestToBeAccepted.hint], function(err, data) {
-            console.log('sandbox.allowRequest response:', err, data);
+        mist1.request('sandbox.denyRequest', [requestToBeDenied.id, requestToBeDenied.hint.id], function(err, data) {
+            console.log('sandbox.denyRequest response:', err, data);
             //done();
         });
-    });
-    
-    it('should accept friend request and see peer in sandbox', function(done) {
-        this.timeout(5000);
-        var signals = sandboxedGps.request('signals', [], function(err, data) {
-            if (data === 'peers' || data[0] === 'peers') {
-                sandboxedGps.request('listPeers', [], function(err, data) {
-                    if (data.length !== 1) { return done(new Error('Not exactly one peer in sandbox! '+ data.length)); }
-                    
-                    var peerCert = BSON.deserialize(app2serviceCert.data);
-                    
-                    if ( Buffer.compare(data[0].luid, mistIdentity1.uid) !== 0 ) { return done(new Error('Sandbox peer luid incorrect!')); }
-                    if ( Buffer.compare(data[0].ruid, peerCert.uid) !== 0 ) { return done(new Error('Sandbox peer ruid incorrect!')); }
-                    if ( Buffer.compare(data[0].rhid, peerCert.hid) !== 0 ) { return done(new Error('Sandbox peer rhid incorrect!')); }
-                    if ( Buffer.compare(data[0].rsid, peerCert.sid) !== 0 ) { return done(new Error('Sandbox peer rsid incorrect!')); }
-                    
-                    sandboxedGps.requestCancel(signals);
-                    done();
-                });
-            }
-        });
-
-        
-        app2.request('identity.friendRequestList', [], function(err, data) {
-            //console.log('app2 friendRequestList:', err, data);
-            if (data.length !== 1) {
-                return done(new Error('Not exactly one friendRequest in list!'));
-            }
-
-            app2.request('identity.friendRequestAccept', [data[0].luid, data[0].ruid], function(err, data) {
-                //console.log('app2 friendRequestAccept:', err, data);
-            });
-        });        
     });
 });
