@@ -989,8 +989,11 @@ static void mist_sandboxed_api_handler(struct wish_app_core_opt* opts, input_buf
 
     bson_iterator ait;
     bson_iterator sit;
-    bson_find(&ait, &bs, "args");
-
+    if ( BSON_ARRAY != bson_find(&ait, &bs, "args") ) {
+        bson_visit("sandbox args not array", (const uint8_t*) bson_data(&bs));
+        bson_destroy(&b);
+        return;
+    }
 
     // init the sub iterator from args array iterator
     bson_iterator_subiterator(&ait, &sit);
@@ -1008,7 +1011,6 @@ static void mist_sandboxed_api_handler(struct wish_app_core_opt* opts, input_buf
         return;
     }
 
-    bool done = false;
     int i;
     int args_len = 0;
 
@@ -1017,11 +1019,10 @@ static void mist_sandboxed_api_handler(struct wish_app_core_opt* opts, input_buf
     // Only single digit array index supported. 
     //   i.e Do not exceed 8 with the index. Rewrite indexing if you must!
     for(i=0; i<9; i++) {
-
         char src[21];
-        BSON_NUMSTR(src, i+1);
-
         char dst[21];
+
+        BSON_NUMSTR(src, i+1);
         BSON_NUMSTR(dst, i);
 
         // init the sub iterator from args array iterator
@@ -1031,35 +1032,13 @@ static void mist_sandboxed_api_handler(struct wish_app_core_opt* opts, input_buf
         //bson_find(&it, req, src);
         bson_type type = bson_find_fieldpath_value(src, &sit);
 
-        // FIXME check type under iterator is valid
-        switch(type) {
-            case BSON_EOO:
-                done = true;
-                break;
-            case BSON_BOOL:
-                bson_append_bool(&b, dst, bson_iterator_bool(&sit));
-                break;
-            case BSON_INT:
-                bson_append_int(&b, dst, bson_iterator_int(&sit));
-                break;
-            case BSON_DOUBLE:
-                bson_append_double(&b, dst, bson_iterator_double(&sit));
-                break;
-            case BSON_STRING:
-            case BSON_BINDATA:
-            case BSON_OBJECT:
-            case BSON_ARRAY:
-                bson_append_element(&b, dst, &sit);
-                break;
-            default:
-                WISHDEBUG(LOG_CRITICAL, "Unsupported bson type %i in mist_passthrough", type);
-        }
-
-        if(done) {
+        if (type == BSON_EOO) {
             break;
         } else {
-            args_len++;
+            bson_append_element(&b, dst, &sit);
         }
+        
+        args_len++;
     }
 
     bson_append_finish_array(&b);
