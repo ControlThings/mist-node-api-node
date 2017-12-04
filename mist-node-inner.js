@@ -50,7 +50,7 @@ function MistNodeInner(addon) {
                 }; 
             })(msg.read.id));
         } else {
-            console.log("There is no invoke function registered for", msg.read.epid );
+            console.log("There is no read function registered for", msg.read.epid );
         }
     });
     

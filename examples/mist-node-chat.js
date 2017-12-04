@@ -65,9 +65,7 @@ node.offlineCb = function(peer) {
 };
 
 node.invoke('complex', function(args, peer, cb) {
-    node.wish('identity.get', [peer.ruid], function(err, data) {
-        cb({ you: data.alias, sent: args });
-    });    
+    cb({ you: 'asfds', sent: args });
 });
 
 node.on('ready', function() {
@@ -78,8 +76,8 @@ process.stdin.on('data', function(data) {
     node.update('msg', data.toString().trim());
 });
 
-node.write(function(epid, peer, value) {
-    node.update(epid, value);
+node.write('msg', function(peer, value) {
+    node.update(value);
 });
 
 

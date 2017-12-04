@@ -125,38 +125,59 @@ describe('Mist Mappings', function () {
             });
         }, 200);
     });
-        
+
+    var source;
+    var destination;
+
+    var outputValue = 7;
+    
     before(function(done) {
-        node = new MistNode({ name: 'src Node', coreIp: '127.0.0.1', corePort: 9096 });
-        node.create({
-            output: { label: 'output', type: 'bool', read: true, write: true } 
+        
+        source = new MistNode({ name: 'src Node', coreIp: '127.0.0.1', corePort: 9097 });
+        
+        source.endpointAdd('mist', { type: 'string' });
+        source.endpointAdd('mist.name', { label: 'Name', type: 'string', read: function(args, peer, cb) { cb(null, 'Output Node'); } });
+        source.endpointAdd('output', {
+            label: 'Output',
+            type: 'int',
+            read: function(args, peer, cb) {
+                console.log('reading output', outputValue);
+                cb(null, outputValue);
+            }
         });
         
-        node.write('output', function(value, peer, cb) {
-            console.log('write:', value);
-            cb();
-        });
+        source.changed('output');
+        
+        source.endpointAdd('test', { label: 'test', type: 'string', read: true, write: true });
+
+        setInterval(function() { outputValue++; source.changed('output'); }, 1000);
         
         setTimeout(done, 100);
-        
     });
     
     before(function(done) {
-        node = new MistNode({ name: 'dst Node', coreIp: '127.0.0.1', corePort: 9097 });
-        node.create({
-            input: { label: 'input', type: 'bool', read: true, write: true } 
-        });
+        var inputValue = 7;
+        destination = new MistNode({ name: 'dst Node', coreIp: '127.0.0.1', corePort: 9096 });
         
-        node.write('input', function(value, peer, cb) {
-            console.log('write:', value);
-            cb();
+        destination.endpointAdd('mist', { type: 'string' });
+        destination.endpointAdd('mist.name', { label: 'Name', type: 'string', read: function(args, peer, cb) { cb(null, 'Input Node'); } });
+        destination.endpointAdd('input', {
+            label: 'Input',
+            type: 'int',
+            read: function(args, peer, cb) {
+                cb(null, inputValue);
+            },
+            write: function(value, peer, cb) {
+                inputValue = value;
+                cb();
+                destination.changed('input');
+            }
         });
         
         setTimeout(done, 100);
         
     });
    
-    
     it('Alice should find Bob in wld', function(done) {
         this.timeout(35000);
         
@@ -324,15 +345,70 @@ describe('Mist Mappings', function () {
         requestorMist.request('listPeers', [], filterPeers)
     })
     
+    
+    it('checking model srcPeer', function(done) {
+        requestorMist.request('mist.control.model', [srcPeer], function(err, data) {
+            console.log('Model check:', err, data);
+            done();
+        });
+    });
+    
+    it('checking model dstPeer', function(done) {
+        requestorMist.request('mist.control.model', [dstPeer], function(err, data) {
+            console.log('Model check:', err, data);
+            done();
+        });
+    });
+    
+    
     it('should request mapping', function(done) {
         //this.timeout(10000);
         requestorMist.request("mist.control.requestMapping", [ srcPeer, dstPeer, 'output', {}, 'input', {} ], function(err, data) {
             if (err) {
+                done();
                 console.log("requestMapping err", err);
                 return;
             }
             
             console.log("requestMapping: ", data);
         })
-    })
+    });
+
+    it('should request mapping', function(done) {
+        this.timeout(10000);
+        setTimeout(() => { done(); }, 9000);
+    });
+    
+    it('should request mapping (2nd time)', function(done) {
+        //this.timeout(10000);
+        requestorMist.request("mist.control.requestMapping", [ srcPeer, dstPeer, 'output', {}, 'input', {} ], function(err, data) {
+            if (err) {
+                console.log("requestMapping2 err", err);
+                return;
+            }
+            
+            if (typeof data !== 'string') {
+                return done(new Error('Requested mapping got faulty id. Expected string, got', typeof data));
+            }
+            
+            //console.log("requestMapping2: ", data);
+            done();
+        });
+    });
+    
+    it('should see the destincation value change', function(done) {
+        //this.timeout(10000);
+        requestorMist.request("mist.control.follow", [dstPeer], function(err, data) {
+            if (err) {
+                console.log("requestMapping2 err", err);
+                return;
+            }
+            
+            if (data.id !== 'output') { return; }
+            
+            if (data.data !== outputValue) { return done(new Error('The mapping reported unexpected data: '+ data.data +' while expecting: '+ outputValue)); }
+            
+            done();
+        });
+    });
 });
