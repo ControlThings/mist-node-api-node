@@ -84,7 +84,23 @@ function MistNodeInner(addon) {
 inherits(MistNodeInner, EventEmitter);
 
 MistNodeInner.prototype.create = function(model, cb) {
-    this.addon.request("mistnode", { model: model });
+    var node = this;
+    var visitor = function (modelFragment, parent) {
+        for (epName in modelFragment) {
+
+            node.endpointAdd( parent + epName, {
+                type: modelFragment[epName].type,
+                read: modelFragment[epName].read,
+                write: modelFragment[epName].write,
+                invoke: modelFragment[epName].invoke
+            });
+
+            if (modelFragment[epName]['#']) {
+                visitor(modelFragment[epName]['#'], parent + epName + '.');
+            }
+        }
+    }
+    visitor(model, "");
 };
 
 MistNodeInner.prototype.endpointAdd = function(fepid, endpoint) {

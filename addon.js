@@ -18,7 +18,7 @@ if (process.env.DEBUG) {
         MistApi = require('./build/Release/MistApi.node').MistApi;
     } else {
         var arch = process.arch;
-        var platform = process.platform === 'darwin' ? 'osx' : process.platform;
+        var platform = process.platform;
         
         try {
             MistApi = require('./bin/MistApi-'+arch+'-'+platform+'.node').MistApi;
