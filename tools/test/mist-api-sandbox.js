@@ -117,14 +117,14 @@ describe('MistApi Sandbox', function () {
         });
     });
     
-    it('shuold list sandboxes', function(done) {
+    it('should list sandboxes', function(done) {
         mist.request('sandbox.list', [], function(err, data) {
             console.log("sandbox.list", err, data);
             done();
         });
     });
     
-    it('shuold list wish identities', function(done) {
+    it('should list wish identities', function(done) {
         mist.wish.request('identity.list', [], function(err, data) {
             console.log("all identities", err, data);
             done();
@@ -133,7 +133,7 @@ describe('MistApi Sandbox', function () {
 
     var sandboxedGps;
 
-    it('shuold add peer to gps sandbox', function(done) {
+    it('should add peer to gps sandbox', function(done) {
         
         sandboxedGps = new Sandboxed(mist, gpsSandboxId);
         
@@ -157,7 +157,7 @@ describe('MistApi Sandbox', function () {
         });
     });
 
-    it('shuold test sandbox', function(done) {
+    it('should test sandbox', function(done) {
 
         mist.request('signals', [], function(err, data) {
             console.log("Signal from MistApi", err, data);
@@ -191,14 +191,14 @@ describe('MistApi Sandbox', function () {
         });
     });
     
-    it('shuold list peers for gps sandbox', function(done) {
+    it('should list peers for gps sandbox', function(done) {
         mist.request('sandbox.listPeers', [gpsSandboxId], function(err, data) {
             console.log("peers allowed for gpsSandbox", err, data);
             done();
         });
     });
     
-    it('shuold list identities in sandbox', function(done) {
+    it('should list identities in sandbox', function(done) {
         sandboxedGps.request('login', ['Gps App'], function(err, data) {
             console.log("ControlThings Sandbox login reponse:", err, data);
 
@@ -213,7 +213,7 @@ describe('MistApi Sandbox', function () {
         });
     });
     
-    it('shuold sign document in sandbox', function(done) {
+    it('should sign document in sandbox', function(done) {
         sandboxedGps.request('login', ['Gps App'], function(err, data) {
             //console.log("ControlThings Sandbox login reponse:", err, data);
             sandboxedGps.request('wish.identity.sign', [mistIdentity1.uid, { data: BSON.serialize({ msg: 'sandboxed signature' }) }], function(err, data) {
@@ -228,7 +228,7 @@ describe('MistApi Sandbox', function () {
         });
     });
 
-    it('shuold be sandboxed ', function(done) {
+    it('should be sandboxed ', function(done) {
         sandboxedGps.request('mist.control.model', [peer], function(err, data) {
             if (err) { return done(new Error('Could not get model from peer, before remove peer test.')); }
             
@@ -247,8 +247,67 @@ describe('MistApi Sandbox', function () {
         });
     });
 
+    it('should add a wifi ', function(done) {
+        mist.request('commission.add', ['wifi', 'mist-Mästarvägen 14'], function(err, data) {
+            if (err) { return done(new Error('Could not get list.')); }
+            
+            console.log("Commission.add result: ", err, data);
+            done();
+        });
+    });
+
+    var wifi_1 = 'mist-Moon Base 2';
+
+    it('should refresh commissionable wifis', function(done) {
+        mist.request('signals', [], function(err, data) {
+            if (data[0] === 'sandboxed.settings' && data[1].hint === 'commission.refresh') {
+                console.log('Refresh...');
+
+                mist.request('commission.add', ['wifi', wifi_1], function (err, data) {
+                    if (err) {
+                        return done(new Error('Could not add wifi.'));
+                    }
+
+                    //done();
+                    
+                });
+
+            }
+        });
+        
+        sandboxedGps.request('signals', [], function(err, data) {
+            console.log('signals:', err, data);
+            if (data[0] === 'commission.list') {
+                sandboxedGps.request('commission.list', [], function(err, data) {
+                    if (err) { return done(new Error('Could not get list.')); }
+
+                    for(var i in data) {
+                        if (data[i].type === 'wifi' && data[i].ssid === wifi_1) {
+                            done();
+                            done = function() {};
+                        }
+                    }
+                });
+                
+            }
+        });
+        
+        sandboxedGps.request('settings', ['commission.refresh'], function(err, data) {
+            if (err) { return done(new Error('Could not get list.')); }
+        });
+    });
+
+    it('should get commission.list ', function(done) {
+        sandboxedGps.request('commission.list', [], function(err, data) {
+            if (err) { return done(new Error('Could not get list.')); }
+            
+            console.log("Commission.list result: ", err, data);
+            done();
+        });
+    });
+
     /*
-    it('shuold test a second sandbox', function(done) {
+    it('should test a second sandbox', function(done) {
         var sandboxedControlThings = new Sandboxed(mist, controlThingsSandboxId);
         
         sandboxedControlThings.request('login', ['ControlThings App'], function(err, data) {

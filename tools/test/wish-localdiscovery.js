@@ -53,4 +53,21 @@ describe('Wish Local Discovery', function () {
             //done(new Error('Not the expected error.'));
         });
     });
+    
+    it('should add a wifi', function(done) {
+        mist.request('commission.add', ['wifi', 'mist-315 S. Broad St.'], function(err, data) {
+            done();
+        });
+    });
+    
+    it('should', function(done) {
+        mist.request('sandbox.list', [], function(err, data) {
+            var sid = data[0].id;
+            
+            mist.request('sandboxed.commission.list', [sid], function(err, data) {
+                console.log('wld.list', err, data);
+                done();
+            });
+        });
+    });
 });
