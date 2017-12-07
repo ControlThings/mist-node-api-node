@@ -94,7 +94,7 @@ describe('Wish core import export identity with many transports', function () {
     });
     
     it('Alice should have expected transports', function(done) {
-        this.timeout(500);
+        this.timeout(1000);
         aliceApp.request('identity.export', [aliceIdentity.uid], function(err, result) {
             if (err) { done(new Error('util.js: Could not ensure identity.')); }
             var export_meta = BSON.deserialize(result.meta)
@@ -103,12 +103,15 @@ describe('Wish core import export identity with many transports', function () {
             //console.log("transports:", transports);
             //console.log("aliceRelayList:", aliceRelayList);
             
-            /* Check that we have the expected amount of transports (2) in Alice's identity export */
+            /* Check that we have the expected transports in Alice's identity export. Note that they need not be in any particular order, and that transports can have other items than relays too! */
             var cnt = 0;
             var expectedCnt = 2;
-            for (x in transports) {
-                if (transports[x].split("wish://")[1] === aliceRelayList[x].host) {
-                    cnt++;
+            for (i in transports) {
+                var transport_ip_port = transports[i].split("wish://")[1];
+                for (j in aliceRelayList) {
+                    if (transport_ip_port === aliceRelayList[j].host) {
+                        cnt++;
+                    }
                 }
             }
             if (cnt === expectedCnt) {
