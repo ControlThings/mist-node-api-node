@@ -29,7 +29,7 @@ describe('MistApi Identity', function () {
     it('should fail to create identity without alias', function(done) {
         app.request('identity.create', [], function(err, data) {
             if (!err) { return done(new Error('Not an error as expected.')); }
-            if (data.code !== 309) { return done(new Error('Not the expected 309 error code as expected.')); }
+            if (data.code !== 309) { return done(new Error('Not the expected 309 error code as expected. Code was: '+data.code)); }
 
             done();
         });

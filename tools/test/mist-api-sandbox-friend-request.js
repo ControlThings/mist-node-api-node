@@ -214,7 +214,7 @@ describe('MistApi Sandbox', function () {
             }
         });
         
-        mist1.request('sandbox.allowRequest', [requestToBeAccepted.id, requestToBeAccepted.hint], function(err, data) {
+        mist1.request('sandbox.allowRequest', [requestToBeAccepted.id, requestToBeAccepted.opts], function(err, data) {
             console.log('sandbox.allowRequest response:', err, data);
             //done();
         });
