@@ -52,23 +52,13 @@ describe('MistApi Sandbox', function () {
         });
     });
     
-    var name2 = 'Bob';
-    
-    before(function(done) {
-        util.ensureIdentity(mist, name2, function(err, identity) {
-            if (err) { done(new Error('util.js: Could not ensure identity.')); }
-            mistIdentity2 = identity;
-            done(); 
-        });
-    });
-    
     var gpsSandboxId = new Buffer('dead00ababababababababababababababababababababababababababababab', 'hex');
     var controlThingsSandboxId = new Buffer('beef00ababababababababababababababababababababababababababababab', 'hex');
 
     var node;
 
     before('should start a mist node', function(done) {
-        node = new MistNode({ name: 'ControlThings', corePort: 9095 });
+        node = new MistNode({ name: 'ControlThings', corePort: 9096 });
         
         node.create({
             enabled: { label: 'Enabled', type: 'bool', read: true, write: true },
@@ -91,6 +81,51 @@ describe('MistApi Sandbox', function () {
         
         setTimeout(done, 200);
     });      
+    
+    before(function(done) {
+        util.clear(node, function(err) {
+            if (err) { done(new Error('util.js: Could not clear core.')); }
+            done(); 
+        });
+    });
+    
+    var name2 = 'Bob';
+    
+    before('ensure identity '+name2, function(done) {
+        util.ensureIdentity(node, name2, function(err, identity) {
+            if (err) { done(new Error('util.js: Could not ensure identity.')); }
+            mistIdentity2 = identity;
+            done(); 
+        });
+    });
+    
+    
+    before('import identity 1', function(done) {
+        mist.wish.request('identity.import', [BSON.serialize(mistIdentity2)], function(err, data) {
+            console.log('Identity import said 1:', err, data);
+            done();
+        });
+    });
+    
+    before('import identity 2', function(done) {
+        node.wish.request('identity.import', [BSON.serialize(mistIdentity1)], function(err, data) {
+            console.log('Identity import said 2:', err, data);
+            done();
+        });
+    });
+    
+    before('should find the remote peer', function(done) {
+        this.timeout(5000);
+        //console.log('Testing peer');
+        
+        mist.request('signals', [], function(err, data) {
+            console.log('mist signals:', err, data);
+            if (data[0] === 'peers') {
+                done();
+            }
+        });
+        
+    });
     
     var peer;
 
@@ -202,10 +237,21 @@ describe('MistApi Sandbox', function () {
         sandboxedGps.request('login', ['Gps App'], function(err, data) {
             console.log("ControlThings Sandbox login reponse:", err, data);
 
+            sandboxedGps.request('wish.identity.list', [null], function(err, data) {
+                console.log("ControlThings sandbox identities:", err, data);
+                done();
+            });
+        });
+    });
+    
+    it('should list identities from remote core in sandbox', function(done) {
+        sandboxedGps.request('login', ['Gps App'], function(err, data) {
+            console.log("ControlThings Sandbox login reponse:", err, data);
+
             sandboxedGps.request('listPeers', [], function(err, data) {
                 console.log("sandboxedGps listPeers:", err, data);
 
-                sandboxedGps.request('wish.identity.list', [], function(err, data) {
+                sandboxedGps.request('wish.identity.list', [data[0]], function(err, data) {
                     console.log("ControlThings sandbox identities:", err, data);
                     done();
                 });
