@@ -170,8 +170,8 @@ function done() {
     
     // To debug errors in Bob's core enable the below bobCore = child.spawn('gdb', ...
     
-    var coreBob = child.spawn('../wish-core', ['-p 38002', '-a 9096', '-r', '-s'], { cwd: './env/bob', stdio: 'inherit' });
-    //var coreBob = child.spawn('gdb', ['-batch', '-ex', 'run -p 38002 -a 9096 -r -s', '-ex', 'bt', '../wish-core'], { cwd: './env/bob', stdio: 'inherit' });
+    //var coreBob = child.spawn('../wish-core', ['-p 38002', '-a 9096', '-r', '-s'], { cwd: './env/bob', stdio: 'inherit' });
+    var coreBob = child.spawn('gdb', ['-batch', '-ex', 'run -p 38002 -a 9096 -r -s', '-ex', 'bt', '../wish-core'], { cwd: './env/bob', stdio: 'inherit' });
     
     var coreBobTimeout = setTimeout(() => { runningBob(); }, 200);
     

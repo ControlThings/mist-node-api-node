@@ -37,14 +37,14 @@ describe('MistApi Sandbox', function () {
     
     var name1 = 'Alice';
     
-    before(function(done) {
+    before('clear 1', function(done) {
         util.clear(mist, function(err) {
             if (err) { done(new Error('util.js: Could not clear core.')); }
             done(); 
         });
     });
     
-    before(function(done) {
+    before('ensure 1', function(done) {
         util.ensureIdentity(mist, name1, function(err, identity) {
             if (err) { done(new Error('util.js: Could not ensure identity.')); }
             mistIdentity1 = identity;
@@ -239,6 +239,38 @@ describe('MistApi Sandbox', function () {
 
             sandboxedGps.request('wish.identity.list', [null], function(err, data) {
                 console.log("ControlThings sandbox identities:", err, data);
+                done();
+            });
+        });
+    });
+    
+    it('should update remote identity alias in remote core from sandbox', function(done) {
+        
+        console.log('About to make wish.identity.update...');
+        
+        sandboxedGps.request('login', ['Gps App'], function(err, data) {
+            //console.log("ControlThings Sandbox login reponse:", err, data);
+
+            sandboxedGps.request('listPeers', [], function(err, data) {
+                //console.log("sandboxedGps listPeers:", err, data);
+
+                sandboxedGps.request('wish.identity.update', [data[0], mistIdentity2.uid, { alias: 'Alvin M. Weinberg', role: 'technician', phone: '+358401231234' }], function(err, data) {
+                    console.log("Remote: wish.identity.update:", err, data);
+                    done();
+                });
+            });
+        });
+    });
+    
+    it('should update local identity alias', function(done) {
+        
+        console.log('About to make wish.identity.update...');
+        
+        sandboxedGps.request('login', ['Gps App'], function(err, data) {
+            //console.log("ControlThings Sandbox login reponse:", err, data);
+
+            sandboxedGps.request('wish.identity.update', [null, mistIdentity2.uid, { alias: 'Albert E.', role: 'user' }], function(err, data) {
+                console.log("Remote: wish.identity.update:", err, data);
                 done();
             });
         });
