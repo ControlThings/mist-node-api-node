@@ -371,12 +371,22 @@ describe('Mist Mappings', function () {
             }
             
             console.log("requestMapping: ", data);
-        })
+        });
     });
 
     it('should request mapping', function(done) {
         this.timeout(10000);
         setTimeout(() => { done(); }, 9000);
+    });
+    
+    it('should have a connection between src and dst nodes', function(done) {
+        srcApp.request('connections.list', [], function(err, data) {
+            console.log('srcApp connections.list:', err, data);
+            //if (data.length !== 1) {
+            //    return done(new Error('Not exactly one friendRequest in list!'));
+            //}
+            done();
+        });        
     });
     
     it('should request mapping (2nd time)', function(done) {

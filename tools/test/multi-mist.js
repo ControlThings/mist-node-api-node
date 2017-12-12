@@ -56,7 +56,7 @@ describe('Multi Mist', function () {
                         if (expired) { return; } else { expired = true; }
                         if( --count === 0 ) { checkServiceList(done); }
                     });
-                }, 200);
+                }, 500);
             })(i);
         }
     });
