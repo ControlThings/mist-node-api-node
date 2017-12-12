@@ -1,5 +1,6 @@
 var WishApp = require('../../index.js').WishApp;
 var inspect = require('util').inspect;
+var util = require('./deps/util.js');
 
 describe('MistApi Identity', function () {
     var app;
@@ -17,6 +18,8 @@ describe('MistApi Identity', function () {
             });
         }, 200);
     });
+    
+    before(function(done) { util.clear(app, done); });
 
     it('should get error on identity not found', function(done) {
         app.request('identity.get', [new Buffer('deadbeefabababababababababababababababababababababababababababab', 'hex')], function (err, data) {
@@ -46,7 +49,10 @@ describe('MistApi Identity', function () {
 
     it('should get identity data', function(done) {
         app.request('identity.create', ['Leif Eriksson'], function(err, data) {
+            if(err) { return done(new Error('identity.create unexpectedly returned error '+data.code)); }
+            
             var uid = data.uid;
+            
             app.request('identity.get', [uid], function (err, data) {
                 if(err) { if (data.code === 997) { return done(new Error('identity.get returned '+data.code)); } }
                    
@@ -61,6 +67,8 @@ describe('MistApi Identity', function () {
     
     it('should create identity with valid transport', function(done) {
         app.request('identity.create', ['Madame de Pompadour'], function(err, data) {
+            if(err) { return done(new Error('identity.create unexpectedly returned error '+data.code)); }
+            
             var uid = data.uid;
             app.request('identity.get', [uid], function (err, data) {
                 if(err) { if (data.code === 997) { return done(new Error('identity.get returned '+data.code)); } }

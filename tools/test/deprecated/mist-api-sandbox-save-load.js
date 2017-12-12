@@ -1,7 +1,9 @@
 var Mist = require('../../index.js').Mist;
 var Sandboxed = require('../../index.js').Sandboxed;
 var MistNode = require('../../index.js').MistNode;
-
+var inspect = require('util').inspect;
+var util = require('./deps/util.js');
+    
 describe('MistApi Sandbox', function () {
     var mist;
     
@@ -19,7 +21,6 @@ describe('MistApi Sandbox', function () {
         }, 200);
     });
 
-    
     after(function(done) {
         //console.log("Calling mist.shutdown().");
         mist.shutdown();
@@ -32,33 +33,8 @@ describe('MistApi Sandbox', function () {
     var aliceIdentity;
     var unimportantIdentity;
 
-    before('should ensure identity for Alice', function(done) {
-        mist.wish.request('identity.list', [], function(err, data) {
-            if (err) { return done(new Error(inspect(data))); }
-            
-            //console.log("Ensuring identity of Alice.", data);
 
-            var c = 0;
-            var t = 0;
-            
-            for(var i in data) {
-                c++;
-                t++;
-                mist.wish.request('identity.remove', [data[i].uid], function(err, data) {
-                    if (err) { return done(new Error(inspect(data))); }
-
-                    c--;
-                    
-                    if ( c===0 ) {
-                        console.log("Deleted ", t, 'identities.');
-                        done();
-                    }
-                });
-            }
-            
-            if(t===0) { done(); }
-        });
-    });
+    before(function(done) { util.clear(mist, done); });
 
     before('should ensure identity for Alice', function(done) {
         mist.wish.request('identity.create', [aliceAlias], function(err, data) {
@@ -69,21 +45,13 @@ describe('MistApi Sandbox', function () {
         });
     });
 
-    before('should ensure identity for Mr. Unimportant', function(done) {
-        mist.wish.request('identity.create', ['Mr. Unimportant'], function(err, data) {
-            if (err) { return done(new Error(inspect(data))); }
-            unimportantIdentity = data;
-            done();
-        });
-    });
-    
     var gpsSandboxId = new Buffer('dead00ababababababababababababababababababababababababababababab', 'hex');
     var controlThingsSandboxId = new Buffer('beef00ababababababababababababababababababababababababababababab', 'hex');
 
     var node;
 
     before('should start a mist node', function(done) {
-        node = new MistNode({ name: 'ControlThings', corePort: 9095 }); // , coreIp: '127.0.0.1'
+        node = new MistNode({ name: 'ControlThings', corePort: 9096 }); // , coreIp: '127.0.0.1'
         
         node.create({
             device: 'ControlThings',
@@ -108,6 +76,17 @@ describe('MistApi Sandbox', function () {
         
         setTimeout(done, 200);
     });      
+
+    before(function(done) { util.clear(node, done); });
+
+    before('should ensure identity for Mr. Unimportant', function(done) {
+        node.wish.request('identity.create', ['Mr. Unimportant'], function(err, data) {
+            if (err) { return done(new Error(inspect(data))); }
+            unimportantIdentity = data;
+            done();
+        });
+    });
+    
     
     var peer;
 

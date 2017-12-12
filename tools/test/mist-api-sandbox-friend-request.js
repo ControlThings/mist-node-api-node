@@ -181,7 +181,7 @@ describe('MistApi Sandbox', function () {
         sandboxedGps = new Sandboxed(mist1, gpsSandboxId);
 
         sandboxedGps.request('login', ['Gps App'], function(err, data) {
-            sandboxedGps.request('wish.identity.list', [], function(err, data) {
+            sandboxedGps.request('wish.identity.list', [null], function(err, data) {
                 //console.log('Sandbox sees these identities:', err, data);
                 
                 if (data[0]) {
@@ -194,7 +194,7 @@ describe('MistApi Sandbox', function () {
                     
                     //console.log('sending request from sandbox', [uid, cert]);
                     
-                    sandboxedGps.request('wish.identity.friendRequest', [uid, cert], function(err, data) {
+                    sandboxedGps.request('wish.identity.friendRequest', [null, uid, cert], function(err, data) {
                         console.log('Sandbox got response for wish.identity.friendRequest', err, data);
                     });
                 }

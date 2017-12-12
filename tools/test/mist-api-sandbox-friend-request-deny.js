@@ -149,7 +149,7 @@ describe('MistApi Sandbox', function () {
     });
     
     before(function(done) {
-        mist2.wish.request('identity.list', [], function(err, data) {
+        mist2.wish.request('identity.list', [null], function(err, data) {
             //console.log('services.list', err, data);
             done();
         });
@@ -166,13 +166,18 @@ describe('MistApi Sandbox', function () {
     
     var requestToBeDenied;
     
-    it('shuold test sandbox settings without hint', function(done) {
+    it('shuold test denying friendRequest from sandbox', function(done) {
 
         var signals = mist1.request('signals', [], function(err, data) {
             //console.log("Signal from MistApi", err, inspect(data, null, 10, true));
             if(data[0] && data[0] === 'sandboxed.settings') {
+                console.log('sandboxed.settings:', data);
                 requestToBeDenied = data[1];
-                done();
+                
+                mist1.request('sandbox.denyRequest', [requestToBeDenied.id, requestToBeDenied.opts.id], function(err, data) {
+                    console.log('sandbox.denyRequest response:', err, data);
+                });
+                
                 //console.log('canceling', signals);
                 mist1.requestCancel(signals);
             }
@@ -181,7 +186,7 @@ describe('MistApi Sandbox', function () {
         sandboxedGps = new Sandboxed(mist1, gpsSandboxId);
 
         sandboxedGps.request('login', ['Gps App'], function(err, data) {
-            sandboxedGps.request('wish.identity.list', [], function(err, data) {
+            sandboxedGps.request('wish.identity.list', [null], function(err, data) {
                 //console.log('Sandbox sees these identities:', err, data);
                 
                 if (data[0]) {
@@ -194,33 +199,13 @@ describe('MistApi Sandbox', function () {
                     
                     //console.log('sending request from sandbox', [uid, cert]);
                     
-                    sandboxedGps.request('wish.identity.friendRequest', [uid, cert], function(err, data) {
+                    sandboxedGps.request('wish.identity.friendRequest', [null, uid, cert], function(err, data) {
                         console.log('Sandbox got response for wish.identity.friendRequest', err, data);
+                        if (err && data.code === 43) { done(); } else { done(new Error('Not the expected permission denied error: '+err+': '+JSON.stringify(data))); }
                     });
                 }
             });
             
-        });
-    });
-    
-    it('should deny the request from sandbox', function(done) {
-        // 'sandbox.addPeer'
-
-        /*
-        var signals = app2.request('signals', [], function(err, data) {
-            //console.log('app2 signals:', err, data);
-            if (data[0] === 'friendRequest')  {
-                app2.cancel(signals);
-                done();
-            }
-        });
-        */
-       
-       console.log('Going to deny this:', requestToBeDenied.hint.id);
-        
-        mist1.request('sandbox.denyRequest', [requestToBeDenied.id, requestToBeDenied.hint.id], function(err, data) {
-            console.log('sandbox.denyRequest response:', err, data);
-            //done();
         });
     });
 });
