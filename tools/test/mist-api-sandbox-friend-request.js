@@ -211,14 +211,17 @@ describe('MistApi Sandbox', function () {
             if (data[0] === 'friendRequest')  {
                 app2.cancel(signals);
                 done();
+                done = function() {};
             }
         });
         
         mist1.request('sandbox.allowRequest', [requestToBeAccepted.id, requestToBeAccepted.opts], function(err, data) {
-            console.log('sandbox.allowRequest response:', err, data);
+            if (err) { console.log('Error: sandbox.allowRequest response:', err, data); }
             //done();
         });
     });
+    
+    var sandboxPeer;
     
     it('should accept friend request and see peer in sandbox', function(done) {
         this.timeout(5000);
@@ -234,22 +237,95 @@ describe('MistApi Sandbox', function () {
                     if ( Buffer.compare(data[0].rhid, peerCert.hid) !== 0 ) { return done(new Error('Sandbox peer rhid incorrect!')); }
                     if ( Buffer.compare(data[0].rsid, peerCert.sid) !== 0 ) { return done(new Error('Sandbox peer rsid incorrect!')); }
                     
+                    sandboxPeer = data[0];
+                    
                     sandboxedGps.requestCancel(signals);
                     done();
                 });
             }
         });
-
         
+
         app2.request('identity.friendRequestList', [], function(err, data) {
             //console.log('app2 friendRequestList:', err, data);
             if (data.length !== 1) {
                 return done(new Error('Not exactly one friendRequest in list!'));
             }
-
+            
             app2.request('identity.friendRequestAccept', [data[0].luid, data[0].ruid], function(err, data) {
                 //console.log('app2 friendRequestAccept:', err, data);
             });
         });        
+    });
+    
+    it('should get a remote wish signal', function(done) {
+        var peer = { luid: sandboxPeer.luid, ruid: sandboxPeer.ruid, rhid: sandboxPeer.rhid };
+
+        var signals = sandboxedGps.request('wish.signals', [peer], function(err, data) {
+            if (data[0] === 'identity') { done(); done = function() {}; sandboxedGps.cancel(signals); }
+            
+            if (data[0] === 'ok') {
+                sandboxedGps.request('wish.identity.update', [peer, peer.luid, { payment: { BCH: '1Ms7pFFeRbj9m6bb6jbsbA23MAC4SQJeEY' }, telephone: '+35812312312' }], function() {
+
+                });
+            }
+        });
+    });
+    
+    it('should get a remote wish identity', function(done) {
+        var peer = { luid: sandboxPeer.luid, ruid: sandboxPeer.ruid, rhid: sandboxPeer.rhid };
+
+        sandboxedGps.request('wish.identity.get', [peer, peer.luid], function(err, data) {
+            //console.log('Here you go', err, data.meta);
+            done();
+        });
+    });
+    
+    it('should get a remote wish identity friend request and accept it', function(done) {
+        var peer = { luid: sandboxPeer.luid, ruid: sandboxPeer.ruid, rhid: sandboxPeer.rhid };
+
+        var lsignals;
+
+        var signals = sandboxedGps.request('wish.signals', [peer], function(err, data) {
+            if (data[0] === 'friendRequest') {
+                //sandboxedGps.requestCancel(signals);
+                //console.log('about to list remote friendRequests');
+                
+                sandboxedGps.request('wish.identity.friendRequestList', [peer], function(err, data) {
+                    //console.log('remote friendRequest list:', err, data);
+                    sandboxedGps.request('wish.identity.friendRequestAccept', [peer, data[0].luid, data[0].ruid], function(err, data) {
+                        //console.log('remote friendRequest Accept:', err, data);
+                        done();
+                        sandboxedGps.requestCancel(signals);
+                        mist1.requestCancel(lsignals);
+                    });
+                });
+            }
+            
+            if (data[0] === 'ok') {
+                
+                sandboxedGps.request('wish.identity.export', [peer, peer.ruid], function(err, data) {
+                    //console.log('exported remote identity:', err, data);
+                    
+                    lsignals = mist1.request('signals', [], function(err, data) {
+                        //console.log('lsignals:', err, data);
+                        if (data[1] && data[1].hint === 'permission') {
+                            mist1.request('sandbox.allowRequest', [data[1].id, data[1].opts], function(err, data) {
+                                //console.log('Allow request:', err, data);
+                                //mist1.requestCancel(lsignals);
+                            });
+                        }
+                    });
+                    
+                    sandboxedGps.request('wish.identity.friendRequest', [null, peer.luid, data], function(err, data) {
+                        //console.log('Here you go', err, data.meta);
+                        done();
+                    });
+                });
+                
+            } else {
+                //console.log('signal:', err, data);
+            }
+        });
     });
 });
