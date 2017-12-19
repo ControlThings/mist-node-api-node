@@ -439,13 +439,13 @@ static void wish_periodic_cb_impl(void* ctx) {
         } else {
             bson bs;
             bson_init_with_data(&bs, msg->data);
-
+            
             if(msg->type == 1) { // WISH
                 bson_iterator it;
                 bson_find(&it, &bs, "cancel");
 
                 if (bson_iterator_type(&it) == BSON_INT) {
-                    printf("wish_cancel %i\n", bson_iterator_int(&it));
+                    //printf("wish_cancel %i\n", bson_iterator_int(&it));
                     wish_core_request_cancel(opts->wish_app, bson_iterator_int(&it));
                     goto consume_and_unlock;
                 }
