@@ -255,6 +255,25 @@ describe('MistApi Sandbox', function () {
             sandboxedGps.request('listPeers', [], function(err, data) {
                 //console.log("sandboxedGps listPeers:", err, data);
 
+                sandboxedGps.request('wish.identity.permissions', [data[0], mistIdentity2.uid, { banned: true }], function(err, data) {
+                    console.log("Remote: wish.identity.permissions:", err, data);
+                    console.log('Warning no checks!');
+                    done();
+                });
+            });
+        });
+    });
+    
+    it('should update remote identity alias in remote core from sandbox', function(done) {
+        
+        //console.log('About to make wish.identity.update...');
+        
+        sandboxedGps.request('login', ['Gps App'], function(err, data) {
+            //console.log("ControlThings Sandbox login reponse:", err, data);
+
+            sandboxedGps.request('listPeers', [], function(err, data) {
+                //console.log("sandboxedGps listPeers:", err, data);
+
                 sandboxedGps.request('wish.identity.update', [data[0], mistIdentity2.uid, { alias: 'Alvin M. Weinberg', role: 'technician', phone: '+358401231234' }], function(err, data) {
                     //console.log("Remote: wish.identity.update:", err, data);
                     console.log('Warning no checks!');
