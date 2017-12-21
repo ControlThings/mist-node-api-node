@@ -65,6 +65,31 @@ describe('MistApi Identity', function () {
         });
     });
     
+    it('should update identity data', function(done) {
+        app.request('identity.create', ['Another Guy'], function(err, data) {
+            if(err) { return done(new Error('identity.create unexpectedly returned error '+data.code)); }
+            
+            var uid = data.uid;
+
+            app.request('identity.update', [uid, { aa: true, bb: true, cc: { test: ['a', 2, 'yellow'] }, dd: true }], function(err, data) {
+                if(err) { return done(new Error('identity.update unexpectedly returned error '+data.code+'. '+data.msg)); }
+
+                app.request('identity.update', [uid, { aa: 'testing', ee: { more: ['data'] }, cc: null, bb: 9, dd: null }], function (err, data) {
+                    if(err) { if (data.code === 997) { return done(new Error('identity.get returned '+data.code)); } }
+
+                    console.log('identity.update:', err, data);
+                    console.log('Warning: no checks.');
+                    
+                    app.request('identity.remove', [uid], function (err, data) {
+                        if(err) { if (data.code === 997) { return done(new Error('identity.remove returned '+data.code)); } }
+
+                        done();
+                    });
+                });
+            });
+        });
+    });
+    
     it('should create identity with valid transport', function(done) {
         app.request('identity.create', ['Madame de Pompadour'], function(err, data) {
             if(err) { return done(new Error('identity.create unexpectedly returned error '+data.code)); }
