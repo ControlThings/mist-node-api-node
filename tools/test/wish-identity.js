@@ -90,6 +90,56 @@ describe('MistApi Identity', function () {
         });
     });
     
+    it('should update identity data 2', function(done) {
+        app.request('identity.create', ['Another Guy'], function(err, data) {
+            if(err) { return done(new Error('identity.create unexpectedly returned error '+data.code)); }
+            
+            var uid = data.uid;
+
+            app.request('identity.update', [uid, {}], function(err, data) {
+                if(err) { return done(new Error('identity.update unexpectedly returned error '+data.code+'. '+data.msg)); }
+
+                app.request('identity.update', [uid, { ee: null }], function (err, data) {
+                    if(err) { if (data.code === 997) { return done(new Error('identity.get returned '+data.code)); } }
+
+                    console.log('identity.update:', err, data);
+                    console.log('Warning: no checks.');
+                    
+                    app.request('identity.remove', [uid], function (err, data) {
+                        if(err) { if (data.code === 997) { return done(new Error('identity.remove returned '+data.code)); } }
+
+                        done();
+                    });
+                });
+            });
+        });
+    });
+    
+    it('should update identity permissions', function(done) {
+        app.request('identity.create', ['Another Guy'], function(err, data) {
+            if(err) { return done(new Error('identity.create unexpectedly returned error '+data.code)); }
+            
+            var uid = data.uid;
+
+            app.request('identity.permissions', [uid, { connect: true }], function(err, data) {
+                if(err) { return done(new Error('identity.update unexpectedly returned error '+data.code+'. '+data.msg)); }
+
+                app.request('identity.permissions', [uid, { yay: 'no', bra: 'jo', connect: null }], function (err, data) {
+                    if(err) { if (data.code === 997) { return done(new Error('identity.get returned '+data.code)); } }
+
+                    console.log('identity.permissions:', err, data);
+                    console.log('Warning: no checks.');
+                    
+                    app.request('identity.remove', [uid], function (err, data) {
+                        if(err) { if (data.code === 997) { return done(new Error('identity.remove returned '+data.code)); } }
+
+                        done();
+                    });
+                });
+            });
+        });
+    });
+    
     it('should create identity with valid transport', function(done) {
         app.request('identity.create', ['Madame de Pompadour'], function(err, data) {
             if(err) { return done(new Error('identity.create unexpectedly returned error '+data.code)); }
