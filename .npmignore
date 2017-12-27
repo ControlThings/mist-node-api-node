@@ -1,9 +1,11 @@
 /nbproject
 /node_modules
-/mist-esp
+/mist-c99
 /build
 /npm-debug.log
 /*.tgz
+/.gitmodules
+/examples
 /mappings.bin
 /binding.gyp
 /doc
