@@ -3,8 +3,8 @@
         {
             "target_name": "MistApi",
             "sources": [ "src/Mist.cc", "src/functions.cc", "src/Message.cc", "src/MistWrapper.cc" ],
-            "cflags": [ "-g -O0" ],
-            "cflags_cc": [ "-g -O0" ],
+            "cflags": [ "-O2" ],
+            "cflags_cc": [ "-O2" ],
             "ldflags": [ ],
             "include_dirs" : [
                 "src",
@@ -31,7 +31,7 @@
                     "xcode_settings": {
                       "OTHER_CPLUSPLUSFLAGS" : [ "-std=c++11", "-stdlib=libc++" ],
                       "OTHER_LDFLAGS": [ "-stdlib=libc++" ],
-                      "MACOSX_DEPLOYMENT_TARGET": "10.7"
+                      "MACOSX_DEPLOYMENT_TARGET": "10.11"
                     },
                 }],
             ],
