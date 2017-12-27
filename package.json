@@ -19,7 +19,7 @@
   "dependencies": {
     "bson-buffer": "1.0.2",
     "nan": "2.7.0",
-    "wish-rpc": "0.6.4"
+    "wish-rpc": "0.6.5"
   },
   "devDependencies": {
     "mkdirp": "0.5.1",
