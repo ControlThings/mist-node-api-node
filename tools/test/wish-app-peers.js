@@ -87,6 +87,7 @@ describe('WishApp Peers', function () {
             //console.log('Peer:', peer);
             if ( Buffer.compare(peer.ruid, mistIdentity2.uid) === 0 && peer.protocol === 'test') {
                 done();
+                done = function() {};
             }
         };
         //done();
