@@ -85,8 +85,7 @@ function Addon(opts) {
         if (event === 'frame') {
             self.emit('frame', msg.peer, msg.frame);
             
-            var payload = BSON.deserialize(msg.frame);
-            if (typeof self.frameCb === 'function') { self.frameCb(msg.peer, payload); }
+            if (typeof self.frameCb === 'function') { self.frameCb(msg.peer, msg.frame); }
 
             return;
         }

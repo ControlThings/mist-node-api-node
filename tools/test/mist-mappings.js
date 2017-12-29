@@ -135,9 +135,9 @@ describe('Mist Mappings', function () {
         
         source = new MistNode({ name: 'src Node', coreIp: '127.0.0.1', corePort: 9097 });
         
-        source.endpointAdd('mist', { type: 'string' });
-        source.endpointAdd('mist.name', { label: 'Name', type: 'string', read: function(args, peer, cb) { cb(null, 'Output Node'); } });
-        source.endpointAdd('output', {
+        source.addEndpoint('mist', { type: 'string' });
+        source.addEndpoint('mist.name', { label: 'Name', type: 'string', read: function(args, peer, cb) { cb(null, 'Output Node'); } });
+        source.addEndpoint('output', {
             label: 'Output',
             type: 'int',
             read: function(args, peer, cb) {
@@ -148,7 +148,7 @@ describe('Mist Mappings', function () {
         
         source.changed('output');
         
-        source.endpointAdd('test', { label: 'test', type: 'string', read: true, write: true });
+        source.addEndpoint('test', { label: 'test', type: 'string', read: true, write: true });
 
         setInterval(function() { outputValue++; source.changed('output'); }, 1000);
         
@@ -159,9 +159,9 @@ describe('Mist Mappings', function () {
         var inputValue = 7;
         destination = new MistNode({ name: 'dst Node', coreIp: '127.0.0.1', corePort: 9096 });
         
-        destination.endpointAdd('mist', { type: 'string' });
-        destination.endpointAdd('mist.name', { label: 'Name', type: 'string', read: function(args, peer, cb) { cb(null, 'Input Node'); } });
-        destination.endpointAdd('input', {
+        destination.addEndpoint('mist', { type: 'string' });
+        destination.addEndpoint('mist.name', { label: 'Name', type: 'string', read: function(args, peer, cb) { cb(null, 'Input Node'); } });
+        destination.addEndpoint('input', {
             label: 'Input',
             type: 'int',
             read: function(args, peer, cb) {

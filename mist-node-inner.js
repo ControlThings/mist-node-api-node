@@ -86,24 +86,25 @@ inherits(MistNodeInner, EventEmitter);
 MistNodeInner.prototype.create = function(model, cb) {
     var node = this;
     var visitor = function (modelFragment, parent) {
-        for (epName in modelFragment) {
+        for (var epid in modelFragment) {
 
-            node.endpointAdd( parent + epName, {
-                type: modelFragment[epName].type,
-                read: modelFragment[epName].read,
-                write: modelFragment[epName].write,
-                invoke: modelFragment[epName].invoke
+            node.addEndpoint( parent + epid, {
+                type: modelFragment[epid].type,
+                read: modelFragment[epid].read,
+                write: modelFragment[epid].write,
+                invoke: modelFragment[epid].invoke
             });
 
-            if (modelFragment[epName]['#']) {
-                visitor(modelFragment[epName]['#'], parent + epName + '.');
+            if (modelFragment[epid]['#']) {
+                visitor(modelFragment[epid]['#'], parent + epid + '.');
             }
         }
-    }
+    };
+    
     visitor(model, "");
 };
 
-MistNodeInner.prototype.endpointAdd = function(fepid, endpoint) {
+MistNodeInner.prototype.addEndpoint = function(fepid, endpoint) {
     var path = fepid.split('.');
     
     var parent;
@@ -129,7 +130,7 @@ MistNodeInner.prototype.endpointAdd = function(fepid, endpoint) {
     this.addon.request("mistnode", { endpointAdd: true, ep: endpoint });
 };
 
-MistNodeInner.prototype.endpointRemove = function(epid) {
+MistNodeInner.prototype.removeEndpoint = function(epid) {
     this.addon.request("mistnode", { endpointRemove: epid });
 };
 

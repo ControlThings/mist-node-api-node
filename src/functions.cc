@@ -933,7 +933,7 @@ static void mist_node_api_handler(mist_app_t* mist_app, input_buf* msg) {
         rpc_client_req* creq = mist_app_request(mist_app, peer, &req, mist_node_api_callback);
 
         if (creq == NULL) {
-            WISHDEBUG(LOG_CRITICAL, "Failed making request %i");
+            WISHDEBUG(LOG_CRITICAL, "Failed making request.");
             return;
         }
         creq->passthru_id = id;

@@ -1,17 +1,5 @@
-# Mist API
-
-A native node.js plugin which uses the C99 Mist implementation. Currently working with Linux x86_64 and nodejs v6.x only. To get it working you need to run a Wish Core on the same host.
-
-## Install 
-
-```sh
-npm install mist-api
-```
-
-## Example
-
-```js
-var MistNode = require('mist-api').MistNode;
+//var MistNode = require('mist-api').MistNode;
+var MistNode = require('../index.js').MistNode;
 
 function Motor() {
     var name = 'Motor';
@@ -53,4 +41,3 @@ function Motor() {
 
 // create Motor instance to run
 var motor = Motor();
-```

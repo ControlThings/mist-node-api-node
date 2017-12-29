@@ -45,19 +45,19 @@ describe('MistApi Control', function () {
     before('should start a mist node', function(done) {
         node = new MistNode({ name: 'ControlThings', corePort: 9095 }); // , coreIp: '127.0.0.1'
         
-        node.endpointAdd('mist', { type: 'string' });
-        node.endpointAdd('mist.name', { label: 'Name', type: 'string', read: true, write: true });
-        node.endpointAdd('name', { label: 'Name', type: 'string', read: true, write: true });
-        node.endpointAdd('enabled', { label: 'Enabled', type: 'bool', read: true, write: true });
-        node.endpointAdd('lon', { label: 'Longitude', type: 'float', read: true });
-        node.endpointAdd('counter', { label: 'Counter', type: 'int', read: true, write: true });
-        node.endpointAdd('device', { type: 'string' });
-        node.endpointAdd('device.config', { label: 'Config', invoke: true });
-        node.endpointAdd('readProblem', { label: 'Problem', type: 'string', read: function(args, peer, cb) { cb({ code: 6, msg: 'Read says no.' }); } });
-        node.endpointAdd('writeProblem', { label: 'Problem', type: 'string', write: function(args, peer, cb) { cb({ code: 6, msg: 'Write says no.' }); } });
-        node.endpointAdd('invokeProblem', { label: 'Problem', invoke: function(args, peer, cb) { cb({ code: 6, msg: 'Invoke says no.' }); } });
-        node.endpointAdd('temporary', { label: 'Removable', type: 'int', read: true, write: true });
-        node.endpointRemove('temporary');
+        node.addEndpoint('mist', { type: 'string' });
+        node.addEndpoint('mist.name', { label: 'Name', type: 'string', read: true, write: true });
+        node.addEndpoint('name', { label: 'Name', type: 'string', read: true, write: true });
+        node.addEndpoint('enabled', { label: 'Enabled', type: 'bool', read: true, write: true });
+        node.addEndpoint('lon', { label: 'Longitude', type: 'float', read: true });
+        node.addEndpoint('counter', { label: 'Counter', type: 'int', read: true, write: true });
+        node.addEndpoint('device', { type: 'string' });
+        node.addEndpoint('device.config', { label: 'Config', invoke: true });
+        node.addEndpoint('readProblem', { label: 'Problem', type: 'string', read: function(args, peer, cb) { cb({ code: 6, msg: 'Read says no.' }); } });
+        node.addEndpoint('writeProblem', { label: 'Problem', type: 'string', write: function(args, peer, cb) { cb({ code: 6, msg: 'Write says no.' }); } });
+        node.addEndpoint('invokeProblem', { label: 'Problem', invoke: function(args, peer, cb) { cb({ code: 6, msg: 'Invoke says no.' }); } });
+        node.addEndpoint('temporary', { label: 'Removable', type: 'int', read: true, write: true });
+        node.removeEndpoint('temporary');
 
         var name = 'Just a Name';
         
@@ -361,7 +361,7 @@ describe('MistApi Control', function () {
     });    
     
     it('shuold remove device endpoint', function(done) {
-        node.endpointRemove('device');
+        node.removeEndpoint('device');
         mist.request('mist.control.model', [peer], function (err, model) {
             if (err) { return done(new Error(inspect(model))); }
             //console.log("Got a model:", err, inspect(model, null, 10, true));
@@ -370,7 +370,7 @@ describe('MistApi Control', function () {
     });
     
     it('shuold remove first root endpoint', function(done) {
-        node.endpointRemove('mist');
+        node.removeEndpoint('mist');
         mist.request('mist.control.model', [peer], function (err, model) {
             if (err) { return done(new Error(inspect(model))); }
             //console.log("Got a model:", err, inspect(model, null, 10, true));
@@ -379,9 +379,9 @@ describe('MistApi Control', function () {
     });
     
     it('shuold remove all endpoints', function(done) {
-        node.endpointRemove('enabled');
-        node.endpointRemove('lon');
-        node.endpointRemove('counter');
+        node.removeEndpoint('enabled');
+        node.removeEndpoint('lon');
+        node.removeEndpoint('counter');
         mist.request('mist.control.model', [peer], function (err, model) {
             if (err) { return done(new Error(inspect(model))); }
             //console.log("Got a model:", err, inspect(model, null, 10, true));
