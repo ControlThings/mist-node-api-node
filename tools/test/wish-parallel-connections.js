@@ -222,6 +222,7 @@ describe('Wish parallel connection reaper', function () {
 
                 })
                 done();
+                done = function() {};
             }
         });
 
@@ -291,11 +292,10 @@ describe('Wish parallel connection reaper', function () {
                     }
                     console.log("mistapi: wish.identity.list ", data);
 
-                })
-                requestorMist.request('ready', [], function (err, data) {
-                    done();
-                })
-
+                });
+                
+                done();
+                done = function() {};
             }
         });
 

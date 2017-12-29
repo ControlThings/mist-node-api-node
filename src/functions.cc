@@ -925,12 +925,16 @@ static void mist_node_api_handler(mist_app_t* mist_app, input_buf* msg) {
             return;
         }
 
-        wish_protocol_peer_t* peer = wish_protocol_peer_find_from_bson(&mist_app->protocol, (const uint8_t*)bson_iterator_value(&it));
-
+        wish_protocol_peer_t peer;
+        
+        bool success = wish_protocol_peer_populate_from_bson(&peer, (const uint8_t*)bson_iterator_value(&it));
+        
+        if (!success) { bson_visit("Failed to populate peer from bson:", (const uint8_t*)bson_iterator_value(&it)); return; }
+        
         bson req;
         bson_init_with_data(&req, msg->data);
         
-        rpc_client_req* creq = mist_app_request(mist_app, peer, &req, mist_node_api_callback);
+        rpc_client_req* creq = mist_app_request(mist_app, &peer, &req, mist_node_api_callback);
 
         if (creq == NULL) {
             WISHDEBUG(LOG_CRITICAL, "Failed making request %i");

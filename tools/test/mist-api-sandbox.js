@@ -122,6 +122,7 @@ describe('MistApi Sandbox', function () {
             //console.log('mist signals:', err, data);
             if (data[0] === 'peers') {
                 done();
+                done = function() {};
             }
         });
         
