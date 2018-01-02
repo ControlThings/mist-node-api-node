@@ -16,6 +16,7 @@ function done() {
     // To debug errors in Alice core C/C++ code enable the below core = child.spawn('gdb', ...
     var core = child.spawn('../wish-core', ['-p 38001', '-a 9095', '-r', '-s'], { cwd: './env/alice', stdio: 'inherit' });
     //var core = child.spawn('gdb', ['-batch', '-ex', 'run -p 38001 -a 9095 -r -s', '-ex', 'bt', '../wish-core'], { cwd: './env/alice', stdio: 'inherit' });
+    //var core = child.spawn('valgrind', ['--leak-check=full', '../wish-core', '-p 38001', '-a 9095', '-r', '-s'], { cwd: './env/alice', stdio: 'inherit' });
 
     function running() {
         //console.log('Starting node.');
@@ -172,6 +173,7 @@ function done() {
     
     var coreBob = child.spawn('../wish-core', ['-p 38002', '-a 9096', '-r', '-s'], { cwd: './env/bob', stdio: 'inherit' });
     //var coreBob = child.spawn('gdb', ['-batch', '-ex', 'run -p 38002 -a 9096 -r -s', '-ex', 'bt', '../wish-core'], { cwd: './env/bob', stdio: 'inherit' });
+    //var coreBob = child.spawn('valgrind', ['--leak-check=full', '../wish-core', '-p 38002', '-a 9096', '-r', '-s'], { cwd: './env/bob', stdio: 'inherit' });
     
     var coreBobTimeout = setTimeout(() => { runningBob(); }, 200);
     
@@ -209,6 +211,7 @@ function done() {
     
     var coreCharlie = child.spawn('../wish-core', ['-p 38003', '-a 9097', '-r', '-s'], { cwd: './env/charlie', stdio: 'inherit' });
     //var coreCharlie = child.spawn('gdb', ['-batch', '-ex', 'run -p 38003 -a 9097 -r -s', '-ex', 'bt', '../wish-core'], { cwd: './env/charlie', stdio: 'inherit' });
+    //var coreCharlie = child.spawn('valgrind', ['--leak-check=full','../wish-core', '-p 38003', '-a 9097', '-r', '-s'], { cwd: './env/charlie', stdio: 'inherit' });
     
     var coreCharlieTimeout = setTimeout(() => { runningCharlie(); }, 200);
     
