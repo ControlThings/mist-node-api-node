@@ -61,11 +61,14 @@ describe('Wish core import export identity with many transports', function () {
         
         aliceApp.request('relay.add', [ newRelayServer ], function(err, data) {
             if (err) { done(new Error('Could not add a relay server')); }
+            console.log('Added relay server');
         });
+         console.log('before adding relay servers (2)');
         aliceApp.request('relay.list', [], function(err, data) {
             if (err) { done(new Error('Could not list relay servers')); }
             console.log('Relays: ', data);  
             aliceRelayList = data;
+            
             done();
         });
     });
