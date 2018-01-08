@@ -389,6 +389,7 @@ describe('Mist Mappings', function () {
         });        
     });
     
+    var mappingId;
     it('should request mapping (2nd time)', function(done) {
         //this.timeout(10000);
         requestorMist.request("mist.control.requestMapping", [ srcPeer, dstPeer, 'output', {}, 'input', {} ], function(err, data) {
@@ -400,15 +401,16 @@ describe('Mist Mappings', function () {
             if (typeof data !== 'string') {
                 return done(new Error('Requested mapping got faulty id. Expected string, got', typeof data));
             }
+            mappingId = data;
             
             //console.log("requestMapping2: ", data);
             done();
         });
     });
     
-    it('should see the destincation value change', function(done) {
+    it('should see the destination value change', function(done) {
         //this.timeout(10000);
-        requestorMist.request("mist.control.follow", [dstPeer], function(err, data) {
+        var id = requestorMist.request("mist.control.follow", [dstPeer], function(err, data) {
             if (err) {
                 console.log("requestMapping2 err", err);
                 return;
@@ -417,8 +419,41 @@ describe('Mist Mappings', function () {
             if (data.id !== 'output') { return; }
             
             if (data.data !== outputValue) { return done(new Error('The mapping reported unexpected data: '+ data.data +' while expecting: '+ outputValue)); }
+            //requestorMist.requestCancel(id);
+            console.log("follow data:", data)
             
             done();
+            done = function() { };
         });
     });
+    
+    it('should see the mapping in model', function(done) {
+        requestorMist.request("mist.control.model", [dstPeer], function (err, data) {
+            if (err) {
+                console.log("control.model err", err);
+                return;
+            }
+            console.log(inspect(data, false, null));
+            console.log("mappingid", data['output']['mappings']);
+            if (typeof data['output']['mappings'][mappingId] !== 'undefined') {
+                done();
+            }
+        });
+    });
+    
+    it('should delete the mapping', function (done) {
+        this.timeout(10000);
+        setTimeout(function() {
+            requestorMist.request("mist.control.unMap", [dstPeer, mappingId], function (err, data) {
+            if (err) {
+                console.log("unMap err", err);
+                return;
+            }
+            console.log("unMap data", data);
+            done();
+        }, 5000);
+        });
+    });
+    
+    
 });
