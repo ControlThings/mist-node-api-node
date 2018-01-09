@@ -34,14 +34,14 @@ describe('Mist Mappings', function () {
     var requestorMist;
 
     before(function(done) {
-        console.log('before 1');
+        //console.log('before 1');
         requestorApp = new WishApp({ name: 'control app', protocols: ['test'], corePort: 9095 }); // , protocols: [] });
 
         setTimeout(done, 200);
     });
    
     before(function(done) {
-        console.log('before 2');
+        //console.log('before 2');
         srcApp = new WishApp({ name: 'app1', protocols: ['test'], corePort: 9096 }); // , protocols: [] });
 
         srcApp.once('ready', function() {
@@ -50,7 +50,7 @@ describe('Mist Mappings', function () {
     });
     
     before(function(done) {
-        console.log('before 3');
+        //console.log('before 3');
         dstApp = new WishApp({ name: 'app2', protocols: ['test'], corePort: 9097 }); // , protocols: [] });
 
         dstApp.once('ready', function() {
@@ -111,14 +111,15 @@ describe('Mist Mappings', function () {
         setTimeout(function() {
             requestorMist.request('ready', [], function(err, ready) {
                 if (ready) {
-                    console.log("==============================requestorMist ready")
+                    //console.log("==============================requestorMist ready")
+                    
                     requestorMist.request('signals', [], function(err, data) {
                         if (err) { console.log("err: ", err); return; }
-                        console.log("requestorMist signal: ", data);
+                        //console.log("requestorMist signal: ", data);
                     });
                     done();
                 } else {
-                    console.log('ready', arguments);
+                    //console.log('ready', arguments);
                     done(new Error('MistApi not ready, bailing.'));
                 }
                
@@ -141,7 +142,7 @@ describe('Mist Mappings', function () {
             label: 'Output',
             type: 'int',
             read: function(args, peer, cb) {
-                console.log('reading output', outputValue);
+                //console.log('reading output', outputValue);
                 cb(null, outputValue);
             }
         });
@@ -178,7 +179,14 @@ describe('Mist Mappings', function () {
         
     });
    
-    it('Alice should find Bob in wld', function(done) {
+    before('listen to signals on source', function(done) {
+        source.wish.request('signals', [], function(err, data) {
+            console.log('source: signals:', err, data);
+        });
+        done();
+    });
+   
+    before('Alice should find Bob in wld', function(done) {
         this.timeout(35000);
         
      
@@ -204,46 +212,48 @@ describe('Mist Mappings', function () {
         setTimeout(poll, 100);
     });
     
-    it('should add Bob as a friend to Alice', function(done) {
-        console.log("Friend request params:", [aliceIdentity.uid, bobWldEntry.ruid, bobWldEntry.rhid]);
+    before('should add Bob as a friend to Alice', function(done) {
+        //console.log("Friend request params:", [aliceIdentity.uid, bobWldEntry.ruid, bobWldEntry.rhid]);
             
         requestorApp.request('wld.friendRequest', [aliceIdentity.uid, bobWldEntry.ruid, bobWldEntry.rhid], function(err, data) {
             if (err) { return done(new Error(inspect(data))); }
             
-           setTimeout(done,1000);
+            setTimeout(done,1000);
         });
     });
   
-    it('Bob should accept friend request from Alice and switch should become visible', function(done) {
+    before('Bob should accept friend request from Alice and switch should become visible', function(done) {
         this.timeout(10000);
         
         var signals = requestorMist.request('signals', [], function(err, data) {
             if (data === 'peers' || data[0] === 'peers') {
-               console.log("Requestor Mist peers")
-               requestorMist.requestCancel(signals);
-               requestorMist.request('wish.identity.list', [], function (err, data) {
+                //console.log("Requestor Mist peers")
+               
+                requestorMist.requestCancel(signals);
+               
+                requestorMist.request('wish.identity.list', [], function (err, data) {
                     if (err) { return; }
-                    console.log("mistapi: wish.identity.list ", data);
+                    //console.log("mistapi: wish.identity.list ", data);
+                });
                 
-                })
-               done();
+                done();
             }
         });
-
         
         srcApp.request('identity.friendRequestList', [], function(err, data) {
-            console.log('srcApp friendRequestList:', err, data);
+            //console.log('srcApp friendRequestList:', err, data);
+            
             if (data.length !== 1) {
                 return done(new Error('Not exactly one friendRequest in list!'));
             }
 
             srcApp.request('identity.friendRequestAccept', [data[0].luid, data[0].ruid], function(err, data) {
-                console.log('srcApp friendRequestAccept:', err, data);
+                //console.log('srcApp friendRequestAccept:', err, data);
             });
         });        
     });
     
-    it('Alice should find Charlie in wld', function(done) {
+    before('Alice should find Charlie in wld', function(done) {
         this.timeout(35000);
         
      
@@ -269,43 +279,47 @@ describe('Mist Mappings', function () {
         setTimeout(poll, 100);
     });
     
-    it('should add Charlie as a friend to Alice', function(done) {
-        console.log("Friend request params:", [aliceIdentity.uid, charlieWldEntry.ruid, charlieWldEntry.rhid]);
+    before('should add Charlie as a friend to Alice', function(done) {
+        //console.log("Friend request params:", [aliceIdentity.uid, charlieWldEntry.ruid, charlieWldEntry.rhid]);
             
         requestorApp.request('wld.friendRequest', [aliceIdentity.uid, charlieWldEntry.ruid, charlieWldEntry.rhid], function(err, data) {
             if (err) { return done(new Error(inspect(data))); }
           
-           setTimeout(done,1000);
+            setTimeout(done,1000);
         });
     });
   
-    it('Charlie should accept friend request from Alice and switch should become visible', function(done) {
+    before('Charlie should accept friend request from Alice and switch should become visible', function(done) {
         this.timeout(10000);
         var signals = requestorMist.request('signals', [], function(err, data) {
             if (data === 'peers' || data[0] === 'peers') {
-               console.log("Requestor Mist peers")
+               //console.log("Requestor Mist peers")
+               
                requestorMist.requestCancel(signals);
+               
                requestorMist.request('wish.identity.list', [], function (err, data) {
                     if (err) { return; }
-                    console.log("mistapi: wish.identity.list ", data);
+                    //console.log("mistapi: wish.identity.list ", data);
                 
-                })
+                });
+                
                 requestorMist.request('ready', [], function(err, data) {
                     done();
-                })
+                });
                
             }
         });
 
         
         dstApp.request('identity.friendRequestList', [], function(err, data) {
-            console.log('dstApp friendRequestList:', err, data);
+            //console.log('dstApp friendRequestList:', err, data);
+            
             if (data.length !== 1) {
                 return done(new Error('Not exactly one friendRequest in list!'));
             }
 
             dstApp.request('identity.friendRequestAccept', [data[0].luid, data[0].ruid], function(err, data) {
-                console.log('dstApp friendRequestAccept:', err, data);
+                //console.log('dstApp friendRequestAccept:', err, data);
             });
         });        
     });
@@ -313,11 +327,11 @@ describe('Mist Mappings', function () {
     var srcPeer;
     var dstPeer;
     
-    it('Get Mist peers', function(done) {
+    before('Get Mist peers', function(done) {
         function filterPeers(err, data) {
             if (err) { console.log("err", err); return;}
             for (var i in data) {
-                console.log("listPeers:",i, data[i]);
+                //console.log("listPeers:",i, data[i]);
                 
                 if (Buffer.compare(data[i].ruid, bobIdentity.uid) === 0) {
                     srcPeer = data[i];
@@ -327,41 +341,35 @@ describe('Mist Mappings', function () {
                 }
                 
             }
-            done()
-            /*
-            requestorMist.request('wish.identity.list', [], function (err, data) {
-                if (err) { return; }
-                console.log("mistapi: wish.identity.list ", data);
-                requestorApp.request('identity.list', [], function (err, data) {
-                    if (err) { return; }
-                    console.log("wish: ", data)
-                })
-                done();
-            })
-            */
             
+            done();
         }
         
         requestorMist.request('listPeers', [], filterPeers)
-    })
+    });
     
     
-    it('checking model srcPeer', function(done) {
+    before('checking model srcPeer', function(done) {
         requestorMist.request('mist.control.model', [srcPeer], function(err, data) {
-            console.log('Model check:', err, data);
+            //console.log('Model check:', err, data);
             done();
         });
     });
     
-    it('checking model dstPeer', function(done) {
+    before('checking model dstPeer', function(done) {
         requestorMist.request('mist.control.model', [dstPeer], function(err, data) {
-            console.log('Model check:', err, data);
+            //console.log('Model check:', err, data);
             done();
         });
     });
     
     
-    it('should request mapping', function(done) {
+    it('should request mapping (1)', function(done) {
+        
+        console.log('Begin request mapping test ===========================================');
+        
+        setTimeout(() => { done(); done = () => {}; }, 500);
+        
         //this.timeout(10000);
         requestorMist.request("mist.control.requestMapping", [ srcPeer, dstPeer, 'output', {}, 'input', {} ], function(err, data) {
             if (err) {
@@ -370,23 +378,36 @@ describe('Mist Mappings', function () {
                 return;
             }
             
+            done(new Error("Unexpectedly not an error. "+inspect(data)));
             console.log("requestMapping: ", data);
         });
     });
 
-    it('should request mapping', function(done) {
+
+    it('should wait for connection between coerced nodes', function(done) {
         this.timeout(10000);
-        setTimeout(() => { done(); }, 9000);
-    });
-    
-    it('should have a connection between src and dst nodes', function(done) {
-        srcApp.request('connections.list', [], function(err, data) {
-            console.log('srcApp connections.list:', err, data);
-            //if (data.length !== 1) {
-            //    return done(new Error('Not exactly one friendRequest in list!'));
-            //}
-            done();
-        });        
+
+        var timeout = setTimeout(() => { done(); }, 9000);
+
+        var signals = source.wish.request('signals', [], function(err, data) {
+            if (data[0] === 'connections') {
+                source.wish.request('connections.list', [], function(err, data) {
+                    if (err) { return done(new Error('Failed listing connections')); }
+                    
+                    for(var i in data) {
+                        if ( Buffer.compare(data[i].luid, charlieIdentity.uid) === 0 
+                              && Buffer.compare(data[i].ruid, bobIdentity.uid) === 0 ) 
+                        {
+                            clearTimeout(timeout);
+                            source.wish.cancel(signals);
+                            done();
+                            done = () => {};
+                            return;
+                        }
+                    }
+                });        
+            }
+        });
     });
     
     var mappingId;
@@ -403,10 +424,11 @@ describe('Mist Mappings', function () {
             }
             mappingId = data;
             
-            //console.log("requestMapping2: ", data);
+            console.log("requestMapping2: ", data);
             done();
         });
     });
+
     
     it('should see the destination value change', function(done) {
         //this.timeout(10000);
@@ -420,26 +442,26 @@ describe('Mist Mappings', function () {
             
             if (data.data !== outputValue) { return done(new Error('The mapping reported unexpected data: '+ data.data +' while expecting: '+ outputValue)); }
             //requestorMist.requestCancel(id);
-            console.log("follow data:", data)
+            //console.log("follow data:", data)
             
             done();
             done = function() { };
         });
     });
-    
+
     it('should see the mapping in model', function(done) {
         requestorMist.request("mist.control.model", [dstPeer], function (err, data) {
-            if (err) {
-                console.log("control.model err", err);
-                return;
-            }
-            console.log(inspect(data, false, null));
-            console.log("mappingid", data['output']['mappings']);
+            if (err) { console.log("control.model err", err); return; }
+            
+            //console.log(inspect(data, false, null));
+            //console.log("mappingid", data['output']['mappings']);
             if (typeof data['output']['mappings'][mappingId] !== 'undefined') {
                 done();
             }
         });
     });
+    
+/*
     
     it('should delete the mapping', function (done) {
         this.timeout(10000);
@@ -454,6 +476,6 @@ describe('Mist Mappings', function () {
         }, 5000);
         });
     });
-    
+*/
     
 });

@@ -292,7 +292,7 @@ describe('MistApi Sandbox', function () {
                 //console.log('about to list remote friendRequests');
                 
                 sandboxedGps.request('wish.identity.friendRequestList', [peer], function(err, data) {
-                    //console.log('remote friendRequest list:', err, data);
+                    console.log('remote friendRequest list:', err, data);
                     sandboxedGps.request('wish.identity.friendRequestAccept', [peer, data[0].luid, data[0].ruid], function(err, data) {
                         //console.log('remote friendRequest Accept:', err, data);
                         done();

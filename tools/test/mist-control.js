@@ -143,7 +143,7 @@ describe('MistApi Control', function () {
     
     
     // Expect follow to return current values for all readable endpoints
-    it('shuold test control.follow', function(done) {
+    it('shuold test control.follow initial sync', function(done) {
         var l = ['mist.name', 'enabled', 'lon', 'counter'];
         var end = false;
         follow = mist.request('mist.control.follow', [peer], function (err, data) {
@@ -155,6 +155,27 @@ describe('MistApi Control', function () {
             
             if (!end && l.length === 0) { end = true; done(); }
         });
+    });
+    
+    // Expect follow to return current values for all readable endpoints, and an additional update on enabled
+    it('shuold test control.follow with change in value', function(done) {
+        var l = ['mist.name', 'enabled', 'lon', 'counter', 'enabled'];
+        var end = false;
+        follow = mist.request('mist.control.follow', [peer], function (err, data) {
+            if (err) { console.log('mist.control.follow error:', data); }
+            if (err) { if(data.code === 6) { return; } return done(new Error(inspect(data))); }
+            //console.log("Follow update:", err, data, l);
+            
+            var index = l.indexOf(data.id);
+            if (index !== -1) { l.splice(index, 1); }
+            
+            if (!end && l.length === 0) { end = true; done(); }
+        });
+        
+        setTimeout(() => {
+            enabled = false;
+            node.changed('enabled');
+        }, 100);
     });
     
     it('shuold test control.read(counter)', function(done) {
