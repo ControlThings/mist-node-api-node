@@ -759,6 +759,7 @@ static void mist_model_parse(const bson* from, mist_model* model) {
 }
 
 static void mist_node_api_callback(rpc_client_req* req, void *ctx, const uint8_t* payload, size_t payload_len) {
+    //printf("mist_node_api_callback: %i %i\n", req->id, req->passthru_id);
     Mist* mist = instance_by_mist_app( (mist_app_t*) req->passthru_ctx );
     
     if (mist == NULL) { return; }
@@ -933,6 +934,12 @@ static void mist_node_api_handler(mist_app_t* mist_app, input_buf* msg) {
         
         bson req;
         bson_init_with_data(&req, msg->data);
+        bson_find(&it, &req, "id");
+        if (BSON_INT != bson_iterator_type(&it)) {
+            WISHDEBUG(LOG_CRITICAL, "Failed replacing id in mist_node_api request.");
+            return;
+        }
+        bson_inplace_set_long(&it, 0);
         
         rpc_client_req* creq = mist_app_request(mist_app, &peer, &req, mist_node_api_callback);
 
