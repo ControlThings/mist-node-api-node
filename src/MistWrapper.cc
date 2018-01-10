@@ -20,7 +20,7 @@ MistWrapper::~MistWrapper() {
 
 void
 MistWrapper::mistDeleted() {
-    cout << "MistWrapper lost the actual Mist instance (Deleted by Nan).\n";
+    //cout << "MistWrapper lost the actual Mist instance (Deleted by Nan).\n";
     _mist = NULL;
 }
 
@@ -109,7 +109,7 @@ MistWrapper::request(const Nan::FunctionCallbackInfo<v8::Value>& info) {
     //printf("request Mist instance %p %p\n", obj->_mist, obj->_worker);
     
     if ( obj->_mist == NULL ) {
-        printf("Someone is trying to make requests while the whole thing is already shut down. Ditched. MistWrapper %p\n", obj);
+        //printf("Someone is trying to make requests while the whole thing is already shut down. Ditched. MistWrapper %p\n", obj);
         return;
     }
     
