@@ -74,5 +74,9 @@ WishAppInner.prototype.cancel = function(id) {
     this.addon.request("wish", { cancel: id });
 };
 
+WishAppInner.prototype.shutdown = function() {
+    this.addon.shutdown();
+};
+
 module.exports = {
     WishAppInner: WishAppInner };

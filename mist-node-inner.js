@@ -183,5 +183,9 @@ MistNodeInner.prototype.requestCancel = function(id) {
     this.addon.request("mistnode", request);
 };
 
+MistNodeInner.prototype.shutdown = function() {
+    this.addon.shutdown();
+};
+
 module.exports = {
     MistNodeInner: MistNodeInner };
