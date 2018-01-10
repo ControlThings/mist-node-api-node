@@ -31,7 +31,7 @@ function Mist(opts) {
     this.addon = new Addon(opts);
     
     this.addon.on('sandboxed', function(msg) {
-        var id = msg.ack || msg.sig || msg.end || msg.err;
+        var id = msg.ack || msg.sig || msg.end || msg.err || msg.fin;
 
         //console.log("the answer is:", require('util').inspect(msg, { colors: true, depth: 10 }));
 
@@ -45,7 +45,7 @@ function Mist(opts) {
     });
 
     this.addon.on('mist', function(msg) {
-        var id = msg.ack || msg.sig || msg.end || msg.err;
+        var id = msg.ack || msg.sig || msg.end || msg.err || msg.fin;
 
         //console.log("mist: the answer is:", require('util').inspect(msg, { colors: true, depth: 10 }));
 
@@ -69,6 +69,7 @@ inherits(Mist, EventEmitter);
 Mist.prototype.request = function(op, args, cb) {
     return this.requestBare(op, args, function(res) {
         //console.log('requestBare cb:', arguments);
+        if(res.fin) { return cb(true, { end: true }); }
         if(res.err) { return cb(true, res.data); }
         
         cb(null, res.data);
@@ -134,10 +135,11 @@ function Sandboxed(mist, sandboxId) {
 
 Sandboxed.prototype.request = function(op, args, cb) {
     return this.requestBare(op, args, function(res) {
+        if(res.fin) { return cb(true, { end: true }); }
         if(res.err) { return cb(true, res.data); }
         
         cb(null, res.data);
-    });    
+    });
 };
 
 Sandboxed.prototype.requestBare = function(op, args, cb) {
@@ -159,7 +161,12 @@ Sandboxed.prototype.requestCancel = function(id) {
     var self = this;
     var request = { cancel: id, sandbox: this.sandboxId };
     
-    setTimeout(function() { if(self.mist.requests[id]) { delete self.mist.requests[id]; } }, 500);
+    setTimeout(() => {
+        if (typeof self.mist.requests[id] === 'function') {
+            self.mist.requests[id](true, { timeout: true });
+            delete self.mist.requests[id]; 
+        }
+    }, 1500);
     
     this.addon.request('sandboxed', request);
 };
