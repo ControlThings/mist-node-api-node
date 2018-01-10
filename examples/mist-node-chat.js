@@ -23,9 +23,11 @@ node.onlineCb = function(peer) {
         //console.log('online, requesting mist.name:', peer);
     });
     
-    node.request(peer, 'control.read', ['mist.name'], function(err, name) {
+    var node_req_id = node.request(peer, 'control.read', ['mist.name'], function(err, name) {
         console.log('control.read("mist.name"):', name); 
     });
+    
+    console.log('node_req_id:', node_req_id);
     
 
     /*

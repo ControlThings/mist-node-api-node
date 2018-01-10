@@ -28,7 +28,7 @@ function Motor() {
     });
 
     // update number every 5 sec
-    setInterval(() => { number++; node.changed('number'); }, 5000);
+    var interval = setInterval(() => { number++; node.changed('number'); }, 5000);
     
     // add an invokable endpoint
     node.addEndpoint('getLog', {
@@ -37,7 +37,12 @@ function Motor() {
             cb(null, { dataset: [{ x: 2, y: 45 }, { x: 5, y: 55 }], request: args, requestee: peer });
         }
     });
+    
+    this.shutdown = function() { clearInterval(interval); node.shutdown(); };
 }
 
 // create Motor instance to run
-var motor = Motor();
+var motor = new Motor();
+
+// clean shutdown:
+//   motor.shutdown();

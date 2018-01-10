@@ -2,6 +2,7 @@ var Mist = require('../../index.js').Mist;
 var Sandboxed = require('../../index.js').Sandboxed;
 var MistNode = require('../../index.js').MistNode;
 var util = require('./deps/util.js');
+var inspect = require('util').inspect;
 
 var bson = require('bson-buffer');
 var BSON = new bson();
@@ -56,28 +57,54 @@ describe('MistApi Sandbox', function () {
     var controlThingsSandboxId = new Buffer('beef00ababababababababababababababababababababababababababababab', 'hex');
 
     var node;
+    var enabled = false;
 
     before('should start a mist node', function(done) {
         node = new MistNode({ name: 'ControlThings', corePort: 9096 });
-        
-        node.create({
-            enabled: { label: 'Enabled', type: 'bool', read: true, write: true },
-            lon: { label: 'Longitude', type: 'float', read: true },
-            counter: { label: 'Counter', type: 'int', read: true, write: true },
-            config: { label: 'Config', type: 'invoke', invoke: true }
+
+        node.addEndpoint('mist', { type: 'string' });
+        node.addEndpoint('mist.name', { label: 'Name', type: 'string', read: true, write: true });
+        node.addEndpoint('name', { label: 'Name', type: 'string', read: true, write: true });
+        node.addEndpoint('enabled', { label: 'Enabled', type: 'bool', read: true, write: true });
+        node.addEndpoint('lon', { label: 'Longitude', type: 'float', read: true });
+        node.addEndpoint('counter', { label: 'Counter', type: 'int', read: true, write: true });
+        node.addEndpoint('config', {
+            label: 'Config',
+            invoke: function(args, peer, cb) {
+                cb(null, { cool: ['a', 7, true], echo: args });
+            }
         });
         
-        node.invoke('config', function(args, peer, cb) {
-            cb({ cool: ['a', 7, true], echo: args });
+        var name = 'Just a Name';
+        var counter = 56784;
+        
+        node.read('mist.name', function(args, peer, cb) { cb(null, name); });
+        
+        node.read('name', function(args, peer, cb) { cb(null, 'root:'+ name); });
+        
+        node.read('enabled', function(args, peer, cb) { cb(null, enabled); });
+        
+        node.read('lon', function(args, peer, cb) { cb(null, 63.4); });
+        
+        node.read('counter', function(args, peer, cb) { cb(null, counter); });
+        
+        node.invoke('device.config', function(args, peer, cb) {
+            cb(null, { cool: ['a', 7, true], echo: args });
         });
         
         node.write('enabled', function(value, peer, cb) {
-            console.log('write:', value);
+            //console.log('Node write:', epid, peer, data);
+            cb(null);
         });
         
-        node.write('counter', function(value, peer, cb) {
-            console.log('write:', value);
+        node.write('mist.name', function(value, peer, cb) {
+            //console.log('writing mist.name to', value);
+            name = value;
+            node.changed('mist.name');
+            cb(null);
         });
+        
+        setInterval(() => { counter++; node.changed('counter'); }, 500);
         
         setTimeout(done, 200);
     });      
@@ -256,9 +283,12 @@ describe('MistApi Sandbox', function () {
             sandboxedGps.request('listPeers', [], function(err, data) {
                 //console.log("sandboxedGps listPeers:", err, data);
 
-                sandboxedGps.request('wish.identity.permissions', [data[0], mistIdentity2.uid, { banned: true }], function(err, data) {
-                    console.log("Remote: wish.identity.permissions:", err, data);
-                    console.log('Warning no checks!');
+                sandboxedGps.request('wish.identity.permissions', [data[0], mistIdentity2.uid, { admin: true }], function(err, data) {
+                    //console.log("Remote: wish.identity.permissions:", err, data);
+                    if (data.permissions.admin !== true) {
+                        return done(new Error('Permission not set, expecting "permissions.admin": true, response was: '+inspect(data))) 
+                    }
+                    
                     done();
                 });
             });
@@ -362,6 +392,24 @@ describe('MistApi Sandbox', function () {
                 
                 done();
             });
+        });
+    });
+
+    it('should control.follow and cancel ', function(done) {
+        var cancel = true;
+        
+        var req = sandboxedGps.request('mist.control.follow', [peer], function(err, data) {
+            if (err) {
+                if (data.end) { return done(); }
+                if (data.timeout) { return done(); }
+                return done(new Error('Unexpected error with control.follow')); 
+            }
+        
+            if (cancel) {
+                //console.log('control.follow', err, data, req);
+                sandboxedGps.requestCancel(req);
+                cancel = false;
+            }
         });
     });
 
