@@ -1294,6 +1294,9 @@ static void* setupMistApi(void* ptr) {
     mist_api_t* api = mist_api_init(mist_app);
     opts->mist_api = api;
 
+    mist_app->online = mist_online;
+    mist_app->offline = mist_offline;
+
     api->periodic = mist_api_periodic_cb_impl;
     api->periodic_ctx = opts;
 
