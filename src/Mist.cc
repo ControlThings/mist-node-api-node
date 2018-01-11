@@ -16,6 +16,9 @@ Mist::Mist(Callback *progress)
     _progress = NULL;
     mistWrapper = NULL;
     executeCalled = false;
+    
+    online_cb = NULL;
+    offline_cb = NULL;
 }
 
 Mist::~Mist() {

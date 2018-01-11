@@ -326,6 +326,8 @@ static void offline(app_t* app, wish_protocol_peer_t* peer) {
     bson_destroy(&bs);
 }
 
+typedef void (*online_cb)(mist_app_t* app, wish_protocol_peer_t* peer);
+
 static void mist_online(mist_app_t* mist_app, wish_protocol_peer_t* peer) {
     //WISHDEBUG(LOG_CRITICAL, "mist_online %s %p", mist_app->name, peer);
     
@@ -348,6 +350,10 @@ static void mist_online(mist_app_t* mist_app, wish_protocol_peer_t* peer) {
     //printf("online to Mist: %s\n", mist->name.c_str());
     mist->sendToNode(msg);
     bson_destroy(&bs);
+
+    // call mist->online_cb if non-null
+    online_cb cb = (online_cb) mist->online_cb;
+    if ( cb != NULL ) { cb(mist_app, peer); }
 }
 
 static void mist_offline(mist_app_t* mist_app, wish_protocol_peer_t* peer) {
@@ -370,6 +376,11 @@ static void mist_offline(mist_app_t* mist_app, wish_protocol_peer_t* peer) {
     //printf("offline to Mist: %s\n", mist->name.c_str());
     mist->sendToNode(msg);
     bson_destroy(&bs);
+    
+    // call mist->online_cb if non-null
+    online_cb cb = (online_cb) mist->offline_cb;
+    
+    if ( cb != NULL ) { cb(mist_app, peer); }
 }
 
 static void frame(app_t* app, const uint8_t* payload, size_t payload_len, wish_protocol_peer_t* peer) {
@@ -1294,6 +1305,9 @@ static void* setupMistApi(void* ptr) {
     mist_api_t* api = mist_api_init(mist_app);
     opts->mist_api = api;
 
+    opts->mist->online_cb = (void*) mist_app->online;
+    opts->mist->offline_cb = (void*) mist_app->offline;
+    
     mist_app->online = mist_online;
     mist_app->offline = mist_offline;
 

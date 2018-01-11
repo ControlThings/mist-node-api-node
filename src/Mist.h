@@ -36,6 +36,9 @@ public:
     std::string coreIp = "127.0.0.1";
     int corePort = 9094;
 
+    void* online_cb;
+    void* offline_cb;
+    
 private:
     bool run;
     bool executeCalled;
