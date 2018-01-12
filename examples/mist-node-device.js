@@ -7,6 +7,9 @@ function Motor() {
 
     // create a mist node (with a unique name per wish core)
     var node = new MistNode({ name: name }); // , coreIp: '127.0.0.1', corePort: 9094
+    
+    //node.readyCb = function(ready) { console.log('MistNodeApi says ready', ready); };
+    node.on('ready', (ready) => { if (ready) { console.log('App is connected.'); } else { console.log('App is disconnected.'); } });
 
     // add `mist` endpoint
     node.addEndpoint('mist', { type: 'string' });

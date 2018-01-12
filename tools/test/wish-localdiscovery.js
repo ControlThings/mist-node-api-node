@@ -53,19 +53,47 @@ describe('Wish Local Discovery', function () {
             //done(new Error('Not the expected error.'));
         });
     });
+
+    it('should disconnect all connections', function(done) {
+        mist.wish.request('connections.list', [], function(err, data) {
+            if (err) { return done(new Error(inspect(data))); }
+            
+            if(data.length === 0) {
+                return done(new Error('Expected there to be at least one connection, before testing disconnectAll'));
+            }
+            
+            mist.wish.request('connections.disconnectAll', [], function(err, data) {
+                if (err) { return done(new Error(inspect(data))); }
+                
+                if (data !== true) { return done(new Error('expected "true", but got unexpected return value: '+inspect(data))); }
+
+                mist.wish.request('connections.list', [], function(err, data) {
+                    if (err) { return done(new Error(inspect(data))); }
+                    
+                    if (data.length > 0) {
+                        return done(new Error('Not expecting a connection to be present.'));
+                    }
+                    
+                    done();
+                });
+            });
+        });
+    });
     
     it('should add a wifi', function(done) {
         mist.request('commission.add', ['wifi', 'mist-315 S. Broad St.'], function(err, data) {
+            console.log('Warning. No checks!');
             done();
         });
     });
     
-    it('should', function(done) {
+    it('should find wifi in commission.list', function(done) {
         mist.request('sandbox.list', [], function(err, data) {
             var sid = data[0].id;
             
             mist.request('sandboxed.commission.list', [sid], function(err, data) {
-                console.log('wld.list', err, data);
+                //console.log('wld.list', err, data);
+                console.log('Warning. No checks!');
                 done();
             });
         });

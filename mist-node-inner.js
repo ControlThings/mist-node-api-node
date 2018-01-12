@@ -11,7 +11,10 @@ function MistNodeInner(addon) {
     
     this.addon = addon;
     
-    setTimeout(function() { self.emit('ready'); }, 200);
+    addon.on('ready', function(ready) {
+        self.emit('ready', ready);
+        if (typeof self.readyCb === 'function') { self.readyCb(ready); }
+    });
     
     addon.on('online', function(peer) {
         if (typeof self.onlineCb === 'function') { self.onlineCb(peer); }

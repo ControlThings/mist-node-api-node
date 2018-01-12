@@ -62,6 +62,8 @@ function Mist(opts) {
 
     this.node = new MistNodeInner(this.addon);
     this.wish = new WishAppInner(this.addon);
+    
+    this.node.request = function(op, args, cb) { cb(true, { code: 1100, msg: 'node.request is not supported from MistApi. Use request on MistAPi and prepend mist., i.e. mist.control.invoke instead of control.invoke.' }) }
 }
 
 inherits(Mist, EventEmitter);

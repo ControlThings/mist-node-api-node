@@ -67,6 +67,13 @@ function Addon(opts) {
             return console.log('Warning! Non BSON message from plugin.', arguments, event, data);
         }
 
+        if (event === 'ready') {
+            self.emit('ready', msg.ready);
+            if (typeof self.readyCb === 'function') { self.readyCb(msg.ready); }
+            
+            return;
+        }
+
         if (event === 'online') {
             self.emit('online', msg.peer);
             msg.peer.online = true;

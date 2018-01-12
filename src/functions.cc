@@ -84,6 +84,23 @@ static Mist* instance_by_app(app_t* app) {
     return NULL;
 }
 
+static Mist* instance_by_wish_app(wish_app_t* app) {
+    if (app == NULL) { return NULL; }
+    
+    struct wish_app_core_opt* opts;
+    
+    LL_FOREACH(wish_app_core_opts, opts) {
+        if(opts->wish_app == app) {
+            return opts->mist;
+            break;
+        }
+    }
+    
+    printf("instance_by_app: Failed finding Mist instance. Pointer is: %p\n", app);
+    
+    return NULL;
+}
+
 bool injectMessage(Mist* mist, int type, uint8_t *msg, int len) {
     
     if (pthread_mutex_trylock(&mutex1)) {
@@ -402,6 +419,23 @@ static void frame(app_t* app, const uint8_t* payload, size_t payload_len, wish_p
     Message msg("frame", (uint8_t*) bson_data(&bs), bson_size(&bs));
     
     //printf("frame to Mist: %s\n", mist->name.c_str());
+    mist->sendToNode(msg);
+    bson_destroy(&bs);
+}
+
+
+static void wish_app_ready_cb(wish_app_t* app, bool ready) {
+    Mist* mist = instance_by_wish_app(app);
+    
+    if (mist == NULL) { WISHDEBUG(LOG_CRITICAL, "wish_app_ready_cb: MistApi not found!! Cannot continue!"); return; }
+    
+    bson bs;
+    bson_init(&bs);
+    bson_append_bool(&bs, "ready", ready);
+    bson_finish(&bs);
+
+    Message msg("ready", (uint8_t*) bson_data(&bs), bson_size(&bs));
+
     mist->sendToNode(msg);
     bson_destroy(&bs);
 }
@@ -934,6 +968,7 @@ static void mist_node_api_handler(mist_app_t* mist_app, input_buf* msg) {
 
         if (BSON_OBJECT != bson_find_from_buffer(&it, msg->data, "peer")) {
             WISHDEBUG(LOG_CRITICAL, "peer is not object but %i", bson_iterator_type(&it));
+            bson_visit("peer is not object (inspect):", (uint8_t*) msg->data);
             return;
         }
 
@@ -1249,6 +1284,9 @@ static void* setupMistNodeApi(void* ptr) {
     opts->mist_app = mist_app;
     
     wish_app_t* app = wish_app_create(name);
+    
+    app->ready = wish_app_ready_cb;
+
     opts->wish_app = app;
     
     if (app == NULL) {
