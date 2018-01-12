@@ -245,17 +245,17 @@ describe('Wish core multiple transports, friend requests, update transports', fu
                             //console.log("Alice: ", result);
                             var hosts = result['hosts'];
                             var transports = hosts[0]['transports'];
-                            //console.log("Alice's transports ", transports);
+                            console.log("Alice's transports ", transports);
                             /* Check that we have the expected transports in Alice's identity export. 
                              * Note that they need not be in any particular order, and that transports can have other items than relays too! */
                             var cnt = 0;
                             var expectedCnt = 1;
-                            for (i in transports) {
+                            for (var i in transports) {
                                 var transport_ip_port = transports[i].split("wish://")[1];
                                 if (!transport_ip_port) {
                                     break;
                                 }
-                                for (j in aliceRelayList) {
+                                for (var j in aliceRelayList) {
                                     if (transport_ip_port === aliceRelayList[j].host) {
                                         cnt++;
                                     }
