@@ -15,3 +15,4 @@
 /.npmignore
 /release.sh
 /sandbox.bin
+/Doxyfile
