@@ -15,12 +15,16 @@ function Mist(opts) {
 
     //console.log("2. Creating the MistApi.StreamingWorker.");
 
+    if (typeof opts === 'string') { opts = { name: opts }; }
     if (!opts) { opts = {}; }
 
     // Default to MistApi
     if (!opts.type) { opts.type = 2; }
     
     this.opts = opts;
+    
+    if (process.env.CORE && this.opts.corePort) { console.log('Failed setting WishCore port from env, already set in options!'); }
+    if (process.env.CORE && !this.opts.corePort) { this.opts.corePort = parseInt(process.env.CORE); }
     
     //console.log('Starting with opts:', opts);
     
@@ -106,11 +110,15 @@ Mist.prototype.shutdown = function() {
 };
 
 function MistNode(opts) {
+    if (typeof opts === 'string') { opts = { name: opts }; }
     if (!opts) { opts = {}; }
 
     // Default to MistApi
     if (!opts.type) { opts.type = 3; }
-    
+
+    if (process.env.CORE && opts.corePort) { console.log('Failed setting WishCore port from env, already set in options!'); }
+    if (process.env.CORE && !opts.corePort) { opts.corePort = parseInt(process.env.CORE); }
+
     this.addon = new Addon(opts);
 
     var node = new MistNodeInner(this.addon);
@@ -182,6 +190,7 @@ function copy(that) {
 }
 
 function WishApp(opts) {
+    if (typeof opts === 'string') { opts = { name: opts }; }
     if (!opts) { opts = {}; }
     opts = copy(opts);    
     
@@ -201,6 +210,9 @@ function WishApp(opts) {
     } else {
         throw new Error('WishApp protocols must be array or non-existing.');
     }
+
+    if (process.env.CORE && opts.corePort) { console.log('Failed setting WishCore port from env, already set in options!'); }
+    if (process.env.CORE && !opts.corePort) { opts.corePort = parseInt(process.env.CORE); }
     
     var addon = new Addon(opts);
 
