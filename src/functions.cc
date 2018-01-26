@@ -1420,8 +1420,8 @@ static void* setupWishApi(void* ptr) {
     return NULL;
 }
 
-void mist_addon_start(Mist* mist) {
-    //printf("mist_addon_start(Mist* %p)\n", mist);
+void mist_addon_init() {
+    //printf("mist_addon_init()\n");
     // Initialize wish_platform functions
     wish_platform_set_malloc(malloc);
     wish_platform_set_realloc(realloc);
@@ -1439,6 +1439,10 @@ void mist_addon_start(Mist* mist) {
     wish_fs_set_close(my_fs_close);
     wish_fs_set_rename(my_fs_rename);
     wish_fs_set_remove(my_fs_remove);    
+}
+
+void mist_addon_start(Mist* mist) {
+    //printf("mist_addon_start(Mist* %p)\n", mist);
     
     int iret;
 

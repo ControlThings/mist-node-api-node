@@ -2,6 +2,8 @@
 
 Mist 1-day developer course. 
 
+<sub><sup>source: mist-node-api-node/doc/mist-developer-course.md</sup></sub>
+
 ## Theory
 
 ### Minimalistic intro
@@ -93,13 +95,15 @@ npm install -g wish-cli
 wish-cli
 ```
 
-If everything went file, you can now create an identity using the cli:
+If everything went fine, you can now create an identity using the cli:
 
 ```javascript
 identity.create('John Andersson')
 ```
 
 It is good to know that the cli will always store the last response from the core into a variable called `result`, which is accessible in the cli.
+
+See: https://www.npmjs.com/package/wish-cli
 
 
 #### Connecting
@@ -127,8 +131,6 @@ identity.friendRequestList()
 identity.friendRequestAccept(result[0].luid, result[0].ruid)
 ```
 
-There is a known bug which timeouts the friendRequest in about 10 seconds, which requres you to prepare the requestee side to have everything done but the two last lines; List and Accept commands ready.
-
 When you are successful you can run:
 
 ```javascript
@@ -138,7 +140,7 @@ identity.list()
 and you will get the result:
 
 ```javascript
-wish> [ { uid: <Buffer b1 be 19 ... 26 8f a9 31>,
+[ { uid: <Buffer b1 be 19 ... 26 8f a9 31>,
     alias: 'John Andersson',
     privkey: true },
   { uid: <Buffer 50 f7 54 ... 46 44 5b>,
@@ -146,23 +148,17 @@ wish> [ { uid: <Buffer b1 be 19 ... 26 8f a9 31>,
     privkey: false } ]
 ```
 
-The privkey field shows wether you have access to the private key or not for each identity. Only your identities have the private key, while your contacts show privkey false.
+The privkey field shows wether you have access to the private key or not for each identity. Only your identities have the private key, while your contacts show `privkey: false`.
 
 #### Mist App
 
-Finally we have come to the part where you can start writing an application. You can start writing your application from scratch, or by starting for some of our application templates. 
-
-* .tar.gz - source code
-* .tgz - npm package
-* GitHub
-
-```sh
-node run.js
-```
+Finally we have come to the part where you can start writing an application. You can start writing your application from scratch, or by starting for some of our application templates from GitHub: https://github.com/akaustel/mist-examples-nodejs
 
 #### Mist Cli
 
 Mist Cli is really useful for accessing things in Mist. You can list Mist devices you have access to, and you can send Mist commands, like read write and invoke, as well as use management commands. It should tell you all you need to know as soon as you get it running.
+
+See: https://www.npmjs.com/package/mist-cli
 
 ```javascript
 npm install -g mist-cli
@@ -252,6 +248,21 @@ mist.control.invoke(peers[0], 'config', args)
    { this: 'can',
      be: [ 'whatever', 'you', 'like', true, 42 ],
      even: <Buffer 4e 69 63 65> } }
+```
+
+#### Programmatical access
+
+```javascript
+var MistNode = require('mist-api').MistNode;
+
+var node = new MistNode('RandomBeacon');
+
+node.on('online', (peer) => {
+  node.request(peer, 'control.invoke', ['cool', 7, true, new Buffer('0001EFCDBA', 'hex')], () => {
+    
+  })
+});
+
 ```
 
 

@@ -18,7 +18,7 @@
   "license": "SEE LICENSE IN LICENSE",
   "dependencies": {
     "bson-buffer": "1.0.2",
-    "nan": "2.7.0",
+    "nan": "2.8.0",
     "wish-rpc": "0.6.5"
   },
   "devDependencies": {

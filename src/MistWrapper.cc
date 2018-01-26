@@ -118,6 +118,8 @@ MistWrapper::request(const Nan::FunctionCallbackInfo<v8::Value>& info) {
 
 void
 MistWrapper::Init(v8::Local<v8::Object> exports) {
+    mist_addon_init();
+    
     v8::Local<v8::FunctionTemplate> tpl = Nan::New<v8::FunctionTemplate>(MistWrapper::New);
     tpl->SetClassName(Nan::New("MistApi").ToLocalChecked());
     tpl->InstanceTemplate()->SetInternalFieldCount(2);
