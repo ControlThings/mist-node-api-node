@@ -17,11 +17,13 @@ function MistNodeInner(addon) {
     });
     
     addon.on('online', function(peer) {
+        self.emit('online', peer);
         if (typeof self.onlineCb === 'function') { self.onlineCb(peer); }
         self.peers.push(peer);
     });
     
     addon.on('offline', function(peer) {
+        self.emit('offline', peer);
         if (typeof self.offlineCb === 'function') { self.offlineCb(peer); }
     });
     
@@ -82,6 +84,8 @@ function MistNodeInner(addon) {
             console.log("There is no invoke function registered for", msg.invoke.epid );
         }
     });
+    
+    this.addEndpoint('mist', { type: 'string', read: true });
 }
 
 inherits(MistNodeInner, EventEmitter);
