@@ -19,11 +19,12 @@ if (process.env.DEBUG) {
     } else {
         var arch = process.arch;
         var platform = process.platform;
+        var version = process.version;
         
         try {
             MistApi = require('./bin/MistApi-'+arch+'-'+platform+'.node').MistApi;
         } catch (e) {
-            console.log('MistApi is a native addon, which is not supported or currently not bundled for your arch/platform ('+arch+'/'+platform+').');
+            console.log('MistApi is a native addon, which is not supported or currently not bundled for your arch/platform or version ('+arch+'/'+platform+' '+version+').');
             process.exit(1);
         }
     }
