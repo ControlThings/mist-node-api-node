@@ -107,7 +107,7 @@ Mist::HandleProgressCallback(const char *data, size_t size) {
     // drain the queue - since we might only get called once for many writes
     std::deque<Message> contents;
     toNode.readAll(contents);
-
+    
     for (Message & msg : contents) {
         v8::Local<v8::Value> argv[] = {
             New<v8::String>(msg.name.c_str()).ToLocalChecked(),
@@ -115,6 +115,6 @@ Mist::HandleProgressCallback(const char *data, size_t size) {
         };
         
         // TODO: Should catch exception from javascript?
-        progress->Call(3, argv);
+        progress->Call(2, argv);
     }
 }
