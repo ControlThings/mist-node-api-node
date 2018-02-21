@@ -242,7 +242,7 @@ describe('Mist Invite', function () {
     
     it('should remotely export identity of bob', function(done) {
         requestorApp.request('connections.request', [connection, 'identity.export', [connection.ruid]], function(err, data) {
-            //console.log('bob identity exported:', err, data);
+            console.log('bob identity exported:', err, data);
             var cert = BSON.deserialize(data.data);
             cert.hid = connection.rhid;
             cert.sid = peer.rsid;
@@ -266,9 +266,12 @@ describe('Mist Invite', function () {
     
     it('should invite the expert', function(done) {
         var signals = dstApp.request('signals', [], function(err, data) {
+            console.log('signals:', err, data);
             if (data[0] === 'friendRequest') {
                 console.log('signal in expert', data);
                 dstApp.request('identity.friendRequestList', [], function(err, data) {
+                    console.log('friendRequestList:', err, data);
+                    console.log('friendRequestList:', BSON.deserialize(data[0].meta.data));
                     dstApp.request('identity.friendRequestAccept', [data[0].luid, data[0].ruid], function(err, data) {
                         dstApp.cancel(signals);
                         done();

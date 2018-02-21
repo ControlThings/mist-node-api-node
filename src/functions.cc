@@ -125,7 +125,7 @@ bool injectMessage(Mist* mist, int type, uint8_t *msg, int len) {
     input_buf* in = (input_buf*) calloc(1, sizeof(input_buf));
     
     char* data = (char*) malloc(len);
-
+    
     memcpy(data, msg, len);
     
     in->data = data;
@@ -1284,15 +1284,14 @@ static void* setupMistNodeApi(void* ptr) {
     opts->mist_app = mist_app;
     
     wish_app_t* app = wish_app_create(name);
-    
-    app->ready = wish_app_ready_cb;
-
     opts->wish_app = app;
     
     if (app == NULL) {
         printf("Failed creating wish app\n");
         return NULL;
     }
+
+    app->ready = wish_app_ready_cb;
     
     wish_app_add_protocol(app, &mist_app->protocol);
     mist_app->app = app;
@@ -1381,6 +1380,8 @@ static void* setupWishApi(void* ptr) {
         printf("Failed creating wish app\n");
         return NULL;
     }
+    
+    wish_app->ready = wish_app_ready_cb;
     
     opts->wish_app = wish_app;
     
