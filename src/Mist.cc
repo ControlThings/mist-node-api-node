@@ -39,7 +39,7 @@ Mist::sendToNode(Message& message) {
     
     if (_progress == NULL) {
         if (executeCalled) {
-            printf("Mist::sendToNode after addon Mist::Execute has been shut down!!?!\n");
+            //printf("Mist::sendToNode after addon Mist::Execute has been shut down!!?!\n");
         } else {
             printf("Mist::sendToNode before Mist::Execute has been run!!?!\n");
             bson_visit("Mist::sendToNode before Mist::Execute has been run!!?!", message.msg);
