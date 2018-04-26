@@ -1,6 +1,7 @@
 #include "Mist.h"
 #include "functions.h"
 #include "app.h"
+#include "mist_port.h"
 #include "mist_app.h"
 #include "mist_api.h"
 #include "mist_model.h"
@@ -1497,4 +1498,19 @@ void mist_addon_start(Mist* mist) {
         fprintf(stderr, "Error - pthread_create() return code: %d\n", iret);
         exit(EXIT_FAILURE);
     }
+}
+
+
+
+void mist_port_wifi_join(mist_api_t* mist_api, const char* ssid, const char* password) {
+    printf("mist_port_wifi_join\n");
+    
+    mist_port_wifi_join_cb(mist_api, WIFI_JOIN_OK);
+    //mist_port_wifi_join_cb(mist_api, WIFI_JOIN_FAILED);
+}
+
+void mist_port_wifi_list(mist_api_t* mist_api) {
+    printf("mist_port_wifi_list\n");
+    
+    //mist_port_wifi_list_cb();
 }
