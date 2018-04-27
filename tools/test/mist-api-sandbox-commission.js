@@ -1,6 +1,7 @@
 var Mist = require('../../index.js').Mist;
 var Sandboxed = require('../../index.js').Sandboxed;
 var MistNode = require('../../index.js').MistNode;
+var WishApp = require('../../index.js').WishApp;
 var util = require('./deps/util.js');
 var inspect = require('util').inspect;
 
@@ -9,9 +10,101 @@ var BSON = new bson();
 
 describe('MistApi Sandbox', function () {
     var mist;
+    var bobMist;
     
     before('Setup Generic UI', function (done) {
         mist = new Mist({ name: 'Generic UI', corePort: 9095 });
+
+        setTimeout(function() {
+            mist.request('ready', [], function(err, ready) {
+                if (ready) {
+                    done();
+                } else {
+                    done(new Error('MistApi not ready, bailing.'));
+                }
+            });
+        }, 200);
+    });
+
+    before(function(done) {
+        var name = "MistConfig";
+        var node = new MistNode({ name: name, corePort: 9096 }); // , coreIp: '127.0.0.1', corePort: 9094
+        //this.node = node;
+
+        // add `mist` endpoint
+        node.addEndpoint('mist', { type: 'string' });
+        // add `mist.name` as subendpoint to mist
+        node.addEndpoint('mist.name', { type: 'string', read: function(args, peer, cb) { cb(null, name); } });
+        
+        node.addEndpoint("mistVersion", { type: "string", read: function(args, peer, cb) {
+            console.log("mistVersion");
+            cb(null, "1.0.1");
+        }});
+    
+        node.addEndpoint("mistWifiListAvailable", { invoke: function(args, peer, cb) {
+            cb(null, [{ ssid: '106 Broad Street', rssi: -10 }, { ssid: '21 Water Street', rssi: -31 }]);
+        }});
+    
+        node.addEndpoint("mistWifiCommissioning", { invoke: function(args, peer, cb) {
+            node.wish.request('connections.disconnectAll', [], (err, data) => {
+                console.log('disconnectAll after mistWifiCommissioning cb:', err, data);
+            });            
+            //cb(null, true);
+        }});
+        
+        node.addEndpoint("claimCore", { invoke: function(args, peer, cb) {
+            //console.log("mistVersion");
+            node.wish.request('identity.permissions', [peer.ruid, {core:{owner:true}}], (err, data) => {
+                console.log('identity.permissions', data);
+                node.wish.request('host.skipConnectionAcl', [false], (err, data) => {
+                    console.log('host.skipConnectionAcl', data);
+                    cb(null, "1.0.1");
+                });
+            });
+        }});
+    
+        
+    
+        done();
+    });
+    
+    before(function(done) {
+        console.log('before 2');
+    
+        bobApp = new WishApp({ name: 'BobTester', protocols: ['test'], corePort: 9096 }); // , protocols: [] });
+
+        bobApp.once('ready', function() {
+            done();
+            
+            bobApp.request("identity.friendRequestList", [], (err, data) => {
+                for (var i in data) {
+                    bobApp.request("identity.friendRequestDecline", [data[i].luid, data[i].ruid], (err, data) => {});
+                }
+            });
+
+            bobApp.request("signals", [], (err, data) => {
+                if (data[0] === "friendRequest") {
+                    console.log("friendRequest");
+                    bobApp.request("identity.friendRequestList", [], (err, data) => {
+                        var ruid = data[0].ruid;
+
+                        bobApp.request("identity.friendRequestAccept", [data[0].luid, data[0].ruid], (err, data) => {
+                            console.log("identity.friendRequestAccept cb ", err, data);
+                        });
+                    });
+                }
+            })    
+        });
+    });
+    
+    
+    
+    
+    
+    
+    
+    before('Setup Generic UI', function (done) {
+        bobMist = new Mist({ name: 'Generic UI', corePort: 9096 });
 
         setTimeout(function() {
             mist.request('ready', [], function(err, ready) {
@@ -100,25 +193,57 @@ describe('MistApi Sandbox', function () {
             done();
         });
     });
+    
+    it('should set skipConnectionAcl ', function(done) {
+        bobApp.request('host.skipConnectionAcl', [true], function(err, data) {
+            //if (err) { return done(new Error('Could not set skipConnectionAcl.')); }
+            
+            console.log("host.skipConnectionAcl cb: ", err, data);
+            done();
+        });
+    });
 
     it('should commission.perform with wifi', function(done) {
-        this.timeout(10000);
+        this.timeout(15000);
+        var timeout;
         
         var luid = mistIdentity1.uid;
         
-        sandboxedGps.request('commission.perform', [luid, { type: 'wifi', ssid: 'mist-somenetwork', class: 'fi.ct.test.device' }], function(err, data) {
+        sandboxedGps.request('commission.perform', [luid, { type: 'wifi', ssid: 'mist-somenetwork', class: 'fi.ct.test' }], function(err, data) {
             if (err) { console.log('an error:', err, data); return done(new Error('Could not get list.')); }
             
-            if(data === 3) { // WAIT_JOIN_WIFI
-                // state machine has started with wifi commissioning, now wait for ON_CONNECTED_TO_EXPECTED_WIFI
+            if(data[0] && data[0] === 'wifiListAvailable') {
+                /*
+                [ 'wifiListAvailable',
+                  [ { ssid: '106 Broad Street', rssi: -10 },
+                    { ssid: '21 Water Street', rssi: -31 } ] ] 
+                */
+               
+                // got a signal that there are wifis available to commission the device to
+                //console.log('wifiListAvailable data', data);
+                var ssid = data[1][0].ssid;
+                var password = 'TheUltimateSecret';
+                
+                sandboxedGps.request('commission.selectWifi', [ssid, password], (err, data) => {
+                    console.log('Your wifi selection cb', err, data);
+                });
+            } else if ( data === 'COMMISSION_STATE_FINISHED_OK') {
+                done();
+            } else if ( data === 'COMMISSION_STATE_WAIT_FOR_PEERS') {
+                /*
+                timeout = setInterval(() => {
+                    bobApp.request('connections.list', [], (err, data) => {
+                        console.log('connections.list cb', err, data);
+                    });
+                }, 1000);
+                */
             }
             
             console.log("Commission.perform result: ", err, data);
         });
-        
-        setTimeout(done, 9500);
     });
 
+    /*
     it('should commission.perform with local (discovery)', function(done) {
         var luid = mistIdentity1.uid;
         
@@ -129,4 +254,5 @@ describe('MistApi Sandbox', function () {
             done();
         });
     });
+    */
 });
