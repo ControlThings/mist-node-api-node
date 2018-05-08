@@ -172,6 +172,7 @@ static void wish_response_cb(rpc_client_req* req, void* ctx, const uint8_t* data
     
     Mist* mist = static_cast<Mist*>(ctx);
     //printf("wish_response_cb to Mist: %s\n", mist->name.c_str());
+    //bson_visit("wish_response_cb to Mist:", data);
     mist->sendToNode(msg);
 }
 
@@ -433,6 +434,7 @@ static void wish_app_ready_cb(wish_app_t* app, bool ready) {
     bson bs;
     bson_init(&bs);
     bson_append_bool(&bs, "ready", ready);
+    bson_append_binary(&bs, "sid", (const char*)&app->wsid, WISH_WSID_LEN);
     bson_finish(&bs);
 
     Message msg("ready", (uint8_t*) bson_data(&bs), bson_size(&bs));

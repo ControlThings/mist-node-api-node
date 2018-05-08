@@ -67,10 +67,10 @@ function Addon(opts) {
         } catch(e) {
             return console.log('Warning! Non BSON message from plugin.', arguments, event, data);
         }
-
+        
         if (event === 'ready') {
-            self.emit('ready', msg.ready);
-            if (typeof self.readyCb === 'function') { self.readyCb(msg.ready); }
+            self.emit('ready', msg.ready, msg.sid);
+            if (typeof self.readyCb === 'function') { self.readyCb(msg.ready, msg.sid); }
             
             return;
         }

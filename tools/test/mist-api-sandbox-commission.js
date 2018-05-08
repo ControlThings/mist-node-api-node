@@ -26,6 +26,40 @@ describe('MistApi Sandbox', function () {
         }, 200);
     });
 
+    var nodeRsid;
+    var nodeName;
+
+    before(function(done) {
+        var name = "TestNode";
+        var node = new MistNode({ name: name, corePort: 9096 }); // , coreIp: '127.0.0.1', corePort: 9094
+        //this.node = node;
+        
+        node.on('ready', (ready, sid) => {
+            // get name
+            nodeName = name;
+            // get sid
+            nodeRsid = sid;
+            
+            done();
+        });
+
+        // add `mist` endpoint
+        node.addEndpoint('mist', { type: 'string' });
+        // add `mist.name` as subendpoint to mist
+        node.addEndpoint('mist.name', { type: 'string', read: function(args, peer, cb) { console.log('read mist.name called:', name); cb(null, name); } });
+        
+        node.addEndpoint("mist.version", { type: "string", read: function(args, peer, cb) {
+            console.log("mist.version");
+            cb(null, "1.0.1");
+        }});
+    
+        node.addEndpoint("battery", { invoke: function(args, peer, cb) {
+            cb(null, { level: 7.1, state: 'discharging' });
+        }});
+    
+        //done();
+    });
+    
     before(function(done) {
         var name = "MistConfig";
         var node = new MistNode({ name: name, corePort: 9096 }); // , coreIp: '127.0.0.1', corePort: 9094
@@ -36,16 +70,25 @@ describe('MistApi Sandbox', function () {
         // add `mist.name` as subendpoint to mist
         node.addEndpoint('mist.name', { type: 'string', read: function(args, peer, cb) { console.log('MistConfig mist.name read:', name); cb(null, name); } });
         
-        node.addEndpoint("mistVersion", { type: "string", read: function(args, peer, cb) {
-            console.log("mistVersion");
+        node.addEndpoint("mist.version", { type: "string", read: function(args, peer, cb) {
+            console.log("mist.version");
             cb(null, "1.0.1");
         }});
     
-        node.addEndpoint("mistWifiListAvailable", { invoke: function(args, peer, cb) {
+        node.addEndpoint("mist.wifiListAvailable", { invoke: function(args, peer, cb) {
             cb(null, [{ ssid: '106 Broad Street', rssi: -10 }, { ssid: '21 Water Street', rssi: -31 }]);
         }});
     
-        node.addEndpoint("mistWifiCommissioning", { invoke: function(args, peer, cb) {
+        node.addEndpoint("mist.resetCommissioning", { invoke: function(args, peer, cb) {
+            console.log('node has been reset to defaults');
+            cb();
+        }});
+    
+        node.addEndpoint("mist.wifiCommissioning", { invoke: function(args, peer, cb) {
+            console.log('mist.wifiCommissioning called in node:', args);
+            
+            if (args.type === 'station') { return cb(null, true); }
+            
             node.wish.request('connections.disconnectAll', [], (err, data) => {
                 console.log('disconnectAll after mistWifiCommissioning cb:', err, data);
             });            
@@ -58,31 +101,9 @@ describe('MistApi Sandbox', function () {
                 console.log('identity.permissions', data);
                 node.wish.request('host.skipConnectionAcl', [false], (err, data) => {
                     console.log('host.skipConnectionAcl', data);
-                    cb(null, "1.0.1");
+                    cb(null, [{ rsid: nodeRsid, name: nodeName }]);
                 });
             });
-        }});
-    
-        done();
-    });
-
-    before(function(done) {
-        var name = "TestNode";
-        var node = new MistNode({ name: name, corePort: 9096 }); // , coreIp: '127.0.0.1', corePort: 9094
-        //this.node = node;
-
-        // add `mist` endpoint
-        node.addEndpoint('mist', { type: 'string' });
-        // add `mist.name` as subendpoint to mist
-        node.addEndpoint('mist.name', { type: 'string', read: function(args, peer, cb) { console.log('read mist.name called:', name); cb(null, name); } });
-        
-        node.addEndpoint("mistVersion", { type: "string", read: function(args, peer, cb) {
-            console.log("mistVersion");
-            cb(null, "1.0.1");
-        }});
-    
-        node.addEndpoint("battery", { invoke: function(args, peer, cb) {
-            cb(null, { level: 7.1, state: 'discharging' });
         }});
     
         done();
@@ -239,7 +260,7 @@ describe('MistApi Sandbox', function () {
     });
 
     it('should commission.perform with wifi', function(done) {
-        this.timeout(15000);
+        this.timeout(20000);
         var timeout;
 
         var log = [];
@@ -260,13 +281,71 @@ describe('MistApi Sandbox', function () {
                 var ssid = data[1][0].ssid;
                 var password = 'TheUltimateSecret';
                 
-                sandboxedGps.request('commission.selectWifi', [ssid, password], (err, data) => {
+                sandboxedGps.request('commission.selectWifi', [{ type: 'station', ssid: ssid, password: password }], (err, data) => {
                     console.log('Your wifi selection cb', err, data);
                 });
-            } else if ( data === 'COMMISSION_STATE_FINISHED_OK') {
+            } else if ( data[1] === 'COMMISSION_STATE_FINISHED_OK') {
                 console.log('commission.perform log:', log);
                 done();
-            } else if ( data === 'COMMISSION_STATE_WAIT_FOR_PEERS') {
+            } else if ( data[1] === 'COMMISSION_STATE_WAIT_FOR_PEERS') {
+                //timeout = setInterval(() => {
+                //    bobApp.request('connections.list', [], (err, data) => {
+                //        console.log('connections.list cb', err, data);
+                //    });
+                //}, 1000);
+            }
+            
+            console.log("Commission.perform result: ", err, data);
+        });
+    });
+
+    //it('should wait for wld', function(done) { this.timeout(5200); setTimeout(done, 5000); });
+
+    it('should set skipConnectionAcl ', function(done) {
+        console.log('wish: identity.remove...');
+        mist.wish.request('identity.remove', [mistIdentity2.uid], function(err, data) {
+            //if (err) { return done(new Error('Could not set skipConnectionAcl.')); }
+
+            console.log("identity.remove cb: ", err, data);
+            bobApp.request('host.skipConnectionAcl', [true], function(err, data) {
+                //if (err) { return done(new Error('Could not set skipConnectionAcl.')); }
+
+                console.log("host.skipConnectionAcl cb: ", err, data);
+                done();
+            });
+        });
+    });
+
+
+    it('should commission.perform with wifi as access-point', function(done) {
+        this.timeout(20000);
+        var timeout;
+
+        var log = [];
+        
+        var luid = mistIdentity1.uid;
+        
+        sandboxedGps.request('commission.perform', [luid, { type: 'wifi', ssid: 'mist-somenetwork', class: 'fi.ct.test' }], function(err, data) {
+            log.push(data);
+            if (err) { console.log('an error:', err, data, log); return done(new Error(data.msg)); }
+            
+            if(data[0] && data[0] === 'wifiListAvailable') {
+                // [ 'wifiListAvailable',
+                //   [ { ssid: '106 Broad Street', rssi: -10 },
+                //     { ssid: '21 Water Street', rssi: -31 } ] ] 
+               
+                // got a signal that there are wifis available to commission the device to
+                //console.log('wifiListAvailable data', data);
+                var ssid = data[1][0].ssid;
+                var password = 'TheUltimateSecret';
+                
+                sandboxedGps.request('commission.selectWifi', [{ type: 'access-point', ssid: ssid }], (err, data) => {
+                    console.log('Your wifi selection cb', err, data);
+                });
+            } else if ( data[1] === 'COMMISSION_STATE_FINISHED_OK') {
+                console.log('commission.perform log:', log);
+                done();
+            } else if ( data[1] === 'COMMISSION_STATE_WAIT_FOR_PEERS') {
                 //timeout = setInterval(() => {
                 //    bobApp.request('connections.list', [], (err, data) => {
                 //        console.log('connections.list cb', err, data);
@@ -331,7 +410,7 @@ describe('MistApi Sandbox', function () {
 
                 console.log("Commission.perform result: ", err, data);
                 
-                if ( data === 'COMMISSION_STATE_FINISHED_OK') {
+                if ( data[1] === 'COMMISSION_STATE_FINISHED_OK') {
                     sandboxedGps.request('listPeers', [], (err, data) => {
                         console.log('listpeers', err,data);
                         console.log('commission.perform log:', log);

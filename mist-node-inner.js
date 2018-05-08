@@ -11,8 +11,8 @@ function MistNodeInner(addon) {
     
     this.addon = addon;
     
-    addon.on('ready', function(ready) {
-        self.emit('ready', ready);
+    addon.on('ready', function(ready, sid) {
+        self.emit('ready', ready, sid);
         if (typeof self.readyCb === 'function') { self.readyCb(ready); }
     });
     
