@@ -74,6 +74,22 @@ describe('MistApi Sandbox', function () {
                 cb(null, { cool: ['a', 7, true], echo: args });
             }
         });
+        node.addEndpoint('claimCore', { 
+            label: 'interface for claiming the core', invoke: function(args, peer, cb) {
+                /* Add the property { core: { owner: true } } to the calling peer's identity */
+                /* FIXME: check first that no other peers are core owners already! */
+                node.wish.request('identity.permissions', [peer.ruid, { core: { owner: true } }], function(err, data) {
+                   if (err) {
+                       cb(null, { msg: 'fail' });
+                       console.log("identity.permissions fails", data);
+                       return;
+                   } 
+                   console.log("identity.permissions OK", data);
+                   cb(null, { cool: ['a', 7, true], echo: args });
+                });
+                
+            }
+        });
         
         var name = 'Just a Name';
         var counter = 56784;
@@ -273,7 +289,7 @@ describe('MistApi Sandbox', function () {
         });
     });
     
-    it('should update remote identity alias in remote core from sandbox', function(done) {
+    it('should update remote identity alias in remote core from sandbox, but get error because claimCore not run yet', function(done) {
         
         //console.log('About to make wish.identity.update...');
         
@@ -283,18 +299,74 @@ describe('MistApi Sandbox', function () {
             sandboxedGps.request('listPeers', [], function(err, data) {
                 //console.log("sandboxedGps listPeers:", err, data);
 
+                
                 sandboxedGps.request('wish.identity.permissions', [data[0], mistIdentity2.uid, { admin: true }], function(err, data) {
                     console.log("Remote: wish.identity.permissions:", err, data);
-                    if (data.permissions.admin !== true) {
-                        return done(new Error('Permission not set, expecting "permissions.admin": true, response was: '+inspect(data))) 
+                    if (err) {
+                        if (data.code === 200) {
+                            done();
+                            return;
+                        } 
                     }
+                    return done(new Error('Fail, because it worked, when it should not have! Core-to-core ACL is disabled?', inspect(data)));
                     
-                    done();
                 });
+                
             });
         });
     });
     
+    it('should invoke claimCore', function(done) {
+        
+        //console.log('About to make wish.identity.update...');
+        
+        sandboxedGps.request('login', ['Gps App'], function(err, data) {
+            //console.log("ControlThings Sandbox login reponse:", err, data);
+
+            sandboxedGps.request('listPeers', [], function(err, data) {
+                //console.log("sandboxedGps listPeers:", err, data);
+
+                
+                sandboxedGps.request('mist.control.invoke', [data[0], 'claimCore', { admin: true }], function(err, data) {
+                    if (err) {
+                        console.log(data);
+                        return done(new Error('Fail! no invoke claimCore!', inspect(data)));
+                        
+                    }
+                    done();
+                });
+                
+            });
+        });
+    });
+    
+    
+    it('should update remote identity alias in remote core from sandbox, and succeed this time', function(done) {
+        
+        //console.log('About to make wish.identity.update...');
+        
+        sandboxedGps.request('login', ['Gps App'], function(err, data) {
+            //console.log("ControlThings Sandbox login reponse:", err, data);
+
+            sandboxedGps.request('listPeers', [], function(err, data) {
+                //console.log("sandboxedGps listPeers:", err, data);
+
+                console.log("this should work:", data[0]);
+                sandboxedGps.request('wish.identity.permissions', [data[0], mistIdentity2.uid, { admin: true }], function(err, data) {
+                    console.log("Remote: wish.identity.permissions:", err, data);
+                    if (err) {
+                        return done(new Error('error with claimCore:' + inspect(data)));
+                    } else {
+                    
+                        done();
+                    }
+                });
+                
+            });
+        });
+    });
+    
+
     it('should update remote identity alias in remote core from sandbox', function(done) {
         
         //console.log('About to make wish.identity.update...');
