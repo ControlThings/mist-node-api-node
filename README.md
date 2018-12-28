@@ -59,3 +59,30 @@ var motor = new Motor();
 // clean shutdown:
 //   motor.shutdown();
 ```
+
+## Compiling the Mist API native library
+
+```
+cd tools;
+./release-x64-linux
+```
+
+### Problems
+
+#### node-gyp fails on c++ compile error  "class v8 has no member IsUint8Array" or similar
+
+This occurs on hosts that have node.js 0.10.x installed as 'nodejs', and
+node-gyp. Solution:
+
+This usually occurs on a host with multiple node.js installations, or
+if are on a host with an outdated system-wide installation of node.js
+(Such as many slightly older Debian installations)
+
+You should use Node version manager (NVM) to install node 6. https://github.com/creationix/nvm 
+
+Then you should switch your session to using node.js 6.x, 
+and install node-gyp to that instance of node.js:
+```
+nvm use 6
+npm i -g node-gyp 
+```
