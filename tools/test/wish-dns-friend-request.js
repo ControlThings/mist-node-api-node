@@ -185,7 +185,8 @@ describe('Wish friend request, transport resolved through DNS', function () {
                 
                 aliceApp.request('identity.friendRequestAccept', [aliceIdentity.uid, bobIdentity.uid], function (err, data) {
                     if (err) { 
-                        if (!handled) { done(new Error('Could not identity.friendRequestAccept')); } 
+                        //console.log('identity.friendRequestAccept err', data);
+                        if (!handled) { done(new Error('Could not identity.friendRequestAccept', data)); } 
                         return;
                     }
                     console.log("Accepting friend req");
@@ -194,7 +195,7 @@ describe('Wish friend request, transport resolved through DNS', function () {
                     aliceApp.request('identity.update', [bobIdentity.uid, { connect: false }], function (err, data) {
                         if (err) { done(new Error('Error when Alice setting connect:false to Bob')); }
                         done();
-                    })
+                    });
                     
                 });
                 
@@ -284,7 +285,7 @@ describe('Wish friend request, transport resolved through DNS', function () {
         bobApp.request('connections.list', [], (err, data) => {
             if (err) { done(new Error('Error when connections.list')) }
             
-            console.log('connections', data);
+            //console.log('connections', data);
             
             if (data[0].ruid.compare(aliceIdentity.uid) == 0) {
                 if (data[0].outgoing && data[0].relay === false) {
