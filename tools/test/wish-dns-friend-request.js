@@ -33,6 +33,7 @@ describe('Wish friend request, transport resolved through DNS', function () {
     var newRelayServer = 'wish.cto.fi:40000';
     
     before(function(done) {
+        this.timeout(30000) //allow long startup time for the sake of valgrind
         console.log('before 1');
          aliceApp = new WishApp({ name: 'app1', protocols: ['test'], corePort: 9095 }); // , protocols: [] });
 
@@ -42,6 +43,7 @@ describe('Wish friend request, transport resolved through DNS', function () {
     });
     
     before(function(done) {
+        this.timeout(30000) //allow long startup time for the sake of valgrind
         console.log('before 2');
         bobApp = new WishApp({ name: 'app2', protocols: ['test'], corePort: 9096 }); // , protocols: [] });
 
