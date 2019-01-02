@@ -32,7 +32,7 @@ describe('Wish Relay', function () {
     
     it('should create identity', function(done) { 
         mist.wish.request('identity.create', ['RelayTester'], (err, data) => {
-            if (err) { return done(new Error(inspect(data))); }
+            if (err && data.code && data.code != 304) { return done(new Error(inspect(data))); } /* err code 304 means that local identity exists */
             done();
         });
     
