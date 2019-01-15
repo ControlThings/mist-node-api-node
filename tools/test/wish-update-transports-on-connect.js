@@ -141,13 +141,12 @@ describe('Wish core multiple transports, friend requests, update transports', fu
            console.log('Alice signal:', data);
            
            if (data[0] === 'friendRequest') {
-               aliceApp.request('identity.friendRequestAccept', [aliceIdentity.uid, bobIdentity.uid], function (err, data) {
-                   if (err) { done(new Error('Could not wld.friend requests accept.')); }
-                   console.log("Accepting friend req");
-                   aliceApp.cancel(id);
+                aliceApp.request('identity.friendRequestAccept', [aliceIdentity.uid, bobIdentity.uid], function (err, data) {           
+                   if (err) { done(new Error('Could not wld.friend requests accept.' + inspect(data))); }
+                   console.log("Accepting friend req");             
                    done();
                });
-               
+               aliceApp.cancel(id);
            }
         });
         
@@ -168,15 +167,38 @@ describe('Wish core multiple transports, friend requests, update transports', fu
         });
     });
     
+    it('wait connection between alice and bob', function (done) {
+        this.timeout(10000);
+        
+        function pollConnections() {
+            aliceApp.request('connections.list', [], (err, data) => {
+                if (err) { done(new Error("connections.list error")) }
+               
+                if (data[0]) {
+                    if (Buffer.compare(aliceIdentity.uid, data[0].luid) === 0 && Buffer.compare(bobIdentity.uid, data[0].ruid) === 0) {
+                        done();
+                    }
+                }
+            });
+        }
+        
+        aliceApp.request('connections.checkConnections', [], (err, data) => {
+            
+        });
+        setTimeout(pollConnections, 1000);
+    });
+    
     /* Check that Bob sees Alice's expected transports */
     it('Check that Bob sees Alice\'s expected transports', function (done) {
         //this.timeout(10000);
+        
+        // FIXME here there is an obvious error, this must fail because it occurs immediately after the friend request and no connection has yet been established thus no transports haven been updated!
         bobApp.request('identity.get', [aliceIdentity.uid], function(err, result) {
-            if (err) { done(new Error('util.js: Could not export identity.')); }
-            //console.log("Alice: ", result);
+            if (err) { done(new Error('util.js: Could not get identity.')); }
+            console.log("Alice: ", result);
             var hosts = result['hosts'];
             var transports = hosts[0]['transports'];
-            //console.log("Alice's transports ", transports);
+            console.log("Alice's transports ", transports);
             /* Check that we have the expected transports in Alice's identity export. 
              * Note that they need not be in any particular order, and that transports can have other items than relays too! */
             var cnt = 0;
@@ -193,7 +215,7 @@ describe('Wish core multiple transports, friend requests, update transports', fu
                 }
             }
             if (cnt === expectedCnt) {
-                console.log('OK, Detected expected number of transports of Alice on Bob core!');
+                console.log('OK, Detected expected number of transports of Alice on Bob core! (1)');
                 done();
             }
         });
@@ -262,7 +284,7 @@ describe('Wish core multiple transports, friend requests, update transports', fu
                                 }
                             }
                             if (cnt === expectedCnt) {
-                                console.log('OK, Detected expected number of transports of Alice on Bob core!');
+                                console.log('OK, Detected expected number of transports of Alice on Bob core! (2)');
                                 done();
                             }
                         });
