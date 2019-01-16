@@ -229,7 +229,10 @@ describe('Mist Mappings', function () {
             if (data === 'peers' || data[0] === 'peers') {
                 //console.log("Requestor Mist peers")
                
-                requestorMist.requestCancel(signals);
+                if (signals != 0) {
+                    requestorMist.requestCancel(signals);
+                    signals = 0;
+                }
                
                 requestorMist.request('wish.identity.list', [], function (err, data) {
                     if (err) { return; }
@@ -237,6 +240,7 @@ describe('Mist Mappings', function () {
                 });
                 
                 done();
+                done = function() { };
             }
         });
         
@@ -295,7 +299,10 @@ describe('Mist Mappings', function () {
             if (data === 'peers' || data[0] === 'peers') {
                //console.log("Requestor Mist peers")
                
-               requestorMist.requestCancel(signals);
+               if (signals != 0) {
+                    requestorMist.requestCancel(signals);
+                    signals = 0;
+                }
                
                requestorMist.request('wish.identity.list', [], function (err, data) {
                     if (err) { return; }
@@ -303,9 +310,8 @@ describe('Mist Mappings', function () {
                 
                 });
                 
-                requestorMist.request('ready', [], function(err, data) {
-                    done();
-                });
+                done();
+                done = function () { }
                
             }
         });
@@ -374,6 +380,7 @@ describe('Mist Mappings', function () {
         requestorMist.request("mist.control.requestMapping", [ srcPeer, dstPeer, 'output', {}, 'input', {} ], function(err, data) {
             if (err) {
                 done();
+                done = function() { }
                 console.log("requestMapping err", err);
                 return;
             }
@@ -415,7 +422,8 @@ describe('Mist Mappings', function () {
         //this.timeout(10000);
         requestorMist.request("mist.control.requestMapping", [ srcPeer, dstPeer, 'output', {}, 'input', {} ], function(err, data) {
             if (err) {
-                console.log("requestMapping2 err", err);
+                console.log("dstPeer", dstPeer, "srcPeer", srcPeer)
+                done(new Error("requestMapping2 error: " + inspect(data)));
                 return;
             }
             
