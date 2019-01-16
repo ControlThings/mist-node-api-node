@@ -374,6 +374,10 @@ describe('Mist Mappings', function () {
         
         console.log('Begin request mapping test ===========================================');
         
+        requestorMist.request('listPeers', [], (err, data) => {
+            console.log("listPeers", data);
+        });
+        
         setTimeout(() => { done(); done = () => {}; }, 500);
         
         //this.timeout(10000);
