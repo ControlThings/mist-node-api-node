@@ -81,16 +81,19 @@ describe('Wish test ban contact', function () {
            if (err) { done(new Error('Could not setup signals')); }
            console.log('Alice signal:', data);
            
+           var handled = false;
            if (data[0] === 'friendRequest') {
+               if (id != 0) { 
+                   aliceApp.cancel(id);
+                   id = 0;
+               }
                aliceApp.request('identity.friendRequestAccept', [aliceIdentity.uid, bobIdentity.uid], function (err, data) {
                    if (err) { done(new Error('Could not wld.friend requests accept.')); }
                    console.log("Accepting friend req");
-                   //aliceApp.cancel(id);
                    aliceApp.request('identity.permissions', [bobIdentity.uid, { banned: true }], function (err, data) {
                        if (err) { done(new Error('Could not identity.permissions')); return; }
                        console.log("perm 1: ", data)
                        done();
-                       
                    });
                    
                });
@@ -147,7 +150,9 @@ describe('Wish test ban contact', function () {
                     if (err) { done(new Error('Could not check connections')); return; }
                     console.log('Check connections OK');
                     done();
+                    done = function() { }
                     bobApp.cancel(sigId);
+
                 });
                 
             });
