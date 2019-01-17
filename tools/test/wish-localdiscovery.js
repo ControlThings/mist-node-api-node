@@ -24,6 +24,34 @@ describe('Wish Local Discovery', function () {
         }, 200);
     });
 
+    before(function (done) {
+        bobMist = new Mist({ name: 'Generic UI 2', corePort: 9096 });
+
+        setTimeout(function() {
+            bobMist.request('signals', [], function(err, data) {
+                if(data[0] === 'ready') {
+                    util.ensureIdentity(bobMist, "Bob", function(err, identity) {
+                        if (err) { done(new Error('util.js: Could not ensure identity.')); }
+                        done(); 
+                    });
+                }; // else { done(new Error('App not ready, bailing.')); }
+
+            });
+        }, 200);
+    });
+
+    var sandboxId = new Buffer(32);
+    before(function (done) {
+         sandboxedGps = new Sandboxed(mist, sandboxId);
+        
+        //console.log('Sandbox login goes here:', gpsSandboxId);
+        
+        sandboxedGps.request('login', ['Gps App'], function(err, data) {
+            done();
+        });
+    });
+
+
     after(function(done) {
         //console.log("Calling mist.shutdown().");
         mist.shutdown();
@@ -53,7 +81,7 @@ describe('Wish Local Discovery', function () {
             //done(new Error('Not the expected error.'));
         });
     });
-
+    /*
     it('should disconnect all connections', function(done) {
         mist.wish.request('connections.list', [], function(err, data) {
             if (err) { return done(new Error(inspect(data))); }
@@ -79,6 +107,7 @@ describe('Wish Local Discovery', function () {
             });
         });
     });
+    */
     
     it('should add a wifi', function(done) {
         mist.request('commission.add', ['wifi', 'mist-315 S. Broad St.'], function(err, data) {
