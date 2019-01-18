@@ -104,7 +104,14 @@ describe('Mist Invite', function () {
     
     before('import mistIdentity1', function(done) {
         srcApp.request('identity.import', [BSON.serialize(aliceIdentity)], function(err, data) {
-            done();
+            if (err) { done(new Error('Error when setting identity.import Alice to Bob core. ' + inspect(data))) }
+            
+            /* Set permissions { core.owner: true } so that Alice is owner of Bob's core, so that Alice can later do remote administration on Bob core */
+            srcApp.request('identity.permissions', [aliceIdentity.uid, { core: {owner: true}}], function(err, data) {
+                if (err) { done(new Error('Error when setting identity.permissions on Bob. ' + inspect(data))) }
+                
+                done();
+            });
         });
     });
     
@@ -268,12 +275,22 @@ describe('Mist Invite', function () {
         var signals = dstApp.request('signals', [], function(err, data) {
             console.log('signals:', err, data);
             if (data[0] === 'friendRequest') {
+                if (signals === 0) {
+                    // signals request was already cancelled (as it is in the case of second invocation of 'friendRequest' signal)
+                    return;
+                }
+                dstApp.cancel(signals);
+                signals = 0;
+                
                 console.log('signal in expert', data);
                 dstApp.request('identity.friendRequestList', [], function(err, data) {
                     console.log('friendRequestList:', err, data);
+                    if (!data[0]) {
+                        done(new Error("Unexepected: The friend request list is empty!"));
+                    }
                     console.log('friendRequestList:', BSON.deserialize(data[0].meta.data));
                     dstApp.request('identity.friendRequestAccept', [data[0].luid, data[0].ruid], function(err, data) {
-                        dstApp.cancel(signals);
+                        
                         done();
                     });
                 });
@@ -294,10 +311,15 @@ describe('Mist Invite', function () {
                     var signals = srcApp.request('signals', [], function(err, data) {
                         console.log('device signals', err, data);
                         if (data[0] === 'friendRequest') {
+                            if (signals === 0) {
+                                // signals request was already cancelled (as it is in the case of second invocation of 'friendRequest' signal)
+                                return;
+                            }
+                            srcApp.cancel(signals);
+                            signals = 0;
                             srcApp.request('identity.friendRequestList', [], function(err, data) {
                                 srcApp.request('identity.friendRequestAccept', [data[0].luid, data[0].ruid], function(err, data) {
-                                    done();
-                                    srcApp.cancel(signals);
+                                    done();  
                                 });
                             });
                         }
