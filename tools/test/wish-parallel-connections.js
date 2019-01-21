@@ -211,9 +211,13 @@ describe('Wish parallel connection reaper', function () {
         this.timeout(10000);
 
         var signals = requestorMist.request('signals', [], function (err, data) {
+            if (signals == 0) {
+                return;
+            }
             if (data === 'peers' || data[0] === 'peers') {
                 console.log("Requestor Mist peers")
                 requestorMist.requestCancel(signals);
+                signals = 0;
                 requestorMist.request('wish.identity.list', [], function (err, data) {
                     if (err) {
                         return;
