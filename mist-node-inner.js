@@ -84,8 +84,6 @@ function MistNodeInner(addon) {
             console.log("There is no invoke function registered for", msg.invoke.epid );
         }
     });
-    
-    this.addEndpoint('mist', { type: 'string', read: true });
 }
 
 inherits(MistNodeInner, EventEmitter);
