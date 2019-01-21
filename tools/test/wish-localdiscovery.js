@@ -61,7 +61,7 @@ describe('Wish Local Discovery', function () {
     });
 
     it('should get a localdiscovery signal', function(done) {
-        this.timeout(10000);
+        this.timeout(20000);
         mist.wish.request('signals', [], function (err, data) {
             if (err) { return done(new Error('Signals returned error.')); }
             
