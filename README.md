@@ -1,6 +1,6 @@
 # Mist API
 
-A native node.js plugin which uses the C99 Mist implementation. Currently working with Linux x86_64 and nodejs v6.x only. To get it working you need to run a Wish Core on the same host.
+A native node.js plugin which uses the C99 Mist implementation.  Currently working with Linux x86_64 and nodejs v6, v8, v10. To get it working you need to run a Wish Core on the same host.
 
 ## Install 
 
