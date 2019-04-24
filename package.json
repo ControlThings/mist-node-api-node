@@ -1,11 +1,11 @@
 {
   "name": "mist-api",
-  "version": "0.12.0-beta-1",
+  "version": "0.12.0",
   "description": "Mist API wrapper for node. Used for accessing all Mist APIs.",
   "main": "index.js",
   "repository": {
     "type": "git",
-    "url": "wish.cto.fi:/git/mist-node-api-node"
+    "url": "foremost.controlthings.fi:/ct/mist/mist-node-api-node"
   },
   "keywords": [
     "mist",
@@ -19,8 +19,7 @@
   "dependencies": {
     "bson-buffer": "1.0.2",
     "nan": "2.13.2",
-    "node-gyp": "^3.8.0",
-    "v8": "^0.1.0"
+    "node-gyp": "^3.8.0"
   },
   "devDependencies": {
     "mkdirp": "0.5.1",
