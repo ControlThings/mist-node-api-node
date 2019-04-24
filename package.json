@@ -19,7 +19,8 @@
   "dependencies": {
     "bson-buffer": "1.0.2",
     "nan": "2.13.2",
-    "node-gyp": "^3.8.0"
+    "node-gyp": "^3.8.0",
+    "v8": "^0.1.0"
   },
   "devDependencies": {
     "mkdirp": "0.5.1",
