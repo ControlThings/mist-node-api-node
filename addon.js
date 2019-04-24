@@ -1,11 +1,7 @@
 var supportedVersionList = [ "v6", "v8", "v10" ];
-
 var currentMajorVersion = process.version.split('.')[0];
 
-console.log("Running on node.js "+currentMajorVersion);
-
 var supported = false;
-
 for (v in supportedVersionList) {
     if (currentMajorVersion === supportedVersionList[v]) {
         supported = true;
