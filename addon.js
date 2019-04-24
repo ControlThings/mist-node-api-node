@@ -1,5 +1,20 @@
-if (!process.version.substr(0, 3) === 'v6.') {
-    console.log('MistApi is a native addon, which is not supported by Node.js version ('+process.version+'), requires v6.x.x., tested on v6.9.2.');
+var supportedVersionList = [ "v6", "v8", "v10" ];
+
+var currentMajorVersion = process.version.split('.')[0];
+
+console.log("Running on node.js "+currentMajorVersion);
+
+var supported = false;
+
+for (v in supportedVersionList) {
+    if (currentMajorVersion === supportedVersionList[v]) {
+        supported = true;
+        break;
+    }
+}
+
+if (!supported) {
+    console.log('MistApi is a native addon, which is not supported by Node.js version ('+process.version+'), supports' + supportedVersionList);
     process.exit(1);
 }
 
@@ -22,8 +37,9 @@ if (process.env.DEBUG) {
         var version = process.version;
         
         try {
-            MistApi = require('./bin/MistApi-'+arch+'-'+platform+'.node').MistApi;
+            MistApi = require('./bin/MistApi-'+arch+'-'+platform+'-' + currentMajorVersion + '.node').MistApi;
         } catch (e) {
+            console.log(e);
             console.log('MistApi is a native addon, which is not supported or currently not bundled for your arch/platform or version ('+arch+'/'+platform+' '+version+').');
             process.exit(1);
         }
