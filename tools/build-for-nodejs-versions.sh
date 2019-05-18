@@ -13,15 +13,16 @@ fi
 NVM_DIR="$HOME/.nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"  # This loads nvm
 
-NODEVERSIONS="6 8 10"
+NODEVERSIONS="6 8 10 12"
 
 for x in $NODEVERSIONS; do
-    nvm_return=`nvm use $x|grep "Now using"`
-    if [ -z "$nvm_return" ]; then
+    if [ `nvm version $x` == "N/A" ]; then
         # nvm will print a descriptive error message
+        echo Error: Node.js corresponding to major version $x is unavailable. Use 'nvm install'
         exit 1
     fi
-    bash $1
+
+    nvm exec $x bash $1
 done
 
 exit 0
