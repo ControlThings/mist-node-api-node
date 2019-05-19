@@ -6,7 +6,7 @@ ARCH_VERSION=`node -e "console.log(process.arch + '-' + process.platform + '-' +
 echo "Building for ${ARCH_VERSION}" 
 cd ../mist-c99; rm -rf build; rm libmist.a; make CC=gcc CFLAGS="-DMIST_API_MAX_UIDS=512 -fPIC" -f make-linux-static-library-x64.mk; cd ../tools;
 #cd ..; CC=clang CXX=clang node-gyp rebuild ; 
-cd ..; CC=gcc CXX=g++ node-gyp rebuild ; 
+cd ..; CC=gcc CXX=g++ CXXFLAGS=-D_GLIBCXX_USE_CXX11_ABI=0 node-gyp rebuild ; 
 cd tools;
 cp ../build/Release/MistApi.node ../bin/MistApi-${ARCH_VERSION}.node;
 strip ../bin/MistApi-${ARCH_VERSION}.node;
