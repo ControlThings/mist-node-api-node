@@ -1,13 +1,13 @@
-#Version of rebuild.sh with explicit compilation with gcc-4.8
-#You must install gcc-4.8 and g++-4.8 
+#!/bin/bash
 
-#ARCH=`node -e "console.log(process.arch+'-'+process.platform)"`
-ARCH="ia32-linux"
+# Release script for cross-compiling for ia32 platform (ia32-linux)
 
-echo "Building for ${ARCH}" 
-export CFLAGS=-m32
-cd ../mist-c99; rm -rf build; rm libmist.a; make CC=gcc-4.8 -f make-linux-static-library-ia32.mk; cd ../tools;
-cd ..; CC=gcc-4.8 CXX=g++-4.8 node-gyp --release rebuild --arch=ia32; 
+ARCH_VERSION=`node -e "console.log('ia32-linux-' + process.version.split('.')[0])"`
+
+echo "Cross-building for ${ARCH}" 
+
+cd ../mist-c99; make -f make-static-library.mk clean; make CC=gcc APPEND_CFLAGS=-m32  BUILD_TYPE=nodejs_plugin BUILD_FLAVOUR=release -f make-static-library.mk; cd ../tools;
+cd ..; CC=gcc CXX=g++ node-gyp --release rebuild --arch=ia32; 
 cd tools;
 cp ../build/Release/MistApi.node ../bin/MistApi-${ARCH}.node;
 strip ../bin/MistApi-${ARCH}.node;
