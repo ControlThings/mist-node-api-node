@@ -13,7 +13,7 @@ fi
 NVM_DIR="$HOME/.nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"  # This loads nvm
 
-NODEVERSIONS="6 8 10 12"
+NODEVERSIONS="6 8 10"
 
 for x in $NODEVERSIONS; do
     if [ `nvm version $x` == "N/A" ]; then
