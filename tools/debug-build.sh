@@ -6,6 +6,8 @@
 # Example on Linux: CC=gcc CXX=g++ ./debug-x64-linux.sh
 # Example on macOS: CC=clang CXX=clang ./debug-x64-linux.sh
 # 
+# To use the MistApi debug build, specify DEBUG=1 env variable (see addon.js)
+#
 
 ARCH_VERSION=`node -e "console.log(process.arch + '-' + process.platform + '-' + process.version.split('.')[0])"`
 
