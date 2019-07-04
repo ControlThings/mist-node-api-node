@@ -42,7 +42,7 @@ describe('Mist Model', function () {
     var node;
     var enabled = true;
 
-    before('should start a mist node', function(done) {
+    before('should start a mist node, last added endpoint is a "child node" (tree.leaf)', function(done) {
         node = new MistNode({ name: 'ControlThings', corePort: 9095 }); // , coreIp: '127.0.0.1'
         var name = 'Just a Name';
         
@@ -64,7 +64,7 @@ describe('Mist Model', function () {
         node.removeEndpoint('temporary');        
         node.addEndpoint('tree', { type: 'string'});
         node.addEndpoint('tree.leaf', { label: 'Tree leaf', type: 'string', read: true});
-       
+        node.addEndpoint('ordinary', { label: 'Ordinary', type: 'string', read: true});
         
         node.read('name', function(args, peer, cb) { cb(null, 'root:'+ name); });
         
@@ -83,7 +83,12 @@ describe('Mist Model', function () {
             cb(null);
         });
         
-        
+        node.read('tree.leaf', function (args, peer, cb) {
+            cb(null, true);
+        });
+        node.read('ordinary', function (args, peer, cb) {
+            cb(null, true);
+        });
         
         setTimeout(done, 200);
     });  
@@ -147,4 +152,11 @@ describe('Mist Model', function () {
         });
     });
     
+    it ('should test follow', function (done) {
+       mist.request('mist.control.follow', [peer], function (err, data) {
+           done();
+           done = function () { }
+           console.log('data', data);
+       }); 
+    });
 });
