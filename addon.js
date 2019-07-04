@@ -24,6 +24,7 @@ var MistApi = null;
 
 if (process.env.DEBUG) {
     MistApi = require('./build/Debug/MistApi.node').MistApi;
+    console.log("                                   *** Using debug build ***");
 } else {
     if(process.env.BUILD) {
         MistApi = require('./build/Release/MistApi.node').MistApi;
