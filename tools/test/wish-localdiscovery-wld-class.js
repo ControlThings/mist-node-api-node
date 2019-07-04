@@ -109,4 +109,45 @@ describe('Wish Local Discovery, very long alias and wldClass', function () {
         });
     });
 
+    it('should remove the wld class and it should disappear from broadcast', function(done) {
+        this.timeout(20000);
+        
+        mist.wish.request('host.setWldClass', [ "" ], function(err, data) {
+                            
+                        
+            mist.wish.request('signals', [], function (err, data) {
+                if (err) { return done(new Error('Signals returned error.')); }
+
+                if(data[0] && data[0] === 'ok') {
+                    mist.wish.request('wld.clear', [], function (err, data) { /* Note: wld.clear required to remove the class. Else it gets cached and will not disappear unless entry disapperas! */
+                        mist.wish.request('wld.announce', [], function(err, data) {
+                            if (err) { if (data.code === 8) { done(new Error('wld.announce does not exist')); } }
+
+                            console.log("Announce returned:", err, data);
+                        });
+                    });
+
+                }
+
+                if (data[0] && data[0] === 'localDiscovery') {
+                    mist.wish.request('wld.list', [], function (err, data) {
+                        console.log(data);
+
+
+                        for (x in data) {
+                            if (data[x] && data[x].alias && data[x].alias === name && data[x].claim && !data[x].class) {
+                                done();
+                                done = function() {};
+                            } 
+                        }
+
+
+                    });
+                }
+
+                //done(new Error('Not the expected error.'));
+            });
+        });
+    });
+    
 });
