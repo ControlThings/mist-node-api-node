@@ -83,15 +83,15 @@ describe('Mist Model special test 3', function () {
         addEp(node, "item16");
         
         addEp(node, "item16.subitem1");
-        //addEp(node, "item16.subitem2");
-        //addEp(node, "item16.subitem3");
-        //addEp(node, "item16.subitem4");
+        addEp(node, "item16.subitem2");
+        addEp(node, "item16.subitem3");
+        addEp(node, "item16.subitem4");
         
         addEp(node, "item17");
 
-        //addEp(node, "item17.subitem5");
-        //addEp(node, "item17.subitem6");
-        //addEp(node, "item17.subitem7");
+        addEp(node, "item17.subitem5");
+        addEp(node, "item17.subitem6");
+        addEp(node, "item17.subitem7");
        
         addEp(node, "item18");
         addEp(node, "item19");
