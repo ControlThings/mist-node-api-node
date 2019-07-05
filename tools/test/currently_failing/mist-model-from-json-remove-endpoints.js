@@ -6,10 +6,10 @@
  * - Attempting to remove any further endpoints results in a crash!
  */
 
-var Mist = require('../../index.js').Mist;
-var MistNode = require('../../index.js').MistNode;
-var WishApp = require('../../index.js').WishApp;
-var util = require('./deps/util.js');
+var Mist = require('../../../index.js').Mist;
+var MistNode = require('../../../index.js').MistNode;
+var WishApp = require('../../../index.js').WishApp;
+var util = require('.././deps/util.js');
 
 var inspect = require('util').inspect;
 const assert = require('assert');
@@ -235,4 +235,55 @@ describe('Mist Model', function () {
             }
         });
     });
+    
+    
+    it('shuold remove test endpoint', function(done) {
+        console.log("Removing ep test");
+        node.removeEndpoint('test');
+        mist.request('mist.control.model', [peer], function (err, model) {
+            if (err) { return done(new Error(inspect(model))); }
+            console.log("Got a model 1:", err, inspect(model, null, 10, true));
+            if (model.test === undefined) {
+                done();
+            }
+            else {
+                done(new Error("Endpoint test was not deleted!"));
+            }
+        });
+    });
+    
+    it('shuold remove first root endpoint', function(done) {
+        console.log("Removing ep mist");
+        node.removeEndpoint('mist');
+        mist.request('mist.control.model', [peer], function (err, model) {
+            if (err) { return done(new Error(inspect(model))); }
+            console.log("Got a model 2:", err, inspect(model, null, 10, true));
+            if (model.mist === undefined) {
+                done();
+            }
+            else {
+                done(new Error("Endpoint mist was not deleted!"));
+            }
+        });
+    });
+    
+    /*
+    // Removing more endpoints currently leads to a crash!
+    it('shuold remove level0 endpoint', function(done) {
+        console.log("Removing ep level1bis");
+        node.removeEndpoint('level0');
+        mist.request('mist.control.model', [peer], function (err, model) {
+            if (err) { return done(new Error(inspect(model))); }
+            console.log("Got a model 3:", err, inspect(model, null, 10, true));
+            if (model.level0 === undefined) {
+                done();
+            }
+            else {
+                done(new Error("Endpoint level1bis was not deleted!"));
+            }
+        });
+    });
+    */
+    
+    
 });
