@@ -831,6 +831,17 @@ static void mist_node_api_callback(rpc_client_req* req, void *ctx, const uint8_t
     mist->sendToNode(msg);
 }
 
+static void mist_ep_destroy(mist_ep* ep) {
+    printf("Deallocing %s\n", ep->id);
+    if (ep->id != NULL) { free(ep->id); }
+    if (ep->label != NULL) { free(ep->label); }
+    if (ep->unit != NULL) { free(ep->unit); }
+    if (ep->scaling != NULL) { free(ep->scaling); }
+    
+    free(ep);
+}
+
+
 static void mist_node_api_handler(mist_app_t* mist_app, input_buf* msg) {
     mist_model* model = &mist_app->model;
 
@@ -856,7 +867,9 @@ static void mist_node_api_handler(mist_app_t* mist_app, input_buf* msg) {
     // endpointRemove
     if (BSON_STRING == bson_find_from_buffer(&it, msg->data, "endpointRemove")) {
         
-        mist_ep_remove(model, bson_iterator_string(&it));
+        mist_ep_remove(model, bson_iterator_string(&it), mist_ep_destroy);
+        
+        //mist_ep_remove(model, bson_iterator_string(&it), NULL);
         return;
     }
 
