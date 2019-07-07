@@ -6,10 +6,10 @@
  * - Attempting to remove any further endpoints results in a crash!
  */
 
-var Mist = require('../../../index.js').Mist;
-var MistNode = require('../../../index.js').MistNode;
-var WishApp = require('../../../index.js').WishApp;
-var util = require('.././deps/util.js');
+var Mist = require('../../index.js').Mist;
+var MistNode = require('../../index.js').MistNode;
+var WishApp = require('../../index.js').WishApp;
+var util = require('./deps/util.js');
 
 var inspect = require('util').inspect;
 const assert = require('assert');
@@ -253,37 +253,80 @@ describe('Mist Model', function () {
     });
     
     it('shuold remove first root endpoint', function(done) {
+        this.timeout(10000);
         console.log("Removing ep mist");
-        node.removeEndpoint('mist');
-        mist.request('mist.control.model', [peer], function (err, model) {
-            if (err) { return done(new Error(inspect(model))); }
-            console.log("Got a model 2:", err, inspect(model, null, 10, true));
-            if (model.mist === undefined) {
-                done();
+        
+        var id = mist.request('mist.control.signals', [peer], function (err, data) {
+            if (err) {
+                done(new Error("mist.control.signals error"));
+                return;
             }
-            else {
-                done(new Error("Endpoint mist was not deleted!"));
+            console.log("mist.control.signals:", data);
+
+            if (data[0] && data[0] === 'ok') {
+                setTimeout(() => { node.removeEndpoint('mist');}, 200);
+            }
+            
+            if (data[0] && data[0] === 'model') {
+                mist.request('mist.control.model', [peer], function (err, model) {
+                    if (err) { return done(new Error(inspect(model))); }
+                    console.log("Got a model 2:", err, inspect(model, null, 10, true));
+                    if (model.mist === undefined) {
+                        cancel(id);
+                        done();
+                        
+                    }
+                    else {
+                        done(new Error("Endpoint mist was not deleted!"));
+                        
+                    }
+                });
             }
         });
+        
+        
+ 
     });
     
-    /*
+    
     // Removing more endpoints currently leads to a crash!
     it('shuold remove level0 endpoint', function(done) {
+        this.timeout(10000);
         console.log("Removing ep level1bis");
-        node.removeEndpoint('level0');
-        mist.request('mist.control.model', [peer], function (err, model) {
-            if (err) { return done(new Error(inspect(model))); }
-            console.log("Got a model 3:", err, inspect(model, null, 10, true));
-            if (model.level0 === undefined) {
-                done();
+        
+ 
+        var id = mist.request('mist.control.signals', [peer], function (err, data) {
+            if (err) {
+                done(new Error("mist.control.signals error"));
+                return;
             }
-            else {
-                done(new Error("Endpoint level1bis was not deleted!"));
+            console.log("mist.control.signals:", data);
+            
+            if (data[0] && data[0] === 'ok') {
+                setTimeout(() => {
+                    node.removeEndpoint('level0');
+                }, 200);
+            }
+            
+            if (data[0] && data[0] === 'model') {
+                mist.request('mist.control.model', [peer], function (err, model) {
+                    if (err) { return done(new Error(inspect(model))); }
+                    console.log("Got a model 3:", err, inspect(model, null, 10, true));
+                    if (model.level0 === undefined) {
+                        cancel(id); 
+                        done();
+                    }
+                    else {
+                        done(new Error("Endpoint level1bis was not deleted!"));
+                    }
+                });
             }
         });
+        
+        
+        
     });
-    */
+    
     
     
 });
