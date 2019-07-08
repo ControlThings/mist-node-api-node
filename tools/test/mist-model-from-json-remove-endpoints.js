@@ -239,32 +239,49 @@ describe('Mist Model', function () {
     
     it('shuold remove test endpoint', function(done) {
         console.log("Removing ep test");
-        node.removeEndpoint('test');
-        mist.request('mist.control.model', [peer], function (err, model) {
-            if (err) { return done(new Error(inspect(model))); }
-            console.log("Got a model 1:", err, inspect(model, null, 10, true));
-            if (model.test === undefined) {
-                done();
-            }
-            else {
-                done(new Error("Endpoint test was not deleted!"));
-            }
-        });
-    });
-    
-    it('shuold remove first root endpoint', function(done) {
-        this.timeout(10000);
-        console.log("Removing ep mist");
-        
         var id = mist.request('mist.control.signals', [peer], function (err, data) {
             if (err) {
-                done(new Error("mist.control.signals error"));
+                //done(new Error("mist.control.signals error"));
+                
                 return;
             }
             console.log("mist.control.signals:", data);
 
             if (data[0] && data[0] === 'ok') {
-                setTimeout(() => { node.removeEndpoint('mist');}, 200);
+                node.removeEndpoint('test');
+            }
+
+            if (data[0] && data[0] === 'model') {
+ 
+                mist.request('mist.control.model', [peer], function (err, model) {
+                    if (err) { return done(new Error(inspect(model))); }
+                    console.log("Got a model 1:", err, inspect(model, null, 10, true));
+                    if (model.test === undefined) {
+                        mist.requestCancel(id);
+                        done();
+                    }
+                    else {
+                        done(new Error("Endpoint test was not deleted!"));
+                    }
+                });
+            }
+        });
+    });
+    
+    it('shuold remove first root endpoint', function(done) {
+        this.timeout(2*1000);
+        console.log("Removing ep mist");
+        
+        var id = mist.request('mist.control.signals', [peer], function (err, data) {
+            if (err) {
+                //done(new Error("mist.control.signals error"));
+                
+                return;
+            }
+            console.log("mist.control.signals:", data);
+
+            if (data[0] && data[0] === 'ok') {
+                node.removeEndpoint('mist');
             }
             
             if (data[0] && data[0] === 'model') {
@@ -272,7 +289,7 @@ describe('Mist Model', function () {
                     if (err) { return done(new Error(inspect(model))); }
                     console.log("Got a model 2:", err, inspect(model, null, 10, true));
                     if (model.mist === undefined) {
-                        cancel(id);
+                        mist.requestCancel(id);
                         done();
                         
                     }
@@ -291,21 +308,20 @@ describe('Mist Model', function () {
     
     // Removing more endpoints currently leads to a crash!
     it('shuold remove level0 endpoint', function(done) {
-        this.timeout(10000);
+        this.timeout(2*1000);
         console.log("Removing ep level1bis");
         
  
         var id = mist.request('mist.control.signals', [peer], function (err, data) {
             if (err) {
-                done(new Error("mist.control.signals error"));
+                //done(new Error("mist.control.signals error"));
+                console.log("control.signals err", data);
                 return;
             }
             console.log("mist.control.signals:", data);
             
             if (data[0] && data[0] === 'ok') {
-                setTimeout(() => {
-                    node.removeEndpoint('level0');
-                }, 200);
+                node.removeEndpoint('level0');
             }
             
             if (data[0] && data[0] === 'model') {
@@ -313,7 +329,7 @@ describe('Mist Model', function () {
                     if (err) { return done(new Error(inspect(model))); }
                     console.log("Got a model 3:", err, inspect(model, null, 10, true));
                     if (model.level0 === undefined) {
-                        cancel(id); 
+                        mist.requestCancel(id); 
                         done();
                     }
                     else {
