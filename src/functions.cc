@@ -832,7 +832,7 @@ static void mist_node_api_callback(rpc_client_req* req, void *ctx, const uint8_t
 }
 
 static void mist_ep_destroy(mist_ep* ep) {
-    printf("Deallocing %s\n", ep->id);
+    //printf("Deallocing %s\n", ep->id);
     if (ep->id != NULL) { free(ep->id); }
     if (ep->label != NULL) { free(ep->label); }
     if (ep->unit != NULL) { free(ep->unit); }
