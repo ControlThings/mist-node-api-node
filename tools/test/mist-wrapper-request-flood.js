@@ -19,16 +19,20 @@ describe('Request flood', function () {
     });
 
     it('makes a lot of requests', function(done) {
-        const numRequests = 1000;
+        const allowedTime = 5000;
+        this.timeout(allowedTime + 1000);
+
+        const numRequests = 10000; //Will fail if for 100000 requests!
         var numCbActivations = 0;
-        const allowedTime = 1000; // 1 second
+        var numErrCbActivations = 0;
+
         for (i = 0; i < numRequests; i++) {
-            console.log("Requesting", i);
+            //console.log("Requesting", i);
             app.request('services.list', [], (err, data) => {
                 if (err) { 
-                    var _done = done; 
-                    done = () => {}; 
-                    return _done(new Error("Request error" + inspect(data))); 
+                    console.log("Request err return", err);
+                    numErrCbActivations++;
+                    return;
                 }
                 
                 if (data) {
@@ -40,8 +44,11 @@ describe('Request flood', function () {
             if (numCbActivations === numRequests) {
                 done();
             }
+            else if (numCbActivations === numRequests + numErrCbActivations) {
+                done(new Error('Unexpected: Made ' + numRequests + ', success: ' + numCbActivations + ' err:' + numErrCbActivations));
+            }
             else {
-                done(new Error('Made ' + numRequests + ' requests, but only ' + numCbActivations + 'callbacks!'));
+                done(new Error('Fail: Made ' + numRequests + ' requests, but only ' + numCbActivations + 'callbacks, with err CBs: ' + numErrCbActivations +'!'));
             }
         }, allowedTime);
     });
