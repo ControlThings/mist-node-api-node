@@ -15,6 +15,7 @@ describe('Request flood', function () {
 
         app.on('ready', function() {
             done();
+            done = () => { };
         });
     });
 
@@ -22,7 +23,7 @@ describe('Request flood', function () {
         const allowedTime = 5000;
         this.timeout(allowedTime + 1000);
 
-        const numRequests = 10000; //Will fail if for 100000 requests!
+        const numRequests = 10000; //Will fail if for 100000 requests, even with mist-c99 v0.6.2. If you test it, remember to increase allowedTime too.
         var numCbActivations = 0;
         var numErrCbActivations = 0;
 
@@ -38,13 +39,15 @@ describe('Request flood', function () {
                 if (data) {
                     numCbActivations++;
                 }
+
+                if (numCbActivations === numRequests) {
+                    done();
+                    done = () => {};
+                }
             });
         }
         setTimeout(() => {
-            if (numCbActivations === numRequests) {
-                done();
-            }
-            else if (numCbActivations === numRequests + numErrCbActivations) {
+            if (numCbActivations === numRequests + numErrCbActivations) {
                 done(new Error('Unexpected: Made ' + numRequests + ', success: ' + numCbActivations + ' err:' + numErrCbActivations));
             }
             else {
