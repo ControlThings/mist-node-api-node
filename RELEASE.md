@@ -41,7 +41,7 @@ Something with the gypfile.
 Instead, run script in top-level directory:
 
 ```sh
-./release.sh
+./release-to-npmjs-org.sh
 ```
 
 ## Other useful things

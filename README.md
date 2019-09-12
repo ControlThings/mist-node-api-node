@@ -60,27 +60,6 @@ var motor = new Motor();
 //   motor.shutdown();
 ```
 
-## Compiling the Mist API native library
-
-The tools directory contains scripts (release- and debug-) which can be
-used to compile for different platforms.
-
-```
-cd tools;
-./release-x64-linux.sh
-```
-
-As the current node.js mist-api port uses an interface which depends on
-node.js version, a separate library build is needed for each version of
-node.js which is to be supported. There is a script for performing a
-batch build for all platforms, tools/build-for-nodejs-versions.sh, which
-takes individual release build scripts as argument:
-
-```
-cd tools;
-build-for-nodejs-versions.sh release-x64-linux.sh
-build-for-nodejs-versions.sh release-raspberry.sh
-```
 
 
 
