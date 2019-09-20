@@ -18,7 +18,21 @@ is started from a "clean" environment.
 
 ## Example invocation
 
+This runs the `mist-model-from-json.js` test with release code:
+
 ```sh
 cd tools
+rm -rf env/; WISH=~/controlthings/mist/wish-c99/build/wish-core node test-suite.js test/mist-model-from-json.js
+```
+
+When developing, you might want to first build a debug build, and then run the test suite using the debug libs:
+
+```sh
+cd tools
+./debug-build.sh
 rm -rf env/; WISH=~/controlthings/mist/wish-c99/build/wish-core DEBUG=1 node test-suite.js test/mist-model-from-json.js
 ```
+
+## Running gdb and valgrind with the test framework
+
+See the script `test-suite.js`, it has options for starting wish-core and the node process under gdb or Valgrind.
