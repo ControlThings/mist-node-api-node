@@ -6,3 +6,4 @@ build
 /tools/env
 mappings.bin
 sandbox.bin
+/.vscode
