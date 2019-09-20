@@ -24,6 +24,9 @@ describe('Multi Mist', function () {
      * and then finally, the libUV threadpool size, process.env.UV_THREADPOOL_SIZE, in test-suite.js must be large enough
      * 
      * Also, it seems that we must create the services "slowly", if we try to create at once, then errors will ensue! 
+     * 
+     * It seems that each MistNode, WishApp... takes creates one thread in mist_addon_start().
+     * Look at wish_core_client. Is it not so that the various things here are accessed by the threads, without synchronisation? Should we not use libuv's synchronisation things? 
      *
      */
     var count = 50;  // total of 10 services, plus one for the WishApp used for ensuring identity.
