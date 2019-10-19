@@ -205,7 +205,8 @@ describe('MistApi Control', function () {
         this.timeout(3*1000);
         var localCounter = 0;
         const followId = mist.request('mist.control.follow', [peer], function (err, data) {
-            if (err && err.msg) { return done(new Error(data.msg)); }
+            console.log("mistapi FOLLOW ", err, data);
+            if (err && !data.end) {  console.log("___ERROR____", data); return done(new Error(data.msg)); }
 
             if (data.id === 'counter') {
                 localCounter++;
@@ -222,33 +223,35 @@ describe('MistApi Control', function () {
         }, 2*1000);
     }); 
 
-
     it('shuold test MistNode control.follow and requestCancel', function(done) {
-        this.timeout(3*1000);
+        this.timeout(10*1000);
         var localCounter = 0;
 
         node2 = new MistNode({ name: 'FollowTester', corePort: 9095 }); // , coreIp: '127.0.0.1'
 
-        node2.on('online', function(peer) {
-        
-            const followId = node2.request(peer, 'control.follow', [], function (err, data) {
-                console.log("FOLLOW ", err, data);
-                if (err && err.msg) { return done(new Error(data.msg)); }
-
-                if (data.id === 'counter') {
-                    localCounter++;
-                    node2.requestCancel(followId);
-                }
-            });
+        node2.on('online', function(peer2) {
+            if ( Buffer.compare(peer2.luid, peer.luid) === 0 && Buffer.compare(peer2.ruid, peer.ruid) === 0 &&
+                Buffer.compare(peer2.rsid, peer.rsid) === 0 && Buffer.compare(peer2.rhid, peer.rhid) === 0) {
             
-            setTimeout( () => {
-                if (localCounter === 1) {
-                    done();
-                }
-                else {
-                    done(new Error("Fail canceling!"));
-                }
-            }, 2*1000);
+                const followId = node2.request(peer2, 'control.follow', [], function (err, data) {
+                    console.log("FOLLOW ", err, data);
+                    if (err && !data.end) { console.log("___ERROR____", data); return done(new Error(data.msg)); }
+
+                    if (data.id === 'counter') {
+                        localCounter++;
+                        node2.requestCancel(followId);
+                    }
+                });
+                
+                setTimeout( () => {
+                    if (localCounter === 1) {
+                        done();
+                    }
+                    else {
+                        done(new Error("Fail canceling!"));
+                    }
+                }, 5*1000);
+            }
             
         });
     });
