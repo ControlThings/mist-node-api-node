@@ -822,6 +822,16 @@ static void mist_node_api_callback(rpc_client_req* req, void *ctx, const uint8_t
            }
         }
     }
+
+    /* If the rpc reply is an 'ack' or 'err', de-allocate passthru_ctx2 since it contains app_peer_t object which we malloc'ed in case the request would have been cencelled explcitly (in case of 'sig' replies, that is) */
+    if (BSON_INT == bson_find_from_buffer(&it, (const char*)payload, "ack") || BSON_INT == bson_find_from_buffer(&it, (const char*)payload, "err") ) {
+        app_peer_t* app_peer = (app_peer_t *) req->passthru_ctx2;
+        free(app_peer->peer);
+        free(app_peer);
+    }
+    //For requests that resulted in 'sig' replies ("control.follow" notably) we deallocate when the request is cancelled.
+    //FIXME This solution *leaks memory* for all those requests that resulted in 'sig' replies, but were not explicitly cancelled! 
+    //In that case we would need to handle 'fin' replies, and also the case where the peer just becomes offline. */
     
     // warning! writing to the const char* payload
     bson_inplace_set_long(&it, req->passthru_id);
@@ -1009,9 +1019,49 @@ static void mist_node_api_handler(mist_app_t* mist_app, input_buf* msg) {
             WISHDEBUG(LOG_CRITICAL, "Failed making request.");
             return;
         }
+        //printf("Made mist_app request with id %i (%i)\n", id, creq->id);
         creq->passthru_id = id;
         creq->passthru_ctx = mist_app;
 
+        /* Allocate memory for an app_peer structure which is needed for the eventual cancelling of the request. 
+        Resources will be free'ed when cancelling the request, or when reply contains 'ack' or 'err'.
+        FIXME as noted in  mist_node_api_callback(), there is a memory leak if a request resulting in 'sig' replies is not canceled explicitly. */
+        app_peer_t* app_peer = (app_peer_t*) malloc(sizeof(app_peer_t));
+        app_peer->app = mist_app->app;
+        app_peer->peer = (wish_protocol_peer_t*) malloc(sizeof(wish_protocol_peer_t));
+        memcpy(app_peer->peer, &peer, sizeof (wish_protocol_peer_t));
+        
+        creq->passthru_ctx2 = app_peer;
+
+        
+        return;
+    }
+    if (BSON_INT == bson_find_from_buffer(&it, msg->data, "cancel")) {
+        //bson_visit("mist node cancel: ", (const uint8_t*) msg->data);
+
+        if (BSON_INT != bson_iterator_type(&it)) {
+            WISHDEBUG(LOG_CRITICAL, "mist_node_api_handler: when canceling, id is not BSON_INT but: %i", bson_iterator_type(&it));
+            return;
+        }
+        int id = bson_iterator_int(&it);
+
+        /* 
+         The request we want to cancel now was once made with mist_app_request, see above, "our" id which we are cancelling is actually saved as passthru_id.
+         Update the send_ctx for each call to passthrough. This is required because there is not own clients for each remote peer as there "shuold" be.
+         */
+
+        rpc_client* client = &mist_app->protocol.rpc_client;
+        rpc_client_req* req = rpc_client_find_passthru_req(client, id);
+        app_peer_t* app_peer = (app_peer_t*) req->passthru_ctx2;
+        mist_app->protocol.rpc_client.send_ctx = app_peer;
+        mist_app_cancel(mist_app, req);        
+        
+        //printf("cancelled %i (%i), peer %s", id, req->id, app_peer->peer->rsid );
+
+        //free the passthrou ctx, that we creted originally when making the request
+        free(app_peer->peer);
+        free(app_peer);
+        
         return;
     }
 }
