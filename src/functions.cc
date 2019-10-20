@@ -822,16 +822,6 @@ static void mist_node_api_callback(rpc_client_req* req, void *ctx, const uint8_t
            }
         }
     }
-
-    /* If the rpc reply is an 'ack' or 'err', de-allocate passthru_ctx2 since it contains app_peer_t object which we malloc'ed in case the request would have been cencelled explcitly (in case of 'sig' replies, that is) */
-    if (BSON_INT == bson_find_from_buffer(&it, (const char*)payload, "ack") || BSON_INT == bson_find_from_buffer(&it, (const char*)payload, "err") ) {
-        app_peer_t* app_peer = (app_peer_t *) req->passthru_ctx2;
-        free(app_peer->peer);
-        free(app_peer);
-    }
-    //For requests that resulted in 'sig' replies ("control.follow" notably) we deallocate when the request is cancelled.
-    //FIXME This solution *leaks memory* for all those requests that resulted in 'sig' replies, but were not explicitly cancelled! 
-    //In that case we would need to handle 'fin' replies, and also the case where the peer just becomes offline. */
     
     // warning! writing to the const char* payload
     bson_inplace_set_long(&it, req->passthru_id);
@@ -851,6 +841,13 @@ static void mist_ep_destroy(mist_ep* ep) {
     free(ep);
 }
 
+static void mist_node_client_req_cleanup(rpc_client_req* req) {
+    printf("cleanup client req %p\nS", req);
+    app_peer_t* app_peer = (app_peer_t*) req->passthru_ctx2;
+    //free the passthrou ctx, that we creted originally when making the request
+    free(app_peer->peer);
+    free(app_peer);
+}
 
 static void mist_node_api_handler(mist_app_t* mist_app, input_buf* msg) {
     mist_model* model = &mist_app->model;
@@ -1024,14 +1021,14 @@ static void mist_node_api_handler(mist_app_t* mist_app, input_buf* msg) {
         creq->passthru_ctx = mist_app;
 
         /* Allocate memory for an app_peer structure which is needed for the eventual cancelling of the request. 
-        Resources will be free'ed when cancelling the request, or when reply contains 'ack' or 'err'.
-        FIXME as noted in  mist_node_api_callback(), there is a memory leak if a request resulting in 'sig' replies is not canceled explicitly. */
+        Resources will be free'ed in when the request is deleted from rpc_client's requests queue (by mist_node_client_req_cleanup() registered below) */
         app_peer_t* app_peer = (app_peer_t*) malloc(sizeof(app_peer_t));
         app_peer->app = mist_app->app;
         app_peer->peer = (wish_protocol_peer_t*) malloc(sizeof(wish_protocol_peer_t));
         memcpy(app_peer->peer, &peer, sizeof (wish_protocol_peer_t));
         
         creq->passthru_ctx2 = app_peer;
+        creq->cleanup = mist_node_client_req_cleanup;
 
         
         return;
@@ -1058,10 +1055,6 @@ static void mist_node_api_handler(mist_app_t* mist_app, input_buf* msg) {
         
         //printf("cancelled %i (%i), peer %s", id, req->id, app_peer->peer->rsid );
 
-        //free the passthrou ctx, that we creted originally when making the request
-        free(app_peer->peer);
-        free(app_peer);
-        
         return;
     }
 }
