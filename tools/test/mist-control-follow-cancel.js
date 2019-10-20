@@ -146,6 +146,7 @@ describe('MistApi Control', function () {
         });
     });
     
+    
     var follow;
   
     // Expect follow to return current values for all readable endpoints
@@ -200,9 +201,9 @@ describe('MistApi Control', function () {
         enabled = false;
         node.changed('enabled');
     });    
-
+    
     it('shuold test MistApi mist.control.follow and requestCancel', function(done) {
-        this.timeout(3*1000);
+        this.timeout(4*1000);
         var localCounter = 0;
         const followId = mist.request('mist.control.follow', [peer], function (err, data) {
             console.log("mistapi FOLLOW ", err, data);
@@ -220,7 +221,7 @@ describe('MistApi Control', function () {
             else {
                 done(new Error("Fail canceling!"));
             }
-        }, 2*1000);
+        }, 3*1000);
     }); 
 
     it('shuold test MistNode control.follow and requestCancel', function(done) {
