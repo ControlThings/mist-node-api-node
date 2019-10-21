@@ -117,6 +117,7 @@ describe('Wish RPC server, not mixing up rpc cancels', function () {
         });
     });
 
+    /* Now test if app/mist RPC server on 'node' can distinguish between control.follow requests node1 and node2, node1 and node2 both assign the same id to their requests! */ 
     it('Both MistNodes start control.follow (node1 first, then node2), then node2 cancels, node1 should still get updates...', function(done) {
         this.timeout(3*1000);
         var localCounter = 0;
@@ -149,13 +150,14 @@ describe('Wish RPC server, not mixing up rpc cancels', function () {
             }
         });
         
-            
+        if (followId1 !== followId2) {
+            done(new Error("node1's and node2's control.follow RPC ids are not equal, which defeats the purpose of this test!"));
+        }
             
         
     });
 
-    // Do the same test on wish app, and see if it does the same!
-
+    // Do the same test on wish app, and see if it does the same! (no it does not, Wish core's app RPC server can distinguish between callers!)
     it('Both MistNodes start wish signals (node1 first, then node2), then node2 cancels, node1 should still get updates...', function(done) {
         this.timeout(5*1000);
         var localCounter = 0;
@@ -195,7 +197,9 @@ describe('Wish RPC server, not mixing up rpc cancels', function () {
             });
         }, 1000);
             
-        
+        if (signalsId1 !== signalsId2) {
+            done(new Error("node1's and node2's wish signals RPC ids are not equal, which defeats the purpose of this test!"));
+        }
     });
 
 });
