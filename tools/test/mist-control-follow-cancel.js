@@ -154,7 +154,11 @@ describe('MistApi Control', function () {
         var l = ['mist.name', 'enabled', 'lon', 'counter'];
         var end = false;
         follow = mist.request('mist.control.follow', [peer], function (err, data) {
-            if (err) { if(data.code === 6) { return; } return done(new Error(inspect(data))); }
+            if (err && !data.end) { 
+                if(data.code === 6) { return; } 
+                else if (!data.err) { return; }
+                else { return done(new Error('err: ' + err + inspect(data))); }
+            }
             //console.log("Follow update:", err, data, l);
             
             var index = l.indexOf(data.id);
