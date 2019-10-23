@@ -45,6 +45,8 @@ function Mist(opts) {
             if(!msg.sig) {
                 delete self.requests[id];
             }
+        } else {
+            console.log('addon.on(\'sandboxed\' cb: Request not found for response:', msg, self, self.requests);
         }
     });
 
@@ -60,7 +62,7 @@ function Mist(opts) {
                 delete self.requests[id];
             }
         } else {
-            console.log('Request not found for response:', id, self, self.requests);
+            console.log('addon.on(\'mist\' cb: Request not found for response:', msg, self, self.requests);
         }
     });
 
