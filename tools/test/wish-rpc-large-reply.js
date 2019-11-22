@@ -4,7 +4,7 @@ var WishApp = require('../../index.js').WishApp;
 var util = require('./deps/util.js');
 
 var inspect = require('util').inspect;
-const testBlobSize = 130*1024; //MIST_RPC_REPLY_BUF_LEN in mist_app.h must allow this
+const testBlobSize = 130*1024; //MIST_RPC_REPLY_BUF_LEN in mist_app.h must allow this, and of course wish-core-client and the wish core must be able to handle RPC data spanning over multiple TCP transport frames
 /**
  * This test will test behaviour of wish-rpc, when very large blobs of data are sent over wish-rpc in reply to a mist control.read.
  * By "very large" we mean blobs of any size that are larger than MIST_RPC_REPLY_BUF_LEN. Also think about the WISH_PORT_RPC_BUFFER_SZ in wish-core
