@@ -1,10 +1,10 @@
-var Mist = require('../../index.js').Mist;
-var MistNode = require('../../index.js').MistNode;
-var WishApp = require('../../index.js').WishApp;
+var Mist = require('../../../index.js').Mist;
+var MistNode = require('../../../index.js').MistNode;
+var WishApp = require('../../../index.js').WishApp;
 
 var BsonParser = require('bson-buffer');
 var BSON = new BsonParser();
-var util = require('./deps/util.js');
+var util = require('../deps/util.js');
 
 describe('Multi Mist', function () {
     var list = [];
@@ -22,6 +22,8 @@ describe('Multi Mist', function () {
      *  and finally in unix port,
      *  - NUM_APP_CONNECTIONS 
      * and then finally, the libUV threadpool size, process.env.UV_THREADPOOL_SIZE, in test-suite.js must be large enough
+     * 
+     * Probably also "max peers" variable in mistapi must be large enough to allow for all the peers...
      * 
      * Also, it seems that we must create the services "slowly", if we try to create at once, then errors will ensue! 
      * 

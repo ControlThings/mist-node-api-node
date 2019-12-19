@@ -3,7 +3,7 @@ const fs = require('fs');
 const mkdirp = require('mkdirp');
 const child = require('child_process');
 
-process.env.UV_THREADPOOL_SIZE = '20';
+process.env.UV_THREADPOOL_SIZE = '100';
 
 var testStartTime = Date.now();
 
