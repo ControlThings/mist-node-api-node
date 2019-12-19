@@ -3,8 +3,8 @@
         {
             "target_name": "MistApi",
             "sources": [ "src/Mist.cc", "src/functions.cc", "src/Message.cc", "src/MistWrapper.cc" ],
-            "cflags": [ "-O2" ],
-            "cflags_cc": [ "-O2" ],
+            "cflags": [ "-O2 -DNUM_WISH_APPS=100" ],
+            "cflags_cc": [ "-O2 -DNUM_WISH_APPS=100" ],
             "ldflags": [ ],
             "include_dirs" : [
                 "src",
