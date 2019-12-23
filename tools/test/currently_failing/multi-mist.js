@@ -31,8 +31,8 @@ describe('Multi Mist', function () {
      * Look at wish_core_client. Is it not so that the various things here are accessed by the threads, without synchronisation? Should we not use libuv's synchronisation things? 
      *
      */
-    var count = 50;  // total of 10 services, plus one for the WishApp used for ensuring identity.
-    var temporalDispersion = 10*1000; //The amount of time under which the services will start, via setTimeout(). Set this to 0 for failing.
+    var count = 20;  // total of 10 services, plus one for the WishApp used for ensuring identity.
+    var temporalDispersion = 0*1000; //The amount of time under which the services will start, via setTimeout(). Set this to 0 for failing.
 
     before(function(done) {
         app = new WishApp({ name: 'WishApp', protocols: [], coreIp: '127.0.0.1', corePort: 9095 });
@@ -73,13 +73,15 @@ describe('Multi Mist', function () {
                 }
                 
                 if (missing.length > 0) {
-                    return done('Missing expected apps from services.list: '+ missing.join(', '));
+                    return done(new Error('Missing expected apps from services.list: '+ missing.join(', ')));
                 }
                 
                 done();
             });
         }
         
+        var count2 = count;
+
         for(var i=0; i<count; i++) {
             (function(i) {
                 setTimeout(() => {
@@ -90,14 +92,24 @@ describe('Multi Mist', function () {
 
                     list.push(wish);
 
+                    /*
                     setTimeout(function() {
                         var expired = false;
                         wish.request('signals', [], function(err, data) {
                             //console.log('signals in WishApp-'+i+": ", data); //, ' (waiting for signals: '+count+')');
                             if (expired) { return; } else { expired = true; }
-                            if( --count === 0 ) { checkServiceList(done); }
+                            if( --count2 === 0 ) { checkServiceList(done); }
                         });
                     }, 500);
+                    */
+
+                   
+                   if (i === count - 1) {
+                       wish.on('ready', () => {
+                           checkServiceList(done);
+                       });
+                   }
+                   
                 }, Math.random()*temporalDispersion);
             })(i);
         }

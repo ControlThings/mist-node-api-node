@@ -47,7 +47,16 @@ struct wish_app_core_opt {
 
 struct wish_app_core_opt* wish_app_core_opts;
 
-pthread_mutex_t mutex1 = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t mutex1 = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t core_client_mutex = PTHREAD_MUTEX_INITIALIZER; //PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP;
+
+static void acquire_core_client_lock(void) {
+    pthread_mutex_lock(&core_client_mutex);
+}
+
+static void release_core_client_lock(void) {
+    pthread_mutex_unlock(&core_client_mutex);
+}
 
 #define SANDBOX_RPC_MSG_LEN_MAX     (16*1024)
 
@@ -1342,10 +1351,13 @@ static void* setupMistNodeApi(void* ptr) {
     mist_app_t* mist_app = opts->mist_app; // start_mist_app();
     opts->mist_app = mist_app;
     
+    acquire_core_client_lock();
+    
     wish_app_t* app = wish_app_create(name);
     opts->wish_app = app;
     
     if (app == NULL) {
+        release_core_client_lock();
         printf("Failed creating wish app\n");
         return NULL;
     }
@@ -1353,6 +1365,9 @@ static void* setupMistNodeApi(void* ptr) {
     app->ready = wish_app_ready_cb;
     
     wish_app_add_protocol(app, &mist_app->protocol);
+
+    release_core_client_lock();
+
     mist_app->app = app;
     
     mist_app->online = mist_online;
@@ -1385,10 +1400,15 @@ static void* setupMistApi(void* ptr) {
     //start wish apps
     mist_app_t* mist_app = opts->mist_app; // start_mist_app();
     
+    acquire_core_client_lock();
+
     wish_app_t* app = wish_app_create((char*)name);
+    
+
     opts->wish_app = app;
 
     if (app == NULL) {
+        release_core_client_lock();
         printf("Failed creating wish app\n");
         return NULL;
     }
@@ -1399,6 +1419,9 @@ static void* setupMistApi(void* ptr) {
     app->port = opts->port;
 
     mist_api_t* api = mist_api_init(mist_app);
+
+    release_core_client_lock();
+
     opts->mist_api = api;
 
     opts->mist->online_cb = (void*) mist_app->online;
@@ -1432,11 +1455,14 @@ static void* setupWishApi(void* ptr) {
     app_t* app = opts->app;
 
     //mist_set_name(mist_app, name);
+    
+    acquire_core_client_lock();
 
     wish_app_t* wish_app = wish_app_create((char*)name);
     
     if (wish_app == NULL) {
         printf("Failed creating wish app\n");
+        release_core_client_lock();
         return NULL;
     }
     
@@ -1449,6 +1475,7 @@ static void* setupWishApi(void* ptr) {
         memcpy(app->protocol.protocol_name, opts->protocol, WISH_PROTOCOL_NAME_MAX_LEN);
         wish_app_add_protocol(wish_app, &app->protocol);
     }
+    release_core_client_lock();
     
     app->app = wish_app;
 
@@ -1499,6 +1526,9 @@ void mist_addon_init() {
     wish_fs_set_close(my_fs_close);
     wish_fs_set_rename(my_fs_rename);
     wish_fs_set_remove(my_fs_remove);    
+
+    wish_core_client_set_lock_fn(acquire_core_client_lock);
+    wish_core_client_set_unlock_fn(release_core_client_lock);
 }
 
 void mist_addon_start(Mist* mist) {
