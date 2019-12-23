@@ -19,24 +19,17 @@ var util = require('./deps/util.js');
  */
 
 /** The number of MistApp and WishApp instances to start for the
- * test. The total number of services is count + 1.
+ * test. The total number of services will be count + 1.
  * 
  * Findings:
- *  - Wish core must support total number of services
- *  (WISH_MAX_SERVICES), which is 10 currently by default
- * and in mist-c99. That must be increased.
+ *  - Wish core must support total number of services (WISH_MAX_SERVICES)
+ *  - NUM_APP_CONNECTIONS must be large enough 
  *  - NUM_WISH_APPS, wish_app.h must equal or greater to (count + 1)
  *  - NUM_MIST_APPS, mist_app.h  must be >= (count + 1)
- *  and finally in unix port,
- *  - NUM_APP_CONNECTIONS 
+
  * and then finally, the libUV threadpool size, process.env.UV_THREADPOOL_SIZE, in test-suite.js must be large enough
  * 
  * Probably also "max peers" variable in mistapi must be large enough to allow for all the peers...
- * 
- * Also, it seems that we must create the services "slowly", if we try to create at once, then errors will ensue! 
- * 
- * It seems that each MistNode, WishApp... takes creates one thread in mist_addon_start().
- * Look at wish_core_client. Is it not so that the various things here are accessed by the threads, without synchronisation? Should we not use libuv's synchronisation things? 
  *
  */
 var count = 50;  // total of 10 services, plus one for the WishApp used for ensuring identity.
