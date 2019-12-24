@@ -30,9 +30,11 @@ var util = require('./deps/util.js');
  * and then finally, the libUV threadpool size, process.env.UV_THREADPOOL_SIZE, in test-suite.js must be large enough
  * 
  * Probably also "max peers" variable in mistapi must be large enough to allow for all the peers...
+ * 
+ * It must also be noted that the wish core's listen() backlog for the app server must be large enough
  *
  */
-var count = 50;  // total of 10 services, plus one for the WishApp used for ensuring identity.
+var count = 90;  // total of 10 services, plus one for the WishApp used for ensuring identity.
 
 describe('Multi Wish app (separate processes)', function () {
     var list = [];
