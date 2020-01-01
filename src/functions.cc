@@ -842,7 +842,7 @@ static void mist_ep_destroy(mist_ep* ep) {
 }
 
 static void mist_node_client_req_cleanup(rpc_client_req* req) {
-    printf("cleanup client req %p\nS", req);
+    //printf("cleanup client req %p\nS", req);
     app_peer_t* app_peer = (app_peer_t*) req->passthru_ctx2;
     //free the passthrou ctx, that we creted originally when making the request
     free(app_peer->peer);
