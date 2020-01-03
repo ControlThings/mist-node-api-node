@@ -160,6 +160,12 @@ MistNodeInner.prototype.changed = function(epid) {
     this.addon.request("mistnode", request);
 };
 
+MistNodeInner.prototype.modelChanged = function() {
+    var request = { modelChanged: true };
+    
+    this.addon.request("mistnode", request);
+}
+
 MistNodeInner.prototype.request = function(peer, op, args, cb) {
     return this.requestBare(peer, op, args, function(res) {
         //console.log('requestBare cb:', arguments);

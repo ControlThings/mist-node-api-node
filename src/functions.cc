@@ -976,6 +976,14 @@ static void mist_node_api_handler(mist_app_t* mist_app, input_buf* msg) {
         return;
     }
 
+    if (BSON_EOO != bson_find_from_buffer(&it, msg->data, "modelChanged")) {
+        /*
+         { modelChanged: true } 
+        */
+        mist_model_changed(&mist_app->model);
+        return;
+    }
+
     if (BSON_STRING == bson_find_from_buffer(&it, msg->data, "op")) {
         /*
          { peer: { luid, ruid... }, op: string, args: [arg1, arg2, ...], id: n }

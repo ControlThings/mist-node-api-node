@@ -249,6 +249,7 @@ describe('Mist Model', function () {
 
             if (data[0] && data[0] === 'ok') {
                 node.removeEndpoint('test');
+                node.modelChanged();
             }
 
             if (data[0] && data[0] === 'model') {
@@ -282,6 +283,7 @@ describe('Mist Model', function () {
 
             if (data[0] && data[0] === 'ok') {
                 node.removeEndpoint('mist');
+                node.modelChanged();
             }
             
             if (data[0] && data[0] === 'model') {
@@ -322,6 +324,7 @@ describe('Mist Model', function () {
             
             if (data[0] && data[0] === 'ok') {
                 node.removeEndpoint('level0');
+                node.modelChanged();
             }
             
             if (data[0] && data[0] === 'model') {
