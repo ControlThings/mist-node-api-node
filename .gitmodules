@@ -1,0 +1,3 @@
+[submodule "mist-c99"]
+	path = mist-c99
+	url = https://github.com/ControlThings/mist-c99.git
