@@ -23,7 +23,7 @@
   },
   "devDependencies": {
     "mkdirp": "0.5.1",
-    "mocha": "3.2.0",
+    "mocha": "10.2.0",
     "wish-rpc": "0.6.5"
   }
 }
